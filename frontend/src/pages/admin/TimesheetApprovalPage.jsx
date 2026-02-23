@@ -227,11 +227,11 @@ export default function TimesheetApprovalPage() {
                                 alert('Eroare la export: ' + (error.response?.data?.detail || error.message))
                             }
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-200 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
                     >
                         <FileDown className="w-4 h-4" />
                         Export
-                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                        <FileSpreadsheet className="w-4 h-4" />
                     </button>
                     <button onClick={fetchWorkers} className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
                         <RefreshCw className="w-4 h-4" /> Refresh

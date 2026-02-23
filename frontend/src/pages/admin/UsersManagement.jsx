@@ -383,11 +383,11 @@ export default function UsersManagement() {
                     {/* Excel Export */}
                     <button
                         onClick={handleExportExcel}
-                        className="bg-white border-2 border-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all flex items-center gap-2"
+                        className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                     >
                         <FileDown className="w-4 h-4" />
                         Export
-                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                        <FileSpreadsheet className="w-4 h-4" />
                     </button>
                     {/* Add User */}
                     <button

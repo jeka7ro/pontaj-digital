@@ -238,11 +238,11 @@ export default function ActivitiesManagement() {
                                 alert('Eroare la export: ' + (error.response?.data?.detail || error.message))
                             }
                         }}
-                        className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-blue-200 text-blue-700 rounded-xl font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all"
+                        className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
                     >
                         <FileDown className="w-4 h-4" />
                         Export
-                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                        <FileSpreadsheet className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => {

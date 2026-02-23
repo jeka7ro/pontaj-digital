@@ -210,8 +210,9 @@ export default function ClockInPage() {
 
     useEffect(() => {
         if (activeShift) {
-            // Freeze timer when NOT actively working (geofence outside, GPS lost, or on break)
-            if (activeShift.is_outside_geofence || activeShift.gps_lost || activeShift.is_on_break) {
+            // Freeze timer when NOT actively working (geofence outside or on break)
+            // GPS lost does NOT freeze timer — just shows a warning
+            if (activeShift.is_outside_geofence || activeShift.is_on_break) {
                 const frozenHours = Math.max(0,
                     (activeShift.elapsed_hours || 0) -
                     (activeShift.break_hours || 0) -
@@ -783,8 +784,8 @@ export default function ClockInPage() {
                                         <span className="font-bold text-sm">📡 GPS PIERDUT</span>
                                     </div>
                                     <p className="text-xs text-white/90">
-                                        Nu am primit semnal GPS de peste 2 minute.
-                                        Cronometrul rulează, dar nu putem verifica dacă ești pe șantier.
+                                        Semnal GPS slab sau indisponibil.
+                                        Cronometrul continuă să numere.
                                     </p>
                                     <div className="mt-3 pt-3 border-t border-white/20">
                                         <p className="text-xs text-white/80 font-medium">
@@ -805,21 +806,18 @@ export default function ClockInPage() {
                             )}
 
                             {/* Timer Display */}
-                            <div className={`bg-white rounded-2xl shadow-lg p-6 text-center ${activeShift.is_outside_geofence || activeShift.gps_lost ? 'opacity-60' : ''}`}>
+                            <div className={`bg-white rounded-2xl shadow-lg p-6 text-center ${activeShift.is_outside_geofence ? 'opacity-60' : ''}`}>
                                 <div className="text-sm text-slate-600 mb-2">
                                     {activeShift.is_outside_geofence
                                         ? '🚫 Cronometru oprit — În afara șantierului'
-                                        : activeShift.gps_lost
-                                            ? '⏸ Cronometru oprit — GPS pierdut'
-                                            : activeShift.is_on_break
-                                                ? '⏸ Cronometru oprit — Pauză'
-                                                : '⏱ Timp lucrat'
+                                        : activeShift.is_on_break
+                                            ? '⏸ Cronometru oprit — Pauză'
+                                            : '⏱ Timp lucrat'
                                     }
                                 </div>
                                 <div className={`text-4xl font-bold mb-1 ${activeShift.is_outside_geofence ? 'text-red-500'
-                                    : activeShift.gps_lost ? 'text-amber-500'
-                                        : activeShift.is_on_break ? 'text-orange-500'
-                                            : 'text-blue-600'
+                                    : activeShift.is_on_break ? 'text-orange-500'
+                                        : 'text-blue-600'
                                     }`}>
                                     {formatTime(elapsedTime)}
                                 </div>

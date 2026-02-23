@@ -734,3 +734,37 @@ def my_dates(
     ).distinct().order_by(Timesheet.date.desc()).all()
     
     return {"dates": [str(d[0]) for d in dates]}
+
+
+@router.delete("/timesheets/cleanup-zombies")
+def cleanup_zombie_segments(
+    target_date: str = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete zombie segments (< 2min duration) for a given date. Admin only."""
+    # Check admin role
+    role = db.query(Role).filter(Role.id == current_user.role_id).first()
+    if not role or role.code not in ("ADMIN", "SITE_MANAGER"):
+        raise HTTPException(status_code=403, detail="Acces interzis")
+    
+    d = date.fromisoformat(target_date) if target_date else date.today()
+    
+    # Find all timesheets for this date
+    timesheets = db.query(Timesheet).filter(Timesheet.date == d).all()
+    
+    deleted = 0
+    for ts in timesheets:
+        segments = db.query(TimesheetSegment).filter(
+            TimesheetSegment.timesheet_id == ts.id,
+            TimesheetSegment.check_out_time != None
+        ).all()
+        
+        for seg in segments:
+            duration = (seg.check_out_time - seg.check_in_time).total_seconds()
+            if duration < 120:  # Less than 2 minutes
+                db.delete(seg)
+                deleted += 1
+    
+    db.commit()
+    return {"deleted": deleted, "date": str(d)}

@@ -243,6 +243,22 @@ export default function ClockInPage() {
         }
     }, [activeShift, geofencePauseTime])
 
+    // Break timer — counts up while on break
+    useEffect(() => {
+        if (!activeShift?.is_on_break || !activeShift?.break_start_time) {
+            return
+        }
+        const updateBreak = () => {
+            const now = new Date()
+            const breakStart = new Date(activeShift.break_start_time)
+            const breakSecs = (now - breakStart) / 1000 / 3600
+            setBreakTime(breakSecs)
+        }
+        updateBreak()
+        const interval = setInterval(updateBreak, 1000)
+        return () => clearInterval(interval)
+    }, [activeShift?.is_on_break, activeShift?.break_start_time])
+
     // Geofence location ping — every 30s while shift is active
     useEffect(() => {
         if (!activeShift || !location) return
@@ -547,9 +563,6 @@ export default function ClockInPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
-                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <Settings className="w-5 h-5" />
-                        </button>
                         <button
                             onClick={() => { logout(); navigate('/login'); }}
                             className="p-2 hover:bg-red-500/30 rounded-lg transition-colors"

@@ -10,7 +10,7 @@ from typing import Optional
 from math import radians, cos, sin, asin, sqrt
 
 from app.database import get_db
-from app.models import User, ConstructionSite, Timesheet, TimesheetSegment, GeofencePause, Role
+from app.models import User, ConstructionSite, Timesheet, TimesheetSegment, GeofencePause, Role, TimesheetLine, Activity
 from app.api.auth import get_current_user
 
 router = APIRouter()
@@ -682,3 +682,99 @@ def my_today_status(
     ).count()
     
     return {"has_completed_segments": completed > 0}
+
+
+@router.get("/timesheets/my-history")
+def my_history(
+    target_date: str = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get employee's own timesheet details for a specific date"""
+    if target_date:
+        d = date.fromisoformat(target_date)
+    else:
+        d = date.today()
+    
+    ts = db.query(Timesheet).filter(
+        Timesheet.owner_user_id == current_user.id,
+        Timesheet.date == d
+    ).first()
+    
+    if not ts:
+        return {"date": str(d), "found": False, "segments": [], "activities": [], "total_worked": 0, "total_break": 0}
+    
+    segments = db.query(TimesheetSegment).filter(
+        TimesheetSegment.timesheet_id == ts.id
+    ).order_by(TimesheetSegment.check_in_time.asc()).all()
+    
+    total_worked = 0
+    total_break = 0
+    seg_list = []
+    
+    for seg in segments:
+        if seg.check_out_time:
+            seg_hours = (seg.check_out_time - seg.check_in_time).total_seconds() / 3600
+        else:
+            seg_hours = (datetime.now() - seg.check_in_time).total_seconds() / 3600
+        
+        brk = 0
+        if seg.break_start_time:
+            be = seg.break_end_time or datetime.now()
+            brk = (be - seg.break_start_time).total_seconds() / 3600
+        
+        geo_pause = get_geofence_pause_seconds(db, seg.id) / 3600
+        worked = max(0, seg_hours - brk - geo_pause)
+        total_worked += worked
+        total_break += brk
+        
+        site = db.query(ConstructionSite).filter(ConstructionSite.id == seg.site_id).first()
+        
+        seg_list.append({
+            "check_in": str(seg.check_in_time),
+            "check_out": str(seg.check_out_time) if seg.check_out_time else None,
+            "site_name": site.name if site else "N/A",
+            "worked_hours": round(worked, 2),
+            "break_hours": round(brk, 2),
+            "geofence_pause_hours": round(geo_pause, 2),
+            "is_active": seg.check_out_time is None
+        })
+    
+    # Activities
+    lines = db.query(TimesheetLine).filter(TimesheetLine.timesheet_id == ts.id).all()
+    act_list = []
+    for ln in lines:
+        act = db.query(Activity).filter(Activity.id == ln.activity_id).first()
+        if act:
+            act_list.append({
+                "name": act.name,
+                "quantity": float(ln.quantity_numeric),
+                "unit_type": ln.unit_type
+            })
+    
+    return {
+        "date": str(d),
+        "found": True,
+        "segments": seg_list,
+        "activities": act_list,
+        "total_worked": round(total_worked, 2),
+        "total_break": round(total_break, 2),
+        "status": ts.status
+    }
+
+
+@router.get("/timesheets/my-dates")
+def my_dates(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get list of dates where employee has timesheets (last 60 days)"""
+    from sqlalchemy import func
+    cutoff = date.today() - timedelta(days=60)
+    
+    dates = db.query(Timesheet.date).filter(
+        Timesheet.owner_user_id == current_user.id,
+        Timesheet.date >= cutoff
+    ).distinct().order_by(Timesheet.date.desc()).all()
+    
+    return {"dates": [str(d[0]) for d in dates]}

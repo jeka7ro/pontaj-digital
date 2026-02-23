@@ -11,29 +11,39 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         let token = null
+        const isAdminRequest = config.url?.startsWith('/admin')
 
-        // Check for employee token in Zustand auth-storage
-        try {
-            const authStorage = localStorage.getItem('auth-storage')
-            if (authStorage) {
-                const parsed = JSON.parse(authStorage)
-                token = parsed.state?.accessToken
-            }
-        } catch (e) {
-            console.error('Error parsing auth storage:', e)
-        }
-
-        // If no employee token, check for admin token
-        if (!token) {
+        if (isAdminRequest) {
+            // Admin requests: use admin token first
             try {
                 const adminStorage = localStorage.getItem('admin-storage')
                 if (adminStorage) {
                     const parsed = JSON.parse(adminStorage)
                     token = parsed.state?.token
                 }
-            } catch (e) {
-                console.error('Error parsing admin storage:', e)
-            }
+            } catch (e) { }
+        }
+
+        // Employee token (or fallback for admin if no admin token)
+        if (!token) {
+            try {
+                const authStorage = localStorage.getItem('auth-storage')
+                if (authStorage) {
+                    const parsed = JSON.parse(authStorage)
+                    token = parsed.state?.accessToken
+                }
+            } catch (e) { }
+        }
+
+        // Final fallback: admin token for non-admin requests
+        if (!token && !isAdminRequest) {
+            try {
+                const adminStorage = localStorage.getItem('admin-storage')
+                if (adminStorage) {
+                    const parsed = JSON.parse(adminStorage)
+                    token = parsed.state?.token
+                }
+            } catch (e) { }
         }
 
         if (token) {

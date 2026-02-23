@@ -150,11 +150,19 @@ def clock_in(
         )
     
     # ----- SCHEDULE ENFORCEMENT -----
+    # Only block brand-new shifts; allow continuation if worker already worked today
     now = datetime.now()
     current_time = now.time()
     schedule_info = {}
     
-    if site.work_start_time and site.work_end_time:
+    has_existing_segments = False
+    if active_timesheet:
+        existing_seg_count = db.query(TimesheetSegment).filter(
+            TimesheetSegment.timesheet_id == active_timesheet.id
+        ).count()
+        has_existing_segments = existing_seg_count > 0
+    
+    if site.work_start_time and site.work_end_time and not has_existing_segments:
         # Allow clock-in 30 minutes before schedule start
         earliest_dt = datetime.combine(today, site.work_start_time) - timedelta(minutes=30)
         earliest_time = earliest_dt.time()

@@ -89,6 +89,7 @@ export default function ClockInPage() {
     const [addedActivities, setAddedActivities] = useState([])
     const [activityQuantities, setActivityQuantities] = useState({})
     const [showActivityPicker, setShowActivityPicker] = useState(false)
+    const [lastAddedActivityId, setLastAddedActivityId] = useState(null)
     const [showClockOutConfirm, setShowClockOutConfirm] = useState(false)
     const [clockOutResult, setClockOutResult] = useState(null)
     const [errorMessage, setErrorMessage] = useState(null)
@@ -331,7 +332,9 @@ export default function ClockInPage() {
             })
             await fetchAddedActivities(activeShift.timesheet_id)
             setActivityQuantities(prev => ({ ...prev, [activity.id]: 1 }))
-            setShowActivityPicker(false)
+            // Flash success on the added activity (don't close picker)
+            setLastAddedActivityId(activity.id)
+            setTimeout(() => setLastAddedActivityId(null), 1500)
         } catch (error) {
             setErrorMessage(error.response?.data?.detail || 'Eroare la adăugarea activității')
         }
@@ -967,18 +970,22 @@ export default function ClockInPage() {
                                                                             <div className="flex items-center gap-2 flex-shrink-0">
                                                                                 <input
                                                                                     type="number"
-                                                                                    min="1"
+                                                                                    min="0"
                                                                                     value={activityQuantities[act.id] ?? 1}
                                                                                     onChange={e => setActivityQuantities(prev => ({ ...prev, [act.id]: e.target.value === '' ? '' : parseFloat(e.target.value) }))}
                                                                                     onBlur={e => { if (e.target.value === '' || parseFloat(e.target.value) < 1) setActivityQuantities(prev => ({ ...prev, [act.id]: 1 })) }}
+                                                                                    onClick={e => e.target.select()}
                                                                                     className="w-16 text-center border border-slate-200 rounded-lg py-1.5 text-sm"
                                                                                 />
                                                                                 <button
                                                                                     onClick={() => handleAddActivity(act)}
-                                                                                    className="text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity"
-                                                                                    style={{ backgroundColor: cat.color }}
+                                                                                    className={`text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${lastAddedActivityId === act.id
+                                                                                        ? 'bg-green-500 scale-105'
+                                                                                        : 'hover:opacity-90'
+                                                                                        }`}
+                                                                                    style={lastAddedActivityId !== act.id ? { backgroundColor: cat.color } : {}}
                                                                                 >
-                                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                                    {lastAddedActivityId === act.id ? '✓' : 'Adaugă'}
                                                                                 </button>
                                                                             </div>
                                                                         </div>

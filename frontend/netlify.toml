@@ -6,14 +6,14 @@
 # Proxy API calls to Render backend
 [[redirects]]
   from = "/api/*"
-  to = "https://pontaj-digital-api.onrender.com/api/:splat"
+  to = "https://pontaj-digital.onrender.com/api/:splat"
   status = 200
   force = true
 
 # Proxy uploads to Render backend
 [[redirects]]
   from = "/uploads/*"
-  to = "https://pontaj-digital-api.onrender.com/uploads/:splat"
+  to = "https://pontaj-digital.onrender.com/uploads/:splat"
   status = 200
   force = true
 

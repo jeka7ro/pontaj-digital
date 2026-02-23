@@ -663,3 +663,26 @@ def location_ping(
             "message": None
         }
 
+
+@router.get("/timesheets/my-today")
+def my_today_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if user has completed segments today (for 'Continuă tura' UX)"""
+    today = date.today()
+    ts = db.query(Timesheet).filter(
+        Timesheet.owner_user_id == current_user.id,
+        Timesheet.date == today,
+        Timesheet.status == "DRAFT"
+    ).first()
+    
+    if not ts:
+        return {"has_completed_segments": False}
+    
+    completed = db.query(TimesheetSegment).filter(
+        TimesheetSegment.timesheet_id == ts.id,
+        TimesheetSegment.check_out_time != None
+    ).count()
+    
+    return {"has_completed_segments": completed > 0}

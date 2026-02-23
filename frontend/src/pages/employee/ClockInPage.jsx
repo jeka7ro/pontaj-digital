@@ -98,6 +98,7 @@ export default function ClockInPage() {
     const [teamInfo, setTeamInfo] = useState(null)
     const [geofencePing, setGeofencePing] = useState(null) // latest ping response
     const [geofencePauseTime, setGeofencePauseTime] = useState(0) // total pause seconds
+    const [hadPreviousShift, setHadPreviousShift] = useState(false)
 
     const isTeamLead = user?.role?.code === 'TEAM_LEAD'
     const isSiteManager = user?.role?.code === 'SITE_MANAGER'
@@ -300,6 +301,13 @@ export default function ClockInPage() {
             setActiveShift(response.data)
             if (response.data?.timesheet_id) {
                 await fetchAddedActivities(response.data.timesheet_id)
+                setHadPreviousShift(false)
+            } else {
+                // No active shift — check if had completed shifts today
+                try {
+                    const histRes = await api.get('/timesheets/my-today')
+                    setHadPreviousShift(histRes.data?.has_completed_segments || false)
+                } catch { setHadPreviousShift(false) }
             }
             return response.data
         } catch (error) {
@@ -1073,7 +1081,7 @@ export default function ClockInPage() {
                                     ) : (
                                         <>
                                             <Play className="w-8 h-8 mb-1" />
-                                            <span className="text-sm">ÎNCEPE</span>
+                                            <span className="text-sm">{hadPreviousShift ? 'CONTINUĂ' : 'ÎNCEPE'}</span>
                                             <span className="text-sm">TURA</span>
                                         </>
                                     )}

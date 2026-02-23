@@ -175,18 +175,18 @@ export default function AdminOverview() {
 
             {/* KPI Row */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                <KPICard label="Angajați" value={stats.total_users} icon={Users} gradient="from-blue-500 to-blue-600" onClick={() => navigate('/admin/users')} />
-                <KPICard label="Șantiere" value={stats.total_sites} icon={Building2} gradient="from-emerald-500 to-emerald-600" onClick={() => navigate('/admin/sites')} />
-                <KPICard label="Lucrează Acum" value={activeCount} icon={Timer} gradient="from-green-400 to-green-500" pulse={activeCount > 0} onClick={() => navigate('/admin/timesheets')} />
-                <KPICard label="În Pauză" value={breakCount} icon={Coffee} gradient="from-orange-400 to-orange-500" onClick={() => navigate('/admin/timesheets')} />
-                <KPICard label="Ore Azi (Live)" value={formatTime(totalHoursToday)} icon={Clock} gradient="from-indigo-500 to-indigo-600" isText pulse onClick={() => navigate('/admin/timesheets')} />
-                <KPICard label="Ore Săptămâna" value={`${stats.total_hours_week}h`} icon={TrendingUp} gradient="from-violet-500 to-violet-600" isText onClick={() => navigate('/admin/reports')} />
+                <KPICard label="Angajați" value={stats.total_users} icon={Users} gradient="from-[#0f172a] to-[#1e3a5f]" onClick={() => navigate('/admin/users')} />
+                <KPICard label="Șantiere" value={stats.total_sites} icon={Building2} gradient="from-[#1e3a5f] to-[#1e40af]" onClick={() => navigate('/admin/sites')} />
+                <KPICard label="Lucrează Acum" value={activeCount} icon={Timer} gradient="from-[#0f172a] to-[#164e63]" pulse={activeCount > 0} onClick={() => navigate('/admin/timesheets')} />
+                <KPICard label="În Pauză" value={breakCount} icon={Coffee} gradient="from-[#1e3a5f] to-[#7c3aed]" onClick={() => navigate('/admin/timesheets')} />
+                <KPICard label="Ore Azi (Live)" value={formatTime(totalHoursToday)} icon={Clock} gradient="from-[#0f172a] to-[#1e40af]" isText pulse onClick={() => navigate('/admin/timesheets')} />
+                <KPICard label="Ore Săptămâna" value={`${stats.total_hours_week}h`} icon={TrendingUp} gradient="from-[#1e3a5f] to-[#0f172a]" isText onClick={() => navigate('/admin/reports')} />
             </div>
 
             {/* Row 2: Weekly Comparison + Site Live Map */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 {/* Weekly Hours Chart — takes 2 cols */}
-                <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+                <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-blue-500" />
@@ -233,7 +233,7 @@ export default function AdminOverview() {
                 </div>
 
                 {/* Live Site Map */}
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-emerald-500" />
                         Șantiere Live
@@ -287,7 +287,7 @@ export default function AdminOverview() {
             {/* Row 3: Hourly Chart + Top Performers + Late Arrivals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 {/* Hourly Activity */}
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <Activity className="w-4 h-4 text-green-500" />
                         Activitate pe Ore — Azi
@@ -315,7 +315,7 @@ export default function AdminOverview() {
                 </div>
 
                 {/* Top Performers */}
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <Trophy className="w-4 h-4 text-amber-500" />
                         Top Performeri — Azi
@@ -354,7 +354,7 @@ export default function AdminOverview() {
                 <div className="space-y-6">
                     {/* Late Arrivals */}
                     {lateArrivals.length > 0 && (
-                        <div className="bg-white rounded-xl border border-amber-200 p-5">
+                        <div className="bg-white rounded-xl border border-amber-200 shadow-lg p-5">
                             <h3 className="text-sm font-bold text-amber-700 mb-3 flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4" />
                                 Sosiri Târzii ({lateArrivals.length})
@@ -375,7 +375,7 @@ export default function AdminOverview() {
 
                     {/* Today's Activities Summary */}
                     {(chartData.activities || []).length > 0 && (
-                        <div className="bg-white rounded-xl border border-slate-200 p-5">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                             <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                                 <Zap className="w-4 h-4 text-violet-500" />
                                 Producție Azi
@@ -406,7 +406,7 @@ export default function AdminOverview() {
 
             {/* Site Distribution Pie + Workers per Day */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-orange-500" />
                         Distribuție pe Șantiere — Azi
@@ -444,7 +444,7 @@ export default function AdminOverview() {
                     )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <Users className="w-4 h-4 text-violet-500" />
                         Muncitori pe Zi — Ultimele 7 Zile
@@ -494,7 +494,7 @@ export default function AdminOverview() {
                             <div className="flex items-center gap-3">
                                 <AvatarImg path={worker.avatar_path} name={worker.worker_name} size="w-8 h-8" />
                                 <div>
-                                    <div className="text-sm font-semibold text-slate-900">{worker.worker_name}</div>
+                                    <div className="text-sm font-semibold text-blue-700 hover:text-blue-900 cursor-pointer hover:underline" onClick={() => navigate(`/admin/users`)}>{worker.worker_name}</div>
                                     <div className="text-xs text-slate-500">{worker.employee_code}</div>
                                 </div>
                             </div>
@@ -547,7 +547,7 @@ export default function AdminOverview() {
                 return (
                     <>
                         {/* Active Workers */}
-                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden mb-4">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -579,7 +579,7 @@ export default function AdminOverview() {
 
                         {/* Finished Workers */}
                         {doneWorkers.length > 0 && (
-                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden mb-6">
                                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50">
                                     <h3 className="text-sm font-bold text-slate-500 flex items-center gap-2">
                                         <CheckCircle className="w-4 h-4 text-slate-400" /> Terminat Azi
@@ -613,7 +613,8 @@ function AvatarImg({ path, name, size = 'w-8 h-8', textSize = 'text-xs' }) {
     const [showFallback, setShowFallback] = useState(false)
     const initial = name?.charAt(0) || '?'
     if (path && !showFallback) {
-        return <img src={`${API_BASE}${path}`} alt="" className={`${size} rounded-full object-cover object-top`} onError={() => setShowFallback(true)} />
+        const src = path.startsWith('http') ? path : `${API_BASE}${path}`
+        return <img src={src} alt="" className={`${size} rounded-full object-cover object-top`} onError={() => setShowFallback(true)} />
     }
     return (
         <div className={`${size} rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white ${textSize} font-bold`}>
@@ -642,7 +643,7 @@ function KPICard({ label, value, icon: Icon, gradient, onClick, pulse, isText })
     return (
         <div
             onClick={onClick}
-            className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-4 shadow-lg relative overflow-hidden ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+            className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-4 shadow-xl relative overflow-hidden ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
         >
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-1">
@@ -659,7 +660,7 @@ function KPICard({ label, value, icon: Icon, gradient, onClick, pulse, isText })
 
 function QuickAction({ icon: Icon, title, desc, color, onClick }) {
     return (
-        <div onClick={onClick} className="bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all">
+        <div onClick={onClick} className="bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all shadow-md">
             <div className="flex items-start gap-3">
                 <div className={`p-2 ${color} rounded-lg`}>
                     <Icon className="w-4 h-4 text-white" />

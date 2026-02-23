@@ -31,6 +31,13 @@ export default function ReportsPage() {
         setDefaultDates()
     }, [])
 
+    // Auto-load report after dates are set
+    useEffect(() => {
+        if (dateFrom && dateTo) {
+            handlePreview()
+        }
+    }, [dateFrom, dateTo])
+
     const setDefaultDates = () => {
         const today = new Date()
         const lastWeek = new Date(today)
@@ -365,9 +372,9 @@ export default function ReportsPage() {
                                     return (
                                         <div key={emp.name} className="flex items-center gap-3">
                                             <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' :
-                                                    i === 1 ? 'bg-slate-200 text-slate-600' :
-                                                        i === 2 ? 'bg-orange-100 text-orange-700' :
-                                                            'bg-slate-100 text-slate-500'
+                                                i === 1 ? 'bg-slate-200 text-slate-600' :
+                                                    i === 2 ? 'bg-orange-100 text-orange-700' :
+                                                        'bg-slate-100 text-slate-500'
                                                 }`}>{i + 1}</span>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-0.5">
@@ -400,8 +407,8 @@ export default function ReportsPage() {
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
                                     className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === tab.key
-                                            ? 'text-blue-600 border-blue-500 bg-white'
-                                            : 'text-slate-500 border-transparent hover:text-slate-700'
+                                        ? 'text-blue-600 border-blue-500 bg-white'
+                                        : 'text-slate-500 border-transparent hover:text-slate-700'
                                         }`}
                                 >
                                     <tab.icon className="w-4 h-4" />
@@ -507,9 +514,9 @@ export default function ReportsPage() {
                                                 <tr key={emp.name} className="hover:bg-blue-50/50 transition-colors">
                                                     <td className="px-5 py-3">
                                                         <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' :
-                                                                i === 1 ? 'bg-slate-200 text-slate-600' :
-                                                                    i === 2 ? 'bg-orange-100 text-orange-700' :
-                                                                        'bg-slate-100 text-slate-500'
+                                                            i === 1 ? 'bg-slate-200 text-slate-600' :
+                                                                i === 2 ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-slate-100 text-slate-500'
                                                             }`}>{i + 1}</span>
                                                     </td>
                                                     <td className="px-5 py-3 text-sm font-semibold text-slate-800">{emp.name}</td>

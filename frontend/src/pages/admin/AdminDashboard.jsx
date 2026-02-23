@@ -4,7 +4,7 @@ import { useAdminStore } from '../../store/adminStore'
 import api from '../../lib/api'
 import {
     LayoutDashboard, Users, Building2, FileText, Settings, LogOut, Shield,
-    Menu, X, Clock, Activity, Bell, ChevronRight
+    Menu, ChevronLeft, Clock, Activity, Bell, ChevronRight
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                         >
-                            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     </div>
                 </div>

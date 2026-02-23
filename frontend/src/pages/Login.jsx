@@ -1,14 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import api from '../lib/api'
-import { HardHat, ArrowRight, Loader2 } from 'lucide-react'
+import { HardHat, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
     const [employeeCode, setEmployeeCode] = useState('')
     const [pin, setPin] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [showPin, setShowPin] = useState(false)
+    const [rememberMe, setRememberMe] = useState(false)
+
+    // Load saved credentials on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('pontaj_saved_login')
+        if (saved) {
+            try {
+                const { code, pin: savedPin } = JSON.parse(saved)
+                setEmployeeCode(code || '')
+                setPin(savedPin || '')
+                setRememberMe(true)
+            } catch (e) { }
+        }
+    }, [])
 
     const navigate = useNavigate()
     const setAuth = useAuthStore((state) => state.setAuth)
@@ -25,6 +40,12 @@ export default function Login() {
             })
 
             const { access_token, refresh_token, user } = response.data
+            // Save or clear credentials
+            if (rememberMe) {
+                localStorage.setItem('pontaj_saved_login', JSON.stringify({ code: employeeCode, pin }))
+            } else {
+                localStorage.removeItem('pontaj_saved_login')
+            }
             setAuth(user, access_token, refresh_token)
             navigate('/')
         } catch (err) {
@@ -83,20 +104,40 @@ export default function Login() {
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
                                 PIN (4 cifre)
                             </label>
-                            <input
-                                type="password"
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value.slice(0, 4))}
-                                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl 
-                         focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 
-                         outline-none transition-all duration-200 text-slate-900 font-medium
-                         placeholder:text-slate-400 placeholder:font-normal"
-                                placeholder="••••"
-                                maxLength={4}
-                                pattern="[0-9]{4}"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPin ? 'text' : 'password'}
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value.slice(0, 4))}
+                                    className="w-full px-4 py-3 pr-12 bg-slate-50 border-2 border-slate-200 rounded-xl 
+                             focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 
+                             outline-none transition-all duration-200 text-slate-900 font-medium
+                             placeholder:text-slate-400 placeholder:font-normal"
+                                    placeholder="••••"
+                                    maxLength={4}
+                                    pattern="[0-9]{4}"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPin(!showPin)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                                >
+                                    {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Remember Me */}
+                        <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                className="w-4.5 h-4.5 rounded border-2 border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                            />
+                            <span className="text-sm text-slate-600 font-medium">Ține-mă minte</span>
+                        </label>
 
                         {/* Error Message */}
                         {error && (

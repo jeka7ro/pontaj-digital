@@ -149,43 +149,23 @@ def clock_in(
             detail="Locația GPS este necesară pentru pontare. Activează GPS-ul sau bifează declarația pe proprie răspundere."
         )
     
-    # ----- SCHEDULE ENFORCEMENT -----
-    # Only block brand-new shifts; allow continuation if worker already worked today
+    # ----- SCHEDULE INFO (non-blocking) -----
     now = datetime.now()
     current_time = now.time()
     schedule_info = {}
+    schedule_warning = None
     
-    has_existing_segments = False
-    if active_timesheet:
-        existing_seg_count = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == active_timesheet.id
-        ).count()
-        has_existing_segments = existing_seg_count > 0
-    
-    if site.work_start_time and site.work_end_time and not has_existing_segments:
-        # Allow clock-in 30 minutes before schedule start
-        earliest_dt = datetime.combine(today, site.work_start_time) - timedelta(minutes=30)
-        earliest_time = earliest_dt.time()
-        
-        # Latest clock-in = work_end_time (no point starting after schedule ends)
-        latest_time = site.work_end_time
-        
-        if current_time < earliest_time:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Programul șantierului începe la {site.work_start_time.strftime('%H:%M')}. Poți face pontajul cu maxim 30 de minute înainte ({earliest_time.strftime('%H:%M')})."
-            )
-        
-        if current_time > latest_time:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Programul șantierului s-a încheiat la {site.work_end_time.strftime('%H:%M')}. Nu poți începe o tură nouă."
-            )
+    if site.work_start_time and site.work_end_time:
+        if current_time < site.work_start_time:
+            schedule_warning = f"Programul șantierului începe la {site.work_start_time.strftime('%H:%M')}."
+        elif current_time > site.work_end_time:
+            schedule_warning = f"Programul șantierului s-a încheiat la {site.work_end_time.strftime('%H:%M')}."
         
         schedule_info = {
             "work_start": site.work_start_time.strftime('%H:%M'),
             "work_end": site.work_end_time.strftime('%H:%M'),
-            "max_overtime_minutes": site.max_overtime_minutes or 120
+            "max_overtime_minutes": site.max_overtime_minutes or 120,
+            "schedule_warning": schedule_warning
         }
     
     # ----- GEOFENCE VERIFICATION -----

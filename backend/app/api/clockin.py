@@ -431,31 +431,7 @@ def get_active_shift(
     
     site = db.query(ConstructionSite).filter(ConstructionSite.id == active_segment.site_id).first()
     
-    # ---- AUTO-CLOSE: if past schedule end + max overtime ----
-    now = datetime.now()
-    if site and site.work_end_time:
-        schedule_end = datetime.combine(today, site.work_end_time)
-        max_ot = site.max_overtime_minutes or 120
-        hard_deadline = schedule_end + timedelta(minutes=max_ot)
-        
-        if now > hard_deadline:
-            # Auto-close the segment at the hard deadline
-            active_segment.check_out_time = hard_deadline
-            
-            # Close any active break
-            if active_segment.break_start_time and not active_segment.break_end_time:
-                active_segment.break_end_time = hard_deadline
-            
-            # Close any active geofence pause
-            active_geo_pause = db.query(GeofencePause).filter(
-                GeofencePause.segment_id == active_segment.id,
-                GeofencePause.pause_end == None
-            ).first()
-            if active_geo_pause:
-                active_geo_pause.pause_end = hard_deadline
-            
-            db.commit()
-            return JSONResponse(content=None)  # No active shift anymore
+    # NOTE: Auto-close removed — workers close manually or admin closes via approval page
     
     # Calculate elapsed time
     now = datetime.now()

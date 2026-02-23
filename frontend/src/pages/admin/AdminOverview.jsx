@@ -3,7 +3,8 @@ import api from '../../lib/api'
 import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,
     Loader2, Coffee, MapPin, RefreshCw, Timer, Trophy, AlertTriangle, Zap,
-    ArrowUpRight, ArrowDownRight, ChevronRight, Eye, ShieldAlert, WifiOff
+    ArrowUpRight, ArrowDownRight, ChevronRight, Eye, ShieldAlert, WifiOff,
+    X, Phone, Mail, FileText, ArrowLeft
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -22,6 +23,11 @@ export default function AdminOverview() {
     const [workersLoading, setWorkersLoading] = useState(true)
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
+
+    // Worker detail drawer
+    const [selectedWorker, setSelectedWorker] = useState(null)
+    const [workerDetail, setWorkerDetail] = useState(null)
+    const [detailLoading, setDetailLoading] = useState(false)
 
     // Live clock
     const [now, setNow] = useState(Date.now())
@@ -86,6 +92,22 @@ export default function AdminOverview() {
         } catch (e) { console.error(e) }
         finally { setWorkersLoading(false) }
     }
+
+    const openWorkerDetail = async (worker) => {
+        setSelectedWorker(worker)
+        setDetailLoading(true)
+        try {
+            const res = await api.get(`/admin/timesheets/worker/${worker.worker_id}/history`)
+            setWorkerDetail(res.data)
+        } catch (e) {
+            console.error('Error fetching worker detail:', e)
+            setWorkerDetail(null)
+        } finally {
+            setDetailLoading(false)
+        }
+    }
+
+    const closeWorkerDetail = () => { setSelectedWorker(null); setWorkerDetail(null) }
 
     const formatTime = (hours) => {
         if (!hours || hours <= 0) return '0h 00m'
@@ -494,7 +516,7 @@ export default function AdminOverview() {
                             <div className="flex items-center gap-3">
                                 <AvatarImg path={worker.avatar_path} name={worker.worker_name} size="w-8 h-8" />
                                 <div>
-                                    <div className="text-sm font-semibold text-blue-700 hover:text-blue-900 cursor-pointer hover:underline" onClick={() => navigate(`/admin/users`)}>{worker.worker_name}</div>
+                                    <div className="text-sm font-semibold text-blue-700 hover:text-blue-900 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); openWorkerDetail(worker) }}>{worker.worker_name}</div>
                                     <div className="text-xs text-slate-500">{worker.employee_code}</div>
                                 </div>
                             </div>
@@ -603,6 +625,137 @@ export default function AdminOverview() {
                 <QuickAction icon={Activity} title="Activități" desc="Gestionează catalogul" color="bg-violet-500" onClick={() => navigate('/admin/activities')} />
                 <QuickAction icon={Users} title="Utilizatori" desc={`${stats.total_users} angajați`} color="bg-slate-600" onClick={() => navigate('/admin/users')} />
             </div>
+
+            {/* Worker Detail Drawer */}
+            {selectedWorker && (
+                <div className="fixed inset-0 z-50 flex">
+                    <div className="flex-1 bg-black/40" onClick={closeWorkerDetail} />
+                    <div className="w-full max-w-lg bg-white shadow-2xl overflow-y-auto" style={{ animation: 'slideInRight 0.25s ease-out' }}>
+                        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+                            <button onClick={closeWorkerDetail} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium">
+                                <ArrowLeft className="w-4 h-4" /> Înapoi
+                            </button>
+                            <button onClick={closeWorkerDetail} className="p-1.5 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
+                        </div>
+
+                        {detailLoading ? (
+                            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+                        ) : workerDetail ? (
+                            <div className="p-6 space-y-6">
+                                {/* Worker Profile */}
+                                <div className="flex items-center gap-4">
+                                    <AvatarImg path={workerDetail.worker.avatar_path} name={workerDetail.worker.full_name} size="w-16 h-16" textSize="text-xl" />
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900">{workerDetail.worker.full_name}</h2>
+                                        <p className="text-sm text-slate-500">{workerDetail.worker.employee_code} • {workerDetail.worker.role_name}</p>
+                                        <StatusBadge status={selectedWorker.status} is_on_break={selectedWorker.is_on_break} is_outside_geofence={selectedWorker.is_outside_geofence} gps_lost={selectedWorker.gps_lost} />
+                                    </div>
+                                </div>
+
+                                {/* Contact */}
+                                <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+                                    {workerDetail.worker.phone && (
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <Phone className="w-4 h-4 text-slate-400" />
+                                            <a href={`tel:${workerDetail.worker.phone}`} className="text-blue-600 hover:underline">{workerDetail.worker.phone}</a>
+                                        </div>
+                                    )}
+                                    {workerDetail.worker.email && (
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <Mail className="w-4 h-4 text-slate-400" />
+                                            <span className="text-slate-700">{workerDetail.worker.email}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Today's Shift Summary */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tura de Azi</h3>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
+                                            <div className="text-lg font-bold text-blue-600">{formatTime(getLiveHours(selectedWorker))}</div>
+                                            <div className="text-[10px] text-blue-500 mt-0.5">Ore lucrate</div>
+                                        </div>
+                                        <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 text-center">
+                                            <div className="text-lg font-bold text-orange-600">{formatTime(selectedWorker.break_hours || 0)}</div>
+                                            <div className="text-[10px] text-orange-500 mt-0.5">Pauză</div>
+                                        </div>
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                                            <div className="text-lg font-bold text-slate-700">
+                                                {selectedWorker.check_in_time ? new Date(selectedWorker.check_in_time).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 mt-0.5">Check-in</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Today's Activities */}
+                                {selectedWorker.activities && selectedWorker.activities.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Activități Raportate Azi</h3>
+                                        <div className="space-y-2">
+                                            {selectedWorker.activities.map((act, i) => (
+                                                <div key={i} className="flex items-center justify-between bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
+                                                    <span className="text-sm font-medium text-slate-700">{act.name}</span>
+                                                    <span className="text-sm font-bold text-violet-600">{act.quantity} <span className="text-xs text-slate-400 font-normal">{act.unit_type}</span></span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* History Summary */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-indigo-600">{workerDetail.summary.total_days}</div>
+                                        <div className="text-xs text-indigo-500 mt-1">Zile lucrate (total)</div>
+                                    </div>
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-emerald-600">{formatTime(workerDetail.summary.total_hours)}</div>
+                                        <div className="text-xs text-emerald-500 mt-1">Ore totale</div>
+                                    </div>
+                                </div>
+
+                                {/* Recent History */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Ultimele Pontaje</h3>
+                                    <div className="space-y-2">
+                                        {workerDetail.history.slice(0, 7).map((entry, i) => (
+                                            <div key={i} className="bg-white border border-slate-200 rounded-xl p-3">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-sm font-semibold text-slate-900">
+                                                        {new Date(entry.date).toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                    <span className="text-sm font-bold text-blue-600">{formatTime(entry.worked_hours)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                    <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {entry.site_name}</span>
+                                                    {entry.check_in && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(entry.check_in).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>}
+                                                </div>
+                                                {entry.activities.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {entry.activities.map((a, j) => (
+                                                            <span key={j} className="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
+                                                                {a.name}: {a.quantity} {a.unit_type}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center py-20 text-slate-400"><p>Eroare la încărcarea datelor</p></div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            `}</style>
         </div>
     )
 }

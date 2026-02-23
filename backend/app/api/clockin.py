@@ -192,22 +192,9 @@ def clock_in(
             site.geofence_radius or 300
         )
         
-        # Self-declaration logic: allow clock-in within max distance with declaration
-        max_self_declare_distance = max(site.geofence_radius or 300, 3000)  # At least 3km or site radius
-        if not is_within_geofence and request.self_declaration:
-            if distance_from_site <= max_self_declare_distance:
-                self_declared = True
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ești prea departe de șantier ({int(distance_from_site)}m). Distanța maximă permisă: {int(max_self_declare_distance/1000)}km."
-                )
-        elif not is_within_geofence and not request.self_declaration:
-            if distance_from_site > max_self_declare_distance:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ești prea departe de șantier ({int(distance_from_site)}m). Distanța maximă permisă: {int(max_self_declare_distance/1000)}km."
-                )
+        # TEMPORARY: Allow check-in from anywhere for testing (no distance blocking)
+        if not is_within_geofence:
+            self_declared = True
     elif not gps_available and request.self_declaration:
         # No GPS but self-declared — allowed but marked
         self_declared = True

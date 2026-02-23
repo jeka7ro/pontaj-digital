@@ -52,7 +52,12 @@ async def root():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "storage": "supabase" if os.getenv("SUPABASE_URL") else "local",
+        "supabase_url": bool(os.getenv("SUPABASE_URL")),
+        "supabase_key": bool(os.getenv("SUPABASE_SERVICE_KEY")),
+    }
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

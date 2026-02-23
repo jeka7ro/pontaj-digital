@@ -1,28 +1,18 @@
 """
 Supabase Storage helper for file uploads.
+Uses httpx for direct REST API calls (no heavy SDK dependencies).
 Falls back to local filesystem when SUPABASE_URL is not configured.
 """
 import os
-import uuid
 from pathlib import Path
 from typing import Optional
+import httpx
 
 
 # Check if Supabase is configured
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Service role key for storage
 STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "uploads")
-
-_supabase_client = None
-
-
-def _get_supabase():
-    """Lazy init Supabase client"""
-    global _supabase_client
-    if _supabase_client is None and SUPABASE_URL and SUPABASE_KEY:
-        from supabase import create_client
-        _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    return _supabase_client
 
 
 def is_cloud_storage() -> bool:
@@ -42,19 +32,20 @@ def upload_file(file_content: bytes, path: str, content_type: str = "image/jpeg"
     Returns:
         Public URL string (Supabase URL or local /uploads/ path)
     """
-    client = _get_supabase()
-    
-    if client:
-        # Upload to Supabase Storage
+    if is_cloud_storage():
+        # Upload to Supabase Storage via REST API
+        url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{path}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "apikey": SUPABASE_KEY,
+            "Content-Type": content_type,
+            "x-upsert": "true",
+        }
         try:
-            client.storage.from_(STORAGE_BUCKET).upload(
-                path=path,
-                file=file_content,
-                file_options={"content-type": content_type, "upsert": "true"}
-            )
+            response = httpx.post(url, content=file_content, headers=headers, timeout=30.0)
+            response.raise_for_status()
             # Return public URL
-            public_url = client.storage.from_(STORAGE_BUCKET).get_public_url(path)
-            return public_url
+            return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{path}"
         except Exception as e:
             print(f"Supabase upload error: {e}")
             raise
@@ -77,12 +68,15 @@ def delete_file(path: str) -> bool:
     Returns:
         True if successful
     """
-    client = _get_supabase()
-    
-    if client:
+    if is_cloud_storage():
+        url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{path}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "apikey": SUPABASE_KEY,
+        }
         try:
-            client.storage.from_(STORAGE_BUCKET).remove([path])
-            return True
+            response = httpx.delete(url, headers=headers, timeout=15.0)
+            return response.status_code < 400
         except Exception as e:
             print(f"Supabase delete error: {e}")
             return False
@@ -100,10 +94,8 @@ def get_file_url(path: str) -> str:
     For Supabase: returns full Supabase Storage URL
     For local: returns /uploads/... path
     """
-    client = _get_supabase()
-    
-    if client:
-        return client.storage.from_(STORAGE_BUCKET).get_public_url(path)
+    if is_cloud_storage():
+        return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{path}"
     else:
         return f"/uploads/{path}"
 

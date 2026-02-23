@@ -603,9 +603,10 @@ function AvatarImg({ path, name, size = 'w-9 h-9', textSize = 'text-sm', rounded
     const initial = name?.charAt(0) || '?'
 
     if (path && !showFallback) {
+        const src = path.startsWith('http') ? path : `${API_BASE}${path}`
         return (
             <img
-                src={`${API_BASE}${path}`}
+                src={src}
                 alt=""
                 className={`${size} ${rounded} object-cover object-top`}
                 onError={() => setShowFallback(true)}

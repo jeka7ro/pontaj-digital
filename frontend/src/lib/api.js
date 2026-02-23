@@ -11,9 +11,12 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         let token = null
-        const isAdminRequest = config.url?.startsWith('/admin')
+        // Detect admin requests: starts with /admin OR contains /admin (e.g. /site-photos/admin)
+        const isAdminRequest = config.url?.startsWith('/admin') || config.url?.includes('/admin')
+        // Also detect when on admin page
+        const isAdminPage = window.location.pathname.startsWith('/admin')
 
-        if (isAdminRequest) {
+        if (isAdminRequest || isAdminPage) {
             // Admin requests: use admin token first
             try {
                 const adminStorage = localStorage.getItem('admin-storage')
@@ -72,15 +75,19 @@ api.interceptors.response.use(
                 return Promise.reject(error)
             }
 
-            // If on admin route, redirect to admin login
-            if (currentPath.startsWith('/admin')) {
+            // Only auto-logout for core admin API calls, not secondary ones like photos
+            const isCoreAdminCall = requestUrl.startsWith('/admin/')
+
+            // If on admin route and it's a core admin call that failed
+            if (currentPath.startsWith('/admin') && isCoreAdminCall) {
                 localStorage.removeItem('admin-storage')
                 window.location.href = '/admin/login'
-            } else {
-                // Otherwise redirect to employee login
+            } else if (!currentPath.startsWith('/admin')) {
+                // Employee route
                 localStorage.removeItem('auth-storage')
                 window.location.href = '/login'
             }
+            // Otherwise just reject (don't redirect for non-core 401s)
         }
         return Promise.reject(error)
     }

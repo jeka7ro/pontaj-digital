@@ -520,12 +520,25 @@ export default function AdminOverview() {
                         </td>
                         <td className="px-5 py-3">
                             {worker.activities && worker.activities.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                    {worker.activities.map((act, i) => (
-                                        <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                                            {act.name}: {act.quantity} {act.unit_type}
-                                        </span>
-                                    ))}
+                                <div className="relative group inline-block">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 cursor-pointer hover:bg-violet-200 transition-colors">
+                                        <Activity className="w-3 h-3" />
+                                        {worker.activities.length} activit{worker.activities.length > 1 ? 'ăți' : 'ate'}
+                                    </span>
+                                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 w-72">
+                                        <div className="bg-slate-900 text-white rounded-xl p-3 shadow-xl border border-slate-700">
+                                            <div className="text-[11px] font-semibold text-slate-400 uppercase mb-2">Activități raportate</div>
+                                            <div className="space-y-1.5">
+                                                {worker.activities.map((act, i) => (
+                                                    <div key={i} className="flex items-center justify-between text-sm">
+                                                        <span className="text-slate-200 truncate flex-1 mr-2">{act.name}</span>
+                                                        <span className="text-violet-300 font-bold whitespace-nowrap">{act.quantity} {act.unit_type}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="absolute left-4 -bottom-1 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-slate-700" />
+                                        </div>
+                                    </div>
                                 </div>
                             ) : <span className="text-xs text-slate-400">—</span>}
                         </td>

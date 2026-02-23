@@ -13,17 +13,6 @@
 
 <body>
   <div id="root"></div>
-  <script>
-    // Force clear old service workers and caches (v2 - 2026-02-19)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        registrations.forEach(function (registration) { registration.unregister(); });
-      });
-      caches.keys().then(function (names) {
-        names.forEach(function (name) { caches.delete(name); });
-      });
-    }
-  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

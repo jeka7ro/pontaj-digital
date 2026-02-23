@@ -28,7 +28,8 @@ app = FastAPI(
     title="Pontaj Digital API",
     description="Enterprise Construction Timesheet System",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 # CORS

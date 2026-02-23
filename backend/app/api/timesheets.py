@@ -846,7 +846,8 @@ async def get_active_workers(
                 activity_list.append({
                     "name": act.name,
                     "quantity": float(tl.quantity_numeric) if tl.quantity_numeric else 0,
-                    "unit_type": tl.unit_type
+                    "unit_type": tl.unit_type,
+                    "added_at": str(tl.created_at) if tl.created_at else None
                 })
         
         active_workers.append({
@@ -970,7 +971,8 @@ async def get_worker_history(
                 activities.append({
                     "name": act.name,
                     "quantity": float(tl.quantity_numeric) if tl.quantity_numeric else 0,
-                    "unit_type": tl.unit_type
+                    "unit_type": tl.unit_type,
+                    "added_at": str(tl.created_at) if tl.created_at else None
                 })
         
         total_worked_all += total_worked

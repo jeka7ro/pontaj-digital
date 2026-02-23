@@ -696,7 +696,14 @@ export default function AdminOverview() {
                                         <div className="space-y-2">
                                             {selectedWorker.activities.map((act, i) => (
                                                 <div key={i} className="flex items-center justify-between bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
-                                                    <span className="text-sm font-medium text-slate-700">{act.name}</span>
+                                                    <div>
+                                                        <span className="text-sm font-medium text-slate-700">{act.name}</span>
+                                                        {act.added_at && (
+                                                            <span className="ml-2 text-[11px] text-slate-400">
+                                                                {new Date(act.added_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-sm font-bold text-violet-600">{act.quantity} <span className="text-xs text-slate-400 font-normal">{act.unit_type}</span></span>
                                                 </div>
                                             ))}

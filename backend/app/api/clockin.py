@@ -149,23 +149,31 @@ def clock_in(
             detail="Locația GPS este necesară pentru pontare. Activează GPS-ul sau bifează declarația pe proprie răspundere."
         )
     
-    # ----- SCHEDULE INFO (non-blocking) -----
+    # ----- SCHEDULE ENFORCEMENT -----
     now = datetime.now()
     current_time = now.time()
     schedule_info = {}
-    schedule_warning = None
     
     if site.work_start_time and site.work_end_time:
-        if current_time < site.work_start_time:
-            schedule_warning = f"Programul șantierului începe la {site.work_start_time.strftime('%H:%M')}."
-        elif current_time > site.work_end_time:
-            schedule_warning = f"Programul șantierului s-a încheiat la {site.work_end_time.strftime('%H:%M')}."
+        # Block clock-in after schedule ends
+        if current_time > site.work_end_time:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Programul șantierului s-a încheiat la {site.work_end_time.strftime('%H:%M')}. Nu poți începe o tură nouă."
+            )
+        
+        # Block clock-in too early (30 min before start)
+        earliest_dt = datetime.combine(today, site.work_start_time) - timedelta(minutes=30)
+        if current_time < earliest_dt.time():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Programul șantierului începe la {site.work_start_time.strftime('%H:%M')}. Poți face pontajul cu maxim 30 de minute înainte."
+            )
         
         schedule_info = {
             "work_start": site.work_start_time.strftime('%H:%M'),
             "work_end": site.work_end_time.strftime('%H:%M'),
-            "max_overtime_minutes": site.max_overtime_minutes or 120,
-            "schedule_warning": schedule_warning
+            "max_overtime_minutes": site.max_overtime_minutes or 120
         }
     
     # ----- GEOFENCE VERIFICATION -----
@@ -431,7 +439,29 @@ def get_active_shift(
     
     site = db.query(ConstructionSite).filter(ConstructionSite.id == active_segment.site_id).first()
     
-    # NOTE: Auto-close removed — workers close manually or admin closes via approval page
+    # ---- AUTO-CLOSE at schedule end ----
+    now = datetime.now()
+    if site and site.work_end_time:
+        schedule_end = datetime.combine(today, site.work_end_time)
+        
+        # Only auto-close if segment started BEFORE schedule end (prevents zombies)
+        if active_segment.check_in_time < schedule_end and now > schedule_end:
+            active_segment.check_out_time = schedule_end
+            
+            # Close any active break
+            if active_segment.break_start_time and not active_segment.break_end_time:
+                active_segment.break_end_time = schedule_end
+            
+            # Close any active geofence pause
+            active_geo_pause = db.query(GeofencePause).filter(
+                GeofencePause.segment_id == active_segment.id,
+                GeofencePause.pause_end == None
+            ).first()
+            if active_geo_pause:
+                active_geo_pause.pause_end = schedule_end
+            
+            db.commit()
+            return JSONResponse(content=None)  # Shift closed at schedule end
     
     # Calculate elapsed time
     now = datetime.now()

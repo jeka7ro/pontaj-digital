@@ -1,0 +1,24 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy API calls to Render backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://pontaj-digital-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Proxy uploads to Render backend
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://pontaj-digital-api.onrender.com/uploads/:splat"
+  status = 200
+  force = true
+
+# SPA fallback — all other routes serve index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

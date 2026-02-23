@@ -13,6 +13,18 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    // One-time cleanup of old broken service workers (runs once per device)
+    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v3')) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+      caches.keys().then(function (names) {
+        names.forEach(function (n) { caches.delete(n); });
+      });
+      localStorage.setItem('sw_cleaned_v3', '1');
+    }
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

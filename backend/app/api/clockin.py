@@ -133,18 +133,6 @@ def clock_in(
                 status_code=400,
                 detail="Ai deja o tură activă. Închide tura curentă înainte de a începe una nouă."
             )
-        
-        # Check if shift was already completed today (has a closed segment)
-        completed_segment = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == active_timesheet.id,
-            TimesheetSegment.check_out_time != None
-        ).first()
-        
-        if completed_segment:
-            raise HTTPException(
-                status_code=400,
-                detail="Tura de astăzi a fost deja încheiată. Nu poți începe o tură nouă în aceeași zi."
-            )
     
     # Get site details from construction_sites table
     site = db.query(ConstructionSite).filter(ConstructionSite.id == request.site_id).first()

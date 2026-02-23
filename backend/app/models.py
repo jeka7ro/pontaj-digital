@@ -62,6 +62,9 @@ class User(Base):
     # ID Card
     id_card_path = Column(String(500))  # Path to ID card front image
     
+    # Contract
+    contract_path = Column(String(500))  # Path to work contract (PDF/JPG)
+    
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

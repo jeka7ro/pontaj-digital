@@ -1601,3 +1601,194 @@ async def get_notification_feed(
         "total": len(events)
     }
 
+
+# ============================================================================
+# Excel Export — Timesheets
+# ============================================================================
+
+@router.get("/admin/timesheets/export/excel")
+async def export_timesheets_excel(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    site_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """Export timesheets to Excel (date range, optional site filter)"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from fastapi.responses import StreamingResponse
+    import io
+
+    today = date.today()
+    start = date.fromisoformat(date_from) if date_from else today - timedelta(days=30)
+    end = date.fromisoformat(date_to) if date_to else today
+
+    ts_query = db.query(Timesheet).filter(
+        Timesheet.date >= start,
+        Timesheet.date <= end,
+        Timesheet.owner_type == "USER"
+    )
+
+    timesheets = ts_query.order_by(Timesheet.date.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Pontaje"
+
+    # Header styling
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+
+    headers = ["Data", "Angajat", "Cod", "Șantier", "Check-in", "Check-out", "Ore Lucrate", "Pauză (h)", "Status", "Activități"]
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+
+    row = 2
+    now = datetime.now()
+    for ts in timesheets:
+        worker = db.query(User).filter(User.id == ts.owner_user_id).first()
+        segments = db.query(TimesheetSegment).filter(
+            TimesheetSegment.timesheet_id == ts.id
+        ).order_by(TimesheetSegment.check_in_time.asc()).all()
+
+        if not segments:
+            continue
+
+        if site_id and not any(s.site_id == site_id for s in segments):
+            continue
+
+        first_seg = segments[0]
+        last_seg = segments[-1]
+        site = db.query(ConstructionSite).filter(ConstructionSite.id == first_seg.site_id).first()
+
+        total_worked = 0
+        total_break = 0
+        all_checked_out = True
+        for seg in segments:
+            if seg.check_out_time:
+                seg_hours = (seg.check_out_time - seg.check_in_time).total_seconds() / 3600
+            else:
+                seg_hours = (now - seg.check_in_time).total_seconds() / 3600
+                all_checked_out = False
+            seg_break = 0
+            if seg.break_start_time:
+                be = seg.break_end_time or now
+                seg_break = (be - seg.break_start_time).total_seconds() / 3600
+            total_worked += max(0, seg_hours - max(0, seg_break))
+            total_break += max(0, seg_break)
+
+        # Activities
+        lines = db.query(TimesheetLine).filter(TimesheetLine.timesheet_id == ts.id).all()
+        act_strs = []
+        for ln in lines:
+            act = db.query(Activity).filter(Activity.id == ln.activity_id).first()
+            if act:
+                act_strs.append(f"{act.name}: {float(ln.quantity_numeric)} {ln.unit_type}")
+
+        status = "Terminat" if all_checked_out else "Activ"
+
+        ws.cell(row=row, column=1, value=str(ts.date)).border = thin_border
+        ws.cell(row=row, column=2, value=worker.full_name if worker else "N/A").border = thin_border
+        ws.cell(row=row, column=3, value=worker.employee_code if worker else "N/A").border = thin_border
+        ws.cell(row=row, column=4, value=site.name if site else "N/A").border = thin_border
+        ws.cell(row=row, column=5, value=str(first_seg.check_in_time.strftime("%H:%M")) if first_seg.check_in_time else "").border = thin_border
+        ws.cell(row=row, column=6, value=str(last_seg.check_out_time.strftime("%H:%M")) if last_seg.check_out_time else "—").border = thin_border
+        ws.cell(row=row, column=7, value=round(total_worked, 2)).border = thin_border
+        ws.cell(row=row, column=8, value=round(total_break, 2)).border = thin_border
+        ws.cell(row=row, column=9, value=status).border = thin_border
+        ws.cell(row=row, column=10, value="; ".join(act_strs) if act_strs else "—").border = thin_border
+        row += 1
+
+    # Auto-width
+    for col in range(1, len(headers) + 1):
+        max_len = max(len(str(ws.cell(row=r, column=col).value or "")) for r in range(1, row))
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = min(max_len + 4, 40)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"pontaje_{start}_{end}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ============================================================================
+# Excel Export — Activities
+# ============================================================================
+
+@router.get("/admin/activities/export/excel")
+async def export_activities_excel(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """Export all activities catalog to Excel"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from fastapi.responses import StreamingResponse
+    from app.models import ActivityCategory
+    import io
+
+    categories = db.query(ActivityCategory).filter(
+        ActivityCategory.organization_id == current_admin.organization_id
+    ).order_by(ActivityCategory.sort_order).all()
+
+    activities = db.query(Activity).filter(
+        Activity.organization_id == current_admin.organization_id
+    ).order_by(Activity.sort_order).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Activități"
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="7C3AED", end_color="7C3AED", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+
+    headers = ["Categorie", "Activitate", "Descriere", "Unitate Măsură", "Ordine", "Status"]
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+
+    cat_map = {c.id: c.name for c in categories}
+    row = 2
+    for act in activities:
+        ws.cell(row=row, column=1, value=cat_map.get(act.category_id, "Necategorizat")).border = thin_border
+        ws.cell(row=row, column=2, value=act.name).border = thin_border
+        ws.cell(row=row, column=3, value=act.description or "").border = thin_border
+        ws.cell(row=row, column=4, value=act.unit_type).border = thin_border
+        ws.cell(row=row, column=5, value=act.sort_order or 0).border = thin_border
+        ws.cell(row=row, column=6, value="Activ" if act.is_active else "Inactiv").border = thin_border
+        row += 1
+
+    for col in range(1, len(headers) + 1):
+        max_len = max(len(str(ws.cell(row=r, column=col).value or "")) for r in range(1, row))
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = min(max_len + 4, 50)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=activitati.xlsx"}
+    )

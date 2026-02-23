@@ -3,7 +3,7 @@ import api from '../../lib/api'
 import {
     Plus, Edit2, Trash2, Loader2, Activity as ActivityIcon,
     CheckCircle, XCircle, ChevronDown, ChevronRight, Palette,
-    FolderPlus, GripVertical, Layers
+    FolderPlus, GripVertical, Layers, FileDown, FileSpreadsheet
 } from 'lucide-react'
 
 export default function ActivitiesManagement() {
@@ -222,6 +222,28 @@ export default function ActivitiesManagement() {
                     <p className="text-slate-600">Gestionează categoriile și activitățile disponibile pentru pontaje</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const response = await api.get('/admin/activities/export/excel', { responseType: 'blob' })
+                                const url = window.URL.createObjectURL(new Blob([response.data]))
+                                const link = document.createElement('a')
+                                link.href = url
+                                link.setAttribute('download', `activitati_${new Date().toISOString().slice(0, 10)}.xlsx`)
+                                document.body.appendChild(link)
+                                link.click()
+                                link.remove()
+                                window.URL.revokeObjectURL(url)
+                            } catch (error) {
+                                alert('Eroare la export: ' + (error.response?.data?.detail || error.message))
+                            }
+                        }}
+                        className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-blue-200 text-blue-700 rounded-xl font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                        <FileDown className="w-4 h-4" />
+                        Export
+                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                    </button>
                     <button
                         onClick={() => {
                             setEditingCategory(null)

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAdminStore } from '../../store/adminStore'
 import useViewPreferencesStore from '../../store/viewPreferencesStore'
 import api from '../../lib/api'
-import { Users, Plus, Search, Edit2, Trash2, Key, UserCheck, UserX, Loader2, Mail, Phone, Calendar, X, Save, Eye, Download, Upload, CreditCard, FileSpreadsheet, ScanLine, MapPin, Filter, XCircle } from 'lucide-react'
+import { Users, Plus, Search, Edit2, Trash2, Key, UserCheck, UserX, Loader2, Mail, Phone, Calendar, X, Save, Eye, Download, Upload, CreditCard, FileSpreadsheet, ScanLine, MapPin, Filter, XCircle, FileText, FileUp, FileDown } from 'lucide-react'
 import ViewToggle from '../../components/ViewToggle'
 import Pagination from '../../components/Pagination'
 
@@ -51,6 +51,9 @@ export default function UsersManagement() {
     const [uploadingIdCard, setUploadingIdCard] = useState(false)
     const [ocrLoading, setOcrLoading] = useState(false)
     const [importing, setImporting] = useState(false)
+    const [contractFile, setContractFile] = useState(null)
+    const [uploadingContract, setUploadingContract] = useState(false)
+    const contractInputRef = useRef(null)
     const importInputRef = useRef(null)
     const idCardInputRef = useRef(null)
 
@@ -59,6 +62,13 @@ export default function UsersManagement() {
     const setViewMode = useViewPreferencesStore((state) => state.setViewMode)
     const setPageSize = useViewPreferencesStore((state) => state.setPageSize)
     const setCurrentPage = useViewPreferencesStore((state) => state.setCurrentPage)
+
+    // Auto-reset page if beyond results
+    useEffect(() => {
+        if (!loading && users.length === 0 && totalUsers > 0 && preferences.currentPage > 1) {
+            setCurrentPage(PAGE_ID, 1)
+        }
+    }, [loading, users.length, totalUsers, preferences.currentPage])
 
     useEffect(() => {
         fetchUsers()
@@ -366,16 +376,18 @@ export default function UsersManagement() {
                         disabled={importing}
                         className="bg-white border-2 border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl font-semibold hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
-                        {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Import Excel
+                        {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
+                        Import
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
                     </button>
                     {/* Excel Export */}
                     <button
                         onClick={handleExportExcel}
                         className="bg-white border-2 border-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all flex items-center gap-2"
                     >
-                        <Download className="w-4 h-4" />
-                        Export Excel
+                        <FileDown className="w-4 h-4" />
+                        Export
+                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
                     </button>
                     {/* Add User */}
                     <button
@@ -740,6 +752,77 @@ export default function UsersManagement() {
                                             />
                                             <span className="text-sm font-semibold text-slate-700">Cont activ</span>
                                         </label>
+                                    </div>
+                                )}
+
+                                {/* Contract Upload */}
+                                {editingUser && (
+                                    <div className="md:col-span-2">
+                                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                                            <h3 className="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
+                                                <FileText className="w-4 h-4" />
+                                                Contract de Muncă
+                                            </h3>
+                                            {editingUser.contract_path ? (
+                                                <div className="flex items-center gap-3">
+                                                    <a
+                                                        href={editingUser.contract_path.startsWith('http') ? editingUser.contract_path : `${API_BASE}${editingUser.contract_path}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors text-sm font-medium"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        Vizualizează Contract
+                                                    </a>
+                                                    <input type="file" ref={contractInputRef} accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
+                                                        const file = e.target.files[0]
+                                                        if (!file) return
+                                                        setUploadingContract(true)
+                                                        try {
+                                                            const fd = new FormData()
+                                                            fd.append('file', file)
+                                                            const resp = await api.post(`/admin/users/${editingUser.id}/upload-contract`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+                                                            setEditingUser({ ...editingUser, contract_path: resp.data.contract_path })
+                                                            alert('✅ Contract încărcat cu succes!')
+                                                        } catch (err) { alert('Eroare: ' + (err.response?.data?.detail || err.message)) }
+                                                        finally { setUploadingContract(false); if (contractInputRef.current) contractInputRef.current.value = '' }
+                                                    }} className="hidden" />
+                                                    <button
+                                                        onClick={() => contractInputRef.current?.click()}
+                                                        disabled={uploadingContract}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                                                    >
+                                                        {uploadingContract ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                                        Înlocuiește
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <input type="file" ref={contractInputRef} accept=".pdf,.jpg,.jpeg,.png" onChange={async (e) => {
+                                                        const file = e.target.files[0]
+                                                        if (!file) return
+                                                        setUploadingContract(true)
+                                                        try {
+                                                            const fd = new FormData()
+                                                            fd.append('file', file)
+                                                            const resp = await api.post(`/admin/users/${editingUser.id}/upload-contract`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+                                                            setEditingUser({ ...editingUser, contract_path: resp.data.contract_path })
+                                                            alert('✅ Contract încărcat cu succes!')
+                                                        } catch (err) { alert('Eroare: ' + (err.response?.data?.detail || err.message)) }
+                                                        finally { setUploadingContract(false); if (contractInputRef.current) contractInputRef.current.value = '' }
+                                                    }} className="hidden" />
+                                                    <button
+                                                        onClick={() => contractInputRef.current?.click()}
+                                                        disabled={uploadingContract}
+                                                        className="w-full h-24 border-2 border-dashed border-amber-300 rounded-lg flex flex-col items-center justify-center text-amber-600 hover:bg-amber-50 transition-colors"
+                                                    >
+                                                        {uploadingContract ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileUp className="w-6 h-6 mb-1" />}
+                                                        <span className="text-sm font-medium">Încarcă Contract</span>
+                                                        <span className="text-xs text-amber-400 mt-0.5">PDF, JPG, PNG</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../lib/api'
-import { Calendar, Clock, Users, Coffee, Building2, Activity, RefreshCw, CheckCircle, Loader2, Timer, Image, X, ChevronLeft, ChevronRight, Phone, Mail, MapPin, FileText, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, Users, Coffee, Building2, Activity, RefreshCw, CheckCircle, Loader2, Timer, Image, X, ChevronLeft, ChevronRight, Phone, Mail, MapPin, FileText, ArrowLeft, FileDown, FileSpreadsheet } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
 
@@ -208,6 +208,31 @@ export default function TimesheetApprovalPage() {
                     <p className="text-sm text-slate-600">Monitorizare live ture și activități</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const response = await api.get('/admin/timesheets/export/excel', {
+                                    params: { date_from: dateFrom, date_to: dateTo },
+                                    responseType: 'blob'
+                                })
+                                const url = window.URL.createObjectURL(new Blob([response.data]))
+                                const link = document.createElement('a')
+                                link.href = url
+                                link.setAttribute('download', `pontaje_${dateFrom}_${dateTo}.xlsx`)
+                                document.body.appendChild(link)
+                                link.click()
+                                link.remove()
+                                window.URL.revokeObjectURL(url)
+                            } catch (error) {
+                                alert('Eroare la export: ' + (error.response?.data?.detail || error.message))
+                            }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-200 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                        <FileDown className="w-4 h-4" />
+                        Export
+                        <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+                    </button>
                     <button onClick={fetchWorkers} className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
                         <RefreshCw className="w-4 h-4" /> Refresh
                     </button>

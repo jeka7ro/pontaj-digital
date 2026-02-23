@@ -86,6 +86,7 @@ class UserResponse(BaseModel):
     address: Optional[str] = None
     avatar_path: Optional[str] = None
     id_card_path: Optional[str] = None
+    contract_path: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -135,7 +136,8 @@ def build_user_response(user, role_name=None):
         email=user.email,
         address=user.address,
         avatar_path=user.avatar_path,
-        id_card_path=user.id_card_path
+        id_card_path=user.id_card_path,
+        contract_path=getattr(user, 'contract_path', None)
     )
 
 
@@ -723,6 +725,44 @@ async def upload_id_card(user_id: str, file: UploadFile = File(...), db: Session
         "avatar_path": user.avatar_path,
         "ocr": ocr_result
     }
+
+
+@router.post("/{user_id}/upload-contract")
+async def upload_contract(user_id: str, file: UploadFile = File(...), db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    """Upload employment contract (PDF/JPG) for a user"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    allowed = ('.jpg', '.jpeg', '.png', '.pdf')
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in allowed:
+        raise HTTPException(status_code=400, detail=f"Format neacceptat. Acceptăm: {', '.join(allowed)}")
+
+    filename = f"{user_id}_contract{ext}"
+    storage_path = f"contracts/{filename}"
+
+    content = await file.read()
+    content_type = "application/pdf" if ext == ".pdf" else get_content_type(filename)
+    contract_url = upload_file(content, storage_path, content_type)
+    user.contract_path = contract_url
+    db.commit()
+
+    return {
+        "message": "Contract încărcat cu succes",
+        "contract_path": user.contract_path
+    }
+
+
+@router.delete("/{user_id}/contract")
+async def delete_contract(user_id: str, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    """Delete employment contract"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.contract_path = None
+    db.commit()
+    return {"message": "Contract șters cu succes"}
 
 
 @router.post("/ocr/extract")

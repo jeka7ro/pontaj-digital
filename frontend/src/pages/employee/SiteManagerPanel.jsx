@@ -11,6 +11,7 @@ export default function SiteManagerPanel() {
     const [expandedTeams, setExpandedTeams] = useState({})
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
+    const [sites, setSites] = useState([])
 
     // Photos state
     const [photos, setPhotos] = useState([])
@@ -58,6 +59,7 @@ export default function SiteManagerPanel() {
     useEffect(() => {
         fetchTeams()
         fetchPhotos()
+        fetchSites()
         refreshTimer.current = setInterval(fetchAllStatuses, 30000)
         return () => clearInterval(refreshTimer.current)
     }, [])
@@ -117,14 +119,40 @@ export default function SiteManagerPanel() {
         } catch (e) { console.error('Error fetching photos:', e) }
     }
 
+    const fetchSites = async () => {
+        try {
+            const res = await api.get('/sites/')
+            setSites(res.data?.sites || res.data || [])
+        } catch (e) { console.error('Error fetching sites:', e) }
+    }
+
+    const getSiteIdForUpload = () => {
+        // 1. Team with site_id assigned
+        const teamWithSite = teams.find(t => t.site_id)
+        if (teamWithSite) return teamWithSite.site_id
+
+        // 2. From team member status (someone who worked on a site today)
+        for (const [, status] of Object.entries(teamStatuses)) {
+            const memberWithSite = status?.members?.find(m => m.site_name)
+            if (memberWithSite) {
+                const site = sites.find(s => s.name === memberWithSite.site_name)
+                if (site) return site.id
+            }
+        }
+
+        // 3. First available site
+        if (sites.length > 0) return sites[0].id
+
+        return null
+    }
+
     const handlePhotoUpload = async (e) => {
         const file = e.target.files?.[0]
         if (!file) return
 
-        // Get site_id from the first team's site
-        const firstTeamWithSite = teams.find(t => t.site_id)
-        if (!firstTeamWithSite) {
-            alert('Nu s-a găsit niciun șantier asociat echipelor.')
+        const siteId = getSiteIdForUpload()
+        if (!siteId) {
+            alert('Nu s-a găsit niciun șantier. Contactați administratorul.')
             return
         }
 
@@ -132,7 +160,7 @@ export default function SiteManagerPanel() {
         try {
             const formData = new FormData()
             formData.append('file', file)
-            formData.append('site_id', firstTeamWithSite.site_id)
+            formData.append('site_id', siteId)
             formData.append('description', photoDescription || '')
 
             await api.post('/site-photos/upload', formData, {

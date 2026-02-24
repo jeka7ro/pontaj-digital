@@ -1538,7 +1538,8 @@ async def get_notification_feed(
             TimesheetSegment.timesheet_id == ts.id
         ).all()
         
-        site = db.query(ConstructionSite).filter(ConstructionSite.id == ts.site_id).first() if ts.site_id else None
+        first_seg = segments[0] if segments else None
+        site = db.query(ConstructionSite).filter(ConstructionSite.id == first_seg.site_id).first() if first_seg else None
         site_name = site.name if site else "Necunoscut"
         
         for seg in segments:

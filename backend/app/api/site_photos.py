@@ -1,17 +1,44 @@
 """
 Site Photos API — upload and list construction site photos
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 import uuid, io
 
 from app.database import get_db
-from app.models import User, ConstructionSite, SitePhoto, Role
+from app.models import User, ConstructionSite, SitePhoto, Role, Admin
 from app.api.auth import get_current_user
+from app.api.admin_auth import get_current_admin
 from app.storage import upload_file, get_content_type
 from app.timezone import now_ro, today_ro
+
+
+def get_current_user_or_admin(request: Request, db: Session = Depends(get_db)):
+    """Accept either employee or admin auth token"""
+    from jose import JWTError, jwt
+    from app.config import settings
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
+        sub = payload.get("sub")
+        # Try admin first (admin tokens have email in payload)
+        if payload.get("email"):
+            admin = db.query(Admin).filter(Admin.id == sub).first()
+            if admin:
+                return admin
+        # Try employee
+        user = db.query(User).filter(User.id == sub).first()
+        if user:
+            return user
+    except Exception:
+        pass
+    raise HTTPException(status_code=401, detail="Invalid token")
 
 router = APIRouter()
 
@@ -81,7 +108,7 @@ def list_site_photos(
     site_id: Optional[str] = None,
     page: int = 1,
     per_page: int = 20,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user_or_admin),
     db: Session = Depends(get_db)
 ):
     """List site photos (admin view) with pagination"""
@@ -104,7 +131,7 @@ def list_site_photos(
             "created_at": str(p.created_at),
             "site_name": site.name if site else "N/A",
             "site_id": p.site_id,
-            "uploader_name": f"{uploader.last_name} {uploader.first_name}" if uploader else "N/A",
+            "uploader_name": uploader.full_name if uploader else "N/A",
             "uploader_avatar": uploader.avatar_path if uploader else None
         })
     
@@ -120,7 +147,7 @@ def list_site_photos(
 @router.delete("/site-photos/{photo_id}")
 def delete_site_photo(
     photo_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user_or_admin),
     db: Session = Depends(get_db)
 ):
     """Delete a site photo (admin only)"""

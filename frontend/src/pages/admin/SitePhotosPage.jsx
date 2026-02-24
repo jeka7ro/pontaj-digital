@@ -35,7 +35,7 @@ export default function SitePhotosPage() {
     }, [fetchPhotos])
 
     useEffect(() => {
-        api.get('/sites').then(r => setSites(r.data || [])).catch(() => { })
+        api.get('/admin/sites').then(r => setSites(r.data?.sites || r.data || [])).catch(() => { })
     }, [])
 
     const handleDelete = async (id) => {

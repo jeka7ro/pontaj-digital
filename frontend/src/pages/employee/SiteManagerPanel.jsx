@@ -163,14 +163,16 @@ export default function SiteManagerPanel() {
             formData.append('site_id', siteId)
             formData.append('description', photoDescription || '')
 
-            await api.post('/site-photos/upload', formData, {
+            const res = await api.post('/site-photos/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
+            console.log('Photo uploaded:', res.data)
             setPhotoDescription('')
-            fetchPhotos()
+            await fetchPhotos()
         } catch (err) {
             console.error('Upload error:', err)
-            alert('Eroare la încărcare. Verificați formatul (JPG, PNG, WebP).')
+            const detail = err.response?.data?.detail || err.message || 'Eroare necunoscută'
+            alert(`Eroare la încărcare: ${detail}`)
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''

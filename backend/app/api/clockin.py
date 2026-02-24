@@ -211,10 +211,17 @@ def clock_in(
         db.flush()
     
     # Create new segment (clock-in)
+    # Clamp check-in time: if before site start, record as site start
+    effective_checkin = now_ro()
+    if site.work_start_time:
+        site_start_dt = datetime.combine(today, site.work_start_time)
+        if effective_checkin < site_start_dt:
+            effective_checkin = site_start_dt
+
     segment = TimesheetSegment(
         timesheet_id=active_timesheet.id,
         site_id=request.site_id,
-        check_in_time=now_ro(),
+        check_in_time=effective_checkin,
         check_out_time=None,
         check_in_latitude=request.latitude,
         check_in_longitude=request.longitude,

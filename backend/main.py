@@ -59,6 +59,23 @@ async def health():
         "supabase_key": bool(os.getenv("SUPABASE_SERVICE_KEY")),
     }
 
+# Reverse geocode proxy (avoids CORS issues with Nominatim from browser)
+import requests as _requests
+
+@app.get("/api/reverse-geocode")
+def reverse_geocode(lat: float, lon: float):
+    """Proxy reverse geocoding to Nominatim to avoid browser CORS"""
+    try:
+        resp = _requests.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={"lat": lat, "lon": lon, "format": "json", "accept-language": "ro"},
+            headers={"User-Agent": "PontajDigital/1.0"},
+            timeout=5
+        )
+        return resp.json()
+    except Exception:
+        return {"display_name": ""}
+
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["admin"])

@@ -177,9 +177,8 @@ export default function ClockInPage() {
     useEffect(() => {
         if (!location) return
         const controller = new AbortController()
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.latitude}&lon=${location.longitude}&format=json&accept-language=ro`, {
-            signal: controller.signal,
-            headers: { 'User-Agent': 'PontajDigital/1.0' }
+        fetch(`/api/reverse-geocode?lat=${location.latitude}&lon=${location.longitude}`, {
+            signal: controller.signal
         })
             .then(r => r.json())
             .then(data => {
@@ -624,16 +623,8 @@ export default function ClockInPage() {
                     </div>
                     <div className="flex items-center gap-1">
                         <button
-                            onClick={() => {
-                                if (!showHistory) {
-                                    setShowHistory(true)
-                                    fetchHistory(historyDate)
-                                    fetchHistoryDates()
-                                } else {
-                                    setShowHistory(false)
-                                }
-                            }}
-                            className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-white/30' : 'hover:bg-white/20'}`}
+                            onClick={() => navigate('/history')}
+                            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                             title="Istoricul Meu"
                         >
                             <Calendar className="w-5 h-5" />
@@ -1174,150 +1165,6 @@ export default function ClockInPage() {
                         </>
                     )}
 
-                    {/* === HISTORY SECTION (toggled from header) === */}
-                    {showHistory && (
-                        <div className="mt-2">
-                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                                {/* Date Picker */}
-                                <div className="p-4 border-b border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => {
-                                                const d = new Date(historyDate)
-                                                d.setDate(d.getDate() - 1)
-                                                const newDate = d.toISOString().split('T')[0]
-                                                setHistoryDate(newDate)
-                                                fetchHistory(newDate)
-                                            }}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                        >
-                                            <ChevronRight className="w-4 h-4 text-slate-500 rotate-180" />
-                                        </button>
-                                        <input
-                                            type="date"
-                                            value={historyDate}
-                                            max={new Date().toISOString().split('T')[0]}
-                                            onChange={(e) => {
-                                                setHistoryDate(e.target.value)
-                                                fetchHistory(e.target.value)
-                                            }}
-                                            className="flex-1 text-center px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                const d = new Date(historyDate)
-                                                d.setDate(d.getDate() + 1)
-                                                const today = new Date()
-                                                if (d <= today) {
-                                                    const newDate = d.toISOString().split('T')[0]
-                                                    setHistoryDate(newDate)
-                                                    fetchHistory(newDate)
-                                                }
-                                            }}
-                                            disabled={historyDate >= new Date().toISOString().split('T')[0]}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-30"
-                                        >
-                                            <ChevronRight className="w-4 h-4 text-slate-500" />
-                                        </button>
-                                    </div>
-                                    {/* Date with weekday */}
-                                    <div className="text-center text-xs text-slate-500 mt-2">
-                                        {new Date(historyDate + 'T12:00:00').toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                    </div>
-                                    {/* Quick date dots */}
-                                    {historyDates.length > 0 && (
-                                        <div className="flex items-center gap-1 mt-3 overflow-x-auto pb-1">
-                                            {historyDates.slice(0, 14).map(d => (
-                                                <button
-                                                    key={d}
-                                                    onClick={() => { setHistoryDate(d); fetchHistory(d) }}
-                                                    className={`flex-shrink-0 px-2 py-1 rounded-lg text-xs font-semibold transition-all ${d === historyDate
-                                                        ? 'bg-blue-500 text-white shadow-md'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                        }`}
-                                                >
-                                                    {new Date(d + 'T12:00:00').toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* History Content */}
-                                {historyLoading ? (
-                                    <div className="p-8 text-center">
-                                        <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto" />
-                                    </div>
-                                ) : !historyData?.found ? (
-                                    <div className="p-8 text-center">
-                                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <Calendar className="w-6 h-6 text-slate-400" />
-                                        </div>
-                                        <p className="text-sm text-slate-500">Niciun pontaj pentru această zi</p>
-                                    </div>
-                                ) : (
-                                    <div className="p-4 space-y-4">
-                                        {/* Summary Cards */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
-                                                <div className="text-xl font-bold text-blue-600">{formatHoursMinutes(historyData.total_worked)}</div>
-                                                <div className="text-xs text-blue-500 mt-0.5">Ore lucrate</div>
-                                            </div>
-                                            <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 text-center">
-                                                <div className="text-xl font-bold text-orange-600">{formatHoursMinutes(historyData.total_break)}</div>
-                                                <div className="text-xs text-orange-500 mt-0.5">Pauză</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Segments (hide 0-minute test entries) */}
-                                        {historyData.segments.filter(s => s.worked_hours > 0 || s.is_active).map((seg, i) => (
-                                            <div key={i} className="bg-slate-50 rounded-xl p-3 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="w-4 h-4 text-slate-500" />
-                                                        <span className="text-sm font-semibold text-slate-800">{seg.site_name}</span>
-                                                    </div>
-                                                    {seg.is_active ? (
-                                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">● Activ</span>
-                                                    ) : (
-                                                        <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-semibold">Terminat</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-4 text-xs text-slate-600">
-                                                    <span>🕐 {new Date(seg.check_in).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    {seg.check_out && (
-                                                        <span>→ {new Date(seg.check_out).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    )}
-                                                    <span className="font-bold text-blue-600">{formatHoursMinutes(seg.worked_hours)}</span>
-                                                </div>
-                                                {seg.break_hours > 0 && (
-                                                    <div className="text-xs text-orange-600">☕ Pauză: {formatHoursMinutes(seg.break_hours)}</div>
-                                                )}
-                                                {seg.geofence_pause_hours > 0 && (
-                                                    <div className="text-xs text-red-500">🚫 Afara din zonă: {formatHoursMinutes(seg.geofence_pause_hours)}</div>
-                                                )}
-                                            </div>
-                                        ))}
-
-                                        {/* Activities */}
-                                        {historyData.activities.length > 0 && (
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Activități</div>
-                                                <div className="space-y-1.5">
-                                                    {historyData.activities.map((act, i) => (
-                                                        <div key={i} className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                                                            <span className="text-sm text-slate-700">{act.name}</span>
-                                                            <span className="text-sm font-bold text-blue-600">{act.quantity} <span className="text-xs text-slate-400 font-normal">{act.unit_type}</span></span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 

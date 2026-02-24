@@ -4,7 +4,7 @@ import { useAdminStore } from '../../store/adminStore'
 import api from '../../lib/api'
 import {
     LayoutDashboard, Users, Building2, FileText, Settings, LogOut, Shield,
-    Menu, ChevronLeft, Clock, Activity, Bell, ChevronRight
+    Menu, ChevronLeft, Clock, Activity, Bell, ChevronRight, Camera
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
         { path: '/admin/timesheets', icon: Clock, label: 'Pontaje' },
         { path: '/admin/activities', icon: Activity, label: 'Activități' },
         { path: '/admin/reports', icon: FileText, label: 'Rapoarte' },
+        { path: '/admin/site-photos', icon: Camera, label: 'Poze Șantier' },
         { path: '/admin/settings', icon: Settings, label: 'Setări' },
     ]
 

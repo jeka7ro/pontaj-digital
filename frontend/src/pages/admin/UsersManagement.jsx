@@ -511,18 +511,43 @@ export default function UsersManagement() {
                             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_50%,white,transparent)]"></div>
                             <div className="relative p-6 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    {/* Avatar in header */}
-                                    {editingUser?.avatar_path ? (
-                                        <img
-                                            src={`${API_BASE}${editingUser.avatar_path}`}
-                                            style={{ objectPosition: 'top' }}
-                                            alt=""
-                                            className="w-14 h-14 rounded-full object-cover ring-3 ring-white/40 shadow-lg"
-                                            onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
+                                    {/* Avatar in header — clickable to change */}
+                                    <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-upload-input')?.click()}>
+                                        {editingUser?.avatar_path ? (
+                                            <img
+                                                src={`${API_BASE}${editingUser.avatar_path}`}
+                                                style={{ objectPosition: 'top' }}
+                                                alt=""
+                                                className="w-14 h-14 rounded-full object-cover ring-3 ring-white/40 shadow-lg"
+                                                onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
+                                            />
+                                        ) : null}
+                                        <div className={`w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white font-bold text-xl ring-3 ring-white/20 ${editingUser?.avatar_path ? 'hidden' : 'flex'}`}>
+                                            {editingUser ? (editingUser.last_name?.charAt(0) || '') + (editingUser.first_name?.charAt(0) || '') : '✦'}
+                                        </div>
+                                        {editingUser && (
+                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-white text-xs font-semibold">📷</span>
+                                            </div>
+                                        )}
+                                        <input
+                                            id="avatar-upload-input"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const f = e.target.files[0]
+                                                if (!f || !editingUser) return
+                                                const fd = new FormData()
+                                                fd.append('file', f)
+                                                try {
+                                                    const resp = await api.post(`/admin/users/${editingUser.id}/upload-avatar`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+                                                    setEditingUser({ ...editingUser, avatar_path: resp.data.avatar_path })
+                                                    fetchUsers()
+                                                } catch (err) { console.error('Avatar upload error:', err) }
+                                                e.target.value = ''
+                                            }}
                                         />
-                                    ) : null}
-                                    <div className={`w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white font-bold text-xl ring-3 ring-white/20 ${editingUser?.avatar_path ? 'hidden' : 'flex'}`}>
-                                        {editingUser ? (editingUser.last_name?.charAt(0) || '') + (editingUser.first_name?.charAt(0) || '') : '✦'}
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-bold text-white">

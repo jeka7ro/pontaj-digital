@@ -6,7 +6,7 @@ import {
     Clock, Play, Square, Coffee, MapPin, Loader2, Timer, Calendar,
     ClipboardList, Plus, Trash2, CheckCircle, CheckCircle2, AlertCircle, ShieldAlert,
     Navigation, ChevronDown, ChevronRight, LogOut, Users, Settings, XCircle,
-    Building2, ShieldCheck
+    Building2, ShieldCheck, ArrowLeftRight
 } from 'lucide-react'
 import TeamLeaderPanel from './TeamLeaderPanel'
 import SiteManagerPanel from './SiteManagerPanel'
@@ -99,6 +99,8 @@ export default function ClockInPage() {
     const [geofencePing, setGeofencePing] = useState(null) // latest ping response
     const [geofencePauseTime, setGeofencePauseTime] = useState(0) // total pause seconds
     const [hadPreviousShift, setHadPreviousShift] = useState(false)
+    const [showSiteChange, setShowSiteChange] = useState(false)
+    const [changeSiteId, setChangeSiteId] = useState(null)
 
     // History state
     const [showHistory, setShowHistory] = useState(false)
@@ -357,6 +359,33 @@ export default function ClockInPage() {
             const res = await api.get('/timesheets/my-dates')
             setHistoryDates(res.data?.dates || [])
         } catch (e) { /* silent */ }
+    }
+
+    const handleSiteChange = async (newSiteId) => {
+        try {
+            setLoading(true)
+            // Close current segment
+            const payload = location
+                ? { latitude: location.latitude, longitude: location.longitude }
+                : {}
+            await api.post('/timesheets/clock-out', payload)
+
+            // Start new segment at new site
+            const clockInPayload = { site_id: newSiteId }
+            if (location) {
+                clockInPayload.latitude = location.latitude
+                clockInPayload.longitude = location.longitude
+            }
+            await api.post('/timesheets/clock-in', clockInPayload)
+
+            setShowSiteChange(false)
+            setChangeSiteId(null)
+            await fetchActiveShift()
+        } catch (error) {
+            setErrorMessage(error.response?.data?.detail || 'Eroare la schimbarea șantierului')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const fetchAddedActivities = async (timesheetId) => {
@@ -934,6 +963,18 @@ export default function ClockInPage() {
                                 </button>
                             )}
 
+                            {/* Site Change Button — only for Site Managers */}
+                            {isSiteManager && !activeShift?.is_on_break && (
+                                <button
+                                    onClick={() => setShowSiteChange(true)}
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow transition-all text-sm"
+                                >
+                                    <ArrowLeftRight className="w-5 h-5" />
+                                    SCHIMBĂ ȘANTIERUL
+                                </button>
+                            )}
+
                             {/* Activities Section */}
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -1118,8 +1159,8 @@ export default function ClockInPage() {
                         </>
                     )}
 
-                    {/* === HISTORY SECTION === */}
-                    {!activeShift && (
+                    {/* === HISTORY SECTION (always visible) === */}
+                    {(
                         <div className="mt-2">
                             <button
                                 onClick={() => {
@@ -1238,8 +1279,8 @@ export default function ClockInPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Segments */}
-                                            {historyData.segments.map((seg, i) => (
+                                            {/* Segments (hide 0-minute test entries) */}
+                                            {historyData.segments.filter(s => s.worked_hours > 0 || s.is_active).map((seg, i) => (
                                                 <div key={i} className="bg-slate-50 rounded-xl p-3 space-y-2">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
@@ -1288,6 +1329,40 @@ export default function ClockInPage() {
                             )}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Site Change Modal */}
+            {showSiteChange && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+                        <div className="text-center mb-4">
+                            <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <ArrowLeftRight className="w-7 h-7 text-indigo-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900">Schimbă Șantierul</h3>
+                            <p className="text-sm text-slate-500 mt-1">Segmentul curent se va închide și se va deschide unul nou.</p>
+                        </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {sites.filter(s => s.id !== activeShift?.site_id).map(site => (
+                                <button
+                                    key={site.id}
+                                    onClick={() => handleSiteChange(site.id)}
+                                    disabled={loading}
+                                    className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+                                >
+                                    <div className="font-semibold text-sm text-slate-800">{site.name}</div>
+                                    <div className="text-xs text-slate-500">{site.address}</div>
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setShowSiteChange(false)}
+                            className="w-full mt-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Anulează
+                        </button>
+                    </div>
                 </div>
             )}
 

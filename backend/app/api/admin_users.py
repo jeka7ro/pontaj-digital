@@ -798,3 +798,27 @@ def delete_user(user_id: str, db: Session = Depends(get_db), current_admin: Admi
     user.is_active = False
     db.commit()
     return {"message": "Utilizator dezactivat cu succes"}
+
+
+@router.post("/{user_id}/upload-avatar")
+async def upload_avatar(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """Upload avatar photo directly for a user"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    contents = await file.read()
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+    avatar_filename = f"avatar_{uuid.uuid4().hex[:8]}.{ext}"
+    content_type = get_content_type(file.filename)
+    
+    avatar_url = upload_file(contents, f"avatars/{avatar_filename}", content_type)
+    user.avatar_path = avatar_url
+    db.commit()
+    
+    return {"avatar_path": avatar_url}

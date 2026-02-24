@@ -417,10 +417,10 @@ export default function AdminOverview() {
 
                     {/* No alerts state */}
                     {lateArrivals.length === 0 && (chartData.activities || []).length === 0 && (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center">
+                        <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-5 text-center">
                             <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                            <p className="text-sm font-semibold text-emerald-700">Totul în regulă!</p>
-                            <p className="text-xs text-emerald-600 mt-1">Nicio alertă sau sosire târzie</p>
+                            <p className="text-sm font-semibold text-slate-700">Totul în regulă!</p>
+                            <p className="text-xs text-slate-400 mt-1">Nicio alertă sau sosire târzie</p>
                         </div>
                     )}
                 </div>

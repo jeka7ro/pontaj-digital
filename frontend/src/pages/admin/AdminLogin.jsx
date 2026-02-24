@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
 import api from '../../lib/api'
-import { Shield, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { Shield, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [rememberMe, setRememberMe] = useState(false)
 
     const navigate = useNavigate()
     const setAuth = useAdminStore((state) => state.setAuth)
@@ -85,18 +87,38 @@ export default function AdminLogin() {
                                 <Lock className="w-4 h-4 inline mr-2" />
                                 Parolă
                             </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl 
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 pr-12 bg-white/10 border-2 border-white/20 rounded-xl 
                          focus:border-blue-400 focus:bg-white/20 focus:ring-4 focus:ring-blue-500/20 
                          outline-none transition-all duration-200 text-white font-medium
                          placeholder:text-white/50"
-                                placeholder="••••••••"
-                                required
-                            />
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/60 hover:text-white transition-colors"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Remember Me */}
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                className="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500/30"
+                            />
+                            <span className="text-sm text-white/80">Memorează-mă</span>
+                        </label>
 
                         {/* Error Message */}
                         {error && (

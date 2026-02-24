@@ -345,3 +345,17 @@ class TeamDailyComposition(Base):
     team = relationship("Team")
     site = relationship("Site")
 
+
+class SitePhoto(Base):
+    """Photos taken by site managers on construction sites"""
+    __tablename__ = "site_photos"
+    
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    site_id = Column(String(36), ForeignKey("construction_sites.id", ondelete="CASCADE"), nullable=False)
+    uploaded_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    photo_path = Column(String(500), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    site = relationship("ConstructionSite")
+    uploaded_by = relationship("User")

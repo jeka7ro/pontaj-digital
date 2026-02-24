@@ -263,6 +263,13 @@ export default function SiteManagerPanel() {
                     </h3>
                     <div className="flex items-center gap-2">
                         <input
+                            type="text"
+                            placeholder="Descriere (opțional)"
+                            value={photoDescription}
+                            onChange={(e) => setPhotoDescription(e.target.value)}
+                            className="border border-slate-200 rounded-xl px-3 py-2 text-xs flex-1 outline-none focus:border-blue-400"
+                        />
+                        <input
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
@@ -292,16 +299,16 @@ export default function SiteManagerPanel() {
                                     onClick={() => { setSelectedPhoto(photo); setShowPhotoModal(true) }}
                                 >
                                     <img
-                                        src={`${API_BASE}${photo.url}`}
+                                        src={photo.photo_path?.startsWith('http') ? photo.photo_path : `${API_BASE}${photo.photo_path}`}
                                         alt={photo.description || 'Poză șantier'}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                         <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                            <p className="text-white text-[10px] truncate">{photo.uploaded_by_name}</p>
+                                            <p className="text-white text-[10px] truncate">{photo.uploader_name}</p>
                                             <p className="text-white/70 text-[9px]">
-                                                {new Date(photo.uploaded_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>
@@ -330,14 +337,14 @@ export default function SiteManagerPanel() {
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowPhotoModal(false)}>
                     <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
                         <img
-                            src={`${API_BASE}${selectedPhoto.url}`}
+                            src={selectedPhoto.photo_path?.startsWith('http') ? selectedPhoto.photo_path : `${API_BASE}${selectedPhoto.photo_path}`}
                             alt={selectedPhoto.description || 'Poză șantier'}
                             className="w-full rounded-2xl"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
-                            <p className="text-white text-sm font-medium">{selectedPhoto.uploaded_by_name}</p>
+                            <p className="text-white text-sm font-medium">{selectedPhoto.uploader_name}</p>
                             <p className="text-white/70 text-xs">
-                                {selectedPhoto.site_name} • {new Date(selectedPhoto.uploaded_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                {selectedPhoto.site_name} • {new Date(selectedPhoto.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                             {selectedPhoto.description && (
                                 <p className="text-white/80 text-xs mt-1">{selectedPhoto.description}</p>

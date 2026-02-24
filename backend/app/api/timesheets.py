@@ -768,7 +768,32 @@ async def get_active_workers(
             ConstructionSite.id == first_segment.site_id
         ).first()
         
+        # ── Auto clock-out: close segments past site work_end_time + overtime ──
         now = now_ro()
+        if site and site.work_end_time and not all_segments[-1].check_out_time:
+            site_close_dt = datetime.combine(query_date, site.work_end_time)
+            if now > site_close_dt:
+                # Auto-close the open segment at exact site_close_dt
+                for seg in all_segments:
+                    if not seg.check_out_time:
+                        seg.check_out_time = site_close_dt
+                        # Also end any open break
+                        if seg.break_start_time and not seg.break_end_time:
+                            seg.break_end_time = site_close_dt
+                        # Also end any open geofence pause
+                        open_gp = db.query(GeofencePause).filter(
+                            GeofencePause.segment_id == seg.id,
+                            GeofencePause.pause_end == None
+                        ).first()
+                        if open_gp:
+                            open_gp.pause_end = site_close_dt
+                db.commit()
+                # Refresh segments after auto-close
+                all_segments = db.query(TimesheetSegment).filter(
+                    TimesheetSegment.timesheet_id == ts.id
+                ).order_by(TimesheetSegment.check_in_time.asc()).all()
+                first_segment = all_segments[0]
+                last_segment = all_segments[-1]
         is_on_break = False
         is_outside_geofence = False
         total_worked = 0

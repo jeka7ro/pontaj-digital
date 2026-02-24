@@ -114,7 +114,7 @@ export default function SiteManagerPanel() {
 
     const fetchPhotos = async () => {
         try {
-            const res = await api.get('/site-photos/')
+            const res = await api.get('/site-photos')
             setPhotos(res.data.photos || [])
         } catch (e) { console.error('Error fetching photos:', e) }
     }
@@ -163,10 +163,9 @@ export default function SiteManagerPanel() {
             formData.append('site_id', siteId)
             formData.append('description', photoDescription || '')
 
-            const res = await api.post('/site-photos/upload', formData, {
+            await api.post('/site-photos/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
-            console.log('Photo uploaded:', res.data)
             setPhotoDescription('')
             await fetchPhotos()
         } catch (err) {
@@ -184,9 +183,8 @@ export default function SiteManagerPanel() {
         try {
             await api.delete(`/site-photos/${photoId}`)
             fetchPhotos()
-            if (selectedPhoto?.id === photoId) setSelectedPhoto(null)
-        } catch (err) {
-            console.error('Delete error:', err)
+        } catch (e) {
+            console.error('Delete error:', e)
         }
     }
 
@@ -286,19 +284,14 @@ export default function SiteManagerPanel() {
 
             {/* Photo Upload Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-4 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <Camera className="w-4 h-4 text-blue-500" />
-                        Poze Șantier ({photos.length})
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            placeholder="Descriere (opțional)"
-                            value={photoDescription}
-                            onChange={(e) => setPhotoDescription(e.target.value)}
-                            className="border border-slate-200 rounded-xl px-3 py-2 text-xs flex-1 outline-none focus:border-blue-400"
-                        />
+                <div className="p-4">
+                    {/* Header row */}
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Camera className="w-4 h-4 text-blue-500" />
+                            Poze Șantier
+                            {photos.length > 0 && <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full font-semibold">{photos.length}</span>}
+                        </h3>
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -310,22 +303,29 @@ export default function SiteManagerPanel() {
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploading}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-50"
                         >
                             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                            {uploading ? 'Se încarcă...' : 'Adaugă poză'}
+                            {uploading ? 'Se încarcă...' : '📸 Adaugă'}
                         </button>
                     </div>
-                </div>
 
-                {/* Photo Grid */}
-                {photos.length > 0 && (
-                    <div className="px-4 pb-4">
+                    {/* Description input - always visible, compact */}
+                    <input
+                        type="text"
+                        placeholder="Descriere poză (opțional)..."
+                        value={photoDescription}
+                        onChange={(e) => setPhotoDescription(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all mb-3"
+                    />
+
+                    {/* Photo Grid */}
+                    {photos.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
                             {photos.map(photo => (
                                 <div
                                     key={photo.id}
-                                    className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer"
+                                    className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
                                     onClick={() => { setSelectedPhoto(photo); setShowPhotoModal(true) }}
                                 >
                                     <img
@@ -334,32 +334,30 @@ export default function SiteManagerPanel() {
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent">
                                         <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                            <p className="text-white text-[10px] truncate">{photo.uploader_name}</p>
+                                            {photo.description && <p className="text-white text-[10px] font-medium truncate">{photo.description}</p>}
                                             <p className="text-white/70 text-[9px]">
-                                                {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                                {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id) }}
-                                        className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                        className="absolute top-1.5 right-1.5 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                                     >
                                         <Trash2 className="w-3 h-3" />
                                     </button>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {photos.length === 0 && (
-                    <div className="px-4 pb-4 text-center text-sm text-slate-400">
-                        <Image className="w-8 h-8 mx-auto mb-1 text-slate-300" />
-                        Nicio poză încărcată azi
-                    </div>
-                )}
+                    ) : (
+                        <div className="text-center py-6 text-slate-400">
+                            <Image className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                            <p className="text-xs">Nicio poză încărcată azi</p>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Photo Modal */}

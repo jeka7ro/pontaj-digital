@@ -12,6 +12,7 @@ export default function SiteManagerPanel() {
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
     const [sites, setSites] = useState([])
+    const [photosExpanded, setPhotosExpanded] = useState(false)
 
     // Photos state
     const [photos, setPhotos] = useState([])
@@ -285,65 +286,75 @@ export default function SiteManagerPanel() {
             {/* Photo Upload Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4">
-                    {/* Header row */}
-                    <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    {/* Header row - clickable to expand */}
+                    <div className="flex items-center justify-between">
+                        <button
+                            onClick={() => setPhotosExpanded(!photosExpanded)}
+                            className="flex items-center gap-2 text-sm font-bold text-slate-700"
+                        >
                             <Camera className="w-4 h-4 text-blue-500" />
                             Poze Șantier
                             {photos.length > 0 && <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full font-semibold">{photos.length}</span>}
-                        </h3>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={handlePhotoUpload}
-                            className="hidden"
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-50"
-                        >
-                            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                            {uploading ? 'Se încarcă...' : '📸 Adaugă'}
+                            {photosExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                         </button>
+                        <div className="flex items-center gap-2">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                onChange={handlePhotoUpload}
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-50"
+                            >
+                                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                {uploading ? 'Se încarcă...' : '📸 Adaugă'}
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Photo Grid - 2 columns, bigger */}
-                    {photos.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            {photos.map(photo => (
-                                <div
-                                    key={photo.id}
-                                    className="relative group rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
-                                    style={{ aspectRatio: '4/3' }}
-                                    onClick={() => { setSelectedPhoto(photo); setShowPhotoModal(true) }}
-                                >
-                                    <img
-                                        src={photo.photo_path?.startsWith('http') ? photo.photo_path : `${API_BASE}${photo.photo_path}`}
-                                        alt={'Poză șantier'}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                    />
-                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
-                                        <p className="text-white/80 text-[10px]">
-                                            {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id) }}
-                                        className="absolute top-1.5 right-1.5 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
+                    {/* Collapsible photo grid */}
+                    {photosExpanded && (
+                        <div className="mt-3">
+                            {photos.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {photos.map(photo => (
+                                        <div
+                                            key={photo.id}
+                                            className="relative group rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
+                                            style={{ aspectRatio: '4/3' }}
+                                            onClick={() => { setSelectedPhoto(photo); setShowPhotoModal(true) }}
+                                        >
+                                            <img
+                                                src={photo.photo_path?.startsWith('http') ? photo.photo_path : `${API_BASE}${photo.photo_path}`}
+                                                alt={'Poză șantier'}
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                            />
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
+                                                <p className="text-white/80 text-[10px]">
+                                                    {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id) }}
+                                                className="absolute top-1.5 right-1.5 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-6 text-slate-400">
-                            <Image className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                            <p className="text-xs">Nicio poză încărcată azi</p>
+                            ) : (
+                                <div className="text-center py-4 text-slate-400">
+                                    <Image className="w-8 h-8 mx-auto mb-1 text-slate-300" />
+                                    <p className="text-xs">Nicio poză încărcată azi</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

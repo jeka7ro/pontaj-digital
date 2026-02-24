@@ -130,25 +130,38 @@ export default function AdminDashboard() {
 
                         {/* Notification Panel */}
                         {showNotifications && (
-                            <div className="absolute left-full bottom-0 ml-3 w-80 bg-white rounded-xl border border-slate-200 shadow-2xl z-50 max-h-[500px] overflow-hidden flex flex-col">
-                                <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-xl">
-                                    <h4 className="text-sm font-bold text-slate-800">🔔 Activitate Azi</h4>
-                                    <span className="text-xs text-slate-500">{notifications.length} evenimente</span>
+                            <div className="absolute left-full bottom-0 ml-3 w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 max-h-[550px] overflow-hidden flex flex-col">
+                                {/* Header */}
+                                <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-2xl">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                            🔔 Activitate Azi
+                                        </h4>
+                                        <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2.5 py-1 rounded-full">
+                                            {notifications.length} evenimente
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="overflow-y-auto flex-1 max-h-[420px]">
+                                {/* Events list */}
+                                <div className="overflow-y-auto flex-1 max-h-[480px]">
                                     {notifications.length === 0 ? (
-                                        <div className="p-6 text-center text-slate-400 text-sm">
-                                            <Bell className="w-6 h-6 mx-auto mb-2 text-slate-300" />
-                                            <p>Nicio activitate azi</p>
+                                        <div className="p-8 text-center">
+                                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <Bell className="w-5 h-5 text-slate-400" />
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-500">Nicio activitate azi</p>
+                                            <p className="text-xs text-slate-400 mt-1">Evenimentele vor apărea aici</p>
                                         </div>
                                     ) : notifications.map((evt, i) => (
-                                        <div key={i} className="px-4 py-2.5 border-b border-slate-50 hover:bg-blue-50/50 transition-colors flex items-start gap-3">
-                                            <span className="text-base mt-0.5">{evt.icon}</span>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-slate-800 font-medium">{evt.message}</p>
-                                                <p className="text-xs text-slate-500">{evt.detail}</p>
+                                        <div key={i} className="px-5 py-3 border-b border-slate-50 hover:bg-slate-50/80 transition-colors flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-base">
+                                                {evt.icon}
                                             </div>
-                                            <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap mt-0.5">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-800 font-medium leading-snug">{evt.message}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5">{evt.detail}</p>
+                                            </div>
+                                            <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap mt-0.5 bg-slate-100 px-2 py-0.5 rounded-md">
                                                 {(() => {
                                                     try {
                                                         return new Date(evt.time).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })

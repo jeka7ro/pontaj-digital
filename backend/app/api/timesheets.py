@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta, date
+from app.timezone import now_ro, today_ro
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -135,7 +136,7 @@ async def list_my_timesheets(
                 # Subtract geofence pause time
                 geo_pauses = db.query(GeofencePause).filter(GeofencePause.segment_id == seg.id).all()
                 for gp in geo_pauses:
-                    gp_end = gp.pause_end or datetime.now()
+                    gp_end = gp.pause_end or now_ro()
                     hours -= (gp_end - gp.pause_start).total_seconds() / 3600
                 total_hours += max(0, hours)
         
@@ -470,7 +471,7 @@ async def list_pending_timesheets(
                 # Subtract geofence pause time
                 geo_pauses = db.query(GeofencePause).filter(GeofencePause.segment_id == seg.id).all()
                 for gp in geo_pauses:
-                    gp_end = gp.pause_end or datetime.now()
+                    gp_end = gp.pause_end or now_ro()
                     hours -= (gp_end - gp.pause_start).total_seconds() / 3600
                 total_hours += max(0, hours)
         
@@ -568,9 +569,9 @@ async def get_timesheet_stats(
     """Get timesheet statistics for admin dashboard"""
     from datetime import datetime, timedelta
     
-    today = date.today()
+    today = today_ro()
     week_start = today - timedelta(days=today.weekday())
-    now = datetime.now()
+    now = now_ro()
     
     # Count all timesheets today
     today_count = db.query(Timesheet).filter(
@@ -619,8 +620,8 @@ async def get_dashboard_stats(
     """Comprehensive dashboard stats with daily breakdown for charts"""
     from datetime import datetime, timedelta
     
-    today = date.today()
-    now = datetime.now()
+    today = today_ro()
+    now = now_ro()
     
     # Last 7 days breakdown
     daily_data = []
@@ -735,7 +736,7 @@ async def get_active_workers(
     """Get all workers who have a timesheet for a given date (defaults to today)"""
     from datetime import datetime
     
-    query_date = date.fromisoformat(target_date) if target_date else date.today()
+    query_date = date.fromisoformat(target_date) if target_date else today_ro()
     
     # Find all timesheets for the given date
     today_timesheets = db.query(Timesheet).filter(
@@ -767,7 +768,7 @@ async def get_active_workers(
             ConstructionSite.id == first_segment.site_id
         ).first()
         
-        now = datetime.now()
+        now = now_ro()
         is_on_break = False
         is_outside_geofence = False
         total_worked = 0
@@ -875,7 +876,7 @@ async def get_active_workers(
         "active_workers": active_workers,
         "total_active": len([w for w in active_workers if w["status"] != "terminat"]),
         "total_today": len(active_workers),
-        "timestamp": str(datetime.now())
+        "timestamp": str(now_ro())
     }
 
 
@@ -928,7 +929,7 @@ async def get_worker_history(
             ConstructionSite.id == first_seg.site_id
         ).first()
         
-        now = datetime.now()
+        now = now_ro()
         total_worked = 0
         total_break = 0
         is_on_break = False
@@ -1516,8 +1517,8 @@ async def get_notification_feed(
     """Get real-time event feed from today's activity"""
     from datetime import datetime
     
-    today = date.today()
-    now = datetime.now()
+    today = today_ro()
+    now = now_ro()
     
     # Fetch all today timesheets with segments
     today_timesheets = db.query(Timesheet).filter(
@@ -1620,7 +1621,7 @@ async def export_timesheets_excel(
     from fastapi.responses import StreamingResponse
     import io
 
-    today = date.today()
+    today = today_ro()
     start = date.fromisoformat(date_from) if date_from else today - timedelta(days=30)
     end = date.fromisoformat(date_to) if date_to else today
 
@@ -1653,7 +1654,7 @@ async def export_timesheets_excel(
         cell.border = thin_border
 
     row = 2
-    now = datetime.now()
+    now = now_ro()
     for ts in timesheets:
         worker = db.query(User).filter(User.id == ts.owner_user_id).first()
         segments = db.query(TimesheetSegment).filter(

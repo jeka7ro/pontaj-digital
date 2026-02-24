@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.timezone import now_ro, today_ro
 from typing import Optional
 import io
 
@@ -33,7 +34,7 @@ def _build_report_data(db: Session, date_from=None, date_to=None, employee_id=No
     timesheets = query.order_by(Timesheet.date.desc()).all()
 
     results = []
-    now = datetime.now()
+    now = now_ro()
 
     for ts in timesheets:
         user = db.query(User).filter(User.id == ts.owner_user_id).first()

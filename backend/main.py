@@ -45,9 +45,10 @@ def _daily_clockin_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup — auto-create tables (needed for fresh PostgreSQL)
-    from app.database import engine, Base
+    from app.database import engine, Base, warmup_pool
     from app import models  # noqa: ensure all models are imported
     Base.metadata.create_all(bind=engine)
+    warmup_pool()
     print("🚀 Starting Pontaj Digital API...")
 
     # Start daily scheduler

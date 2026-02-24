@@ -376,7 +376,7 @@ export default function AdminOverview() {
                 <div className="space-y-6">
                     {/* Late Arrivals */}
                     {lateArrivals.length > 0 && (
-                        <div className="bg-white rounded-xl border border-amber-200 shadow-lg p-5">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5">
                             <h3 className="text-sm font-bold text-amber-700 mb-3 flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4" />
                                 Sosiri Târzii ({lateArrivals.length})

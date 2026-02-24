@@ -144,6 +144,25 @@ def list_site_photos(
     }
 
 
+@router.patch("/site-photos/{photo_id}")
+def update_site_photo(
+    photo_id: str,
+    body: dict,
+    current_user = Depends(get_current_user_or_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a site photo's description"""
+    photo = db.query(SitePhoto).filter(SitePhoto.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Poza nu a fost găsită")
+    
+    if "description" in body:
+        photo.description = body["description"]
+    
+    db.commit()
+    return {"message": "Poză actualizată", "id": photo.id, "description": photo.description}
+
+
 @router.delete("/site-photos/{photo_id}")
 def delete_site_photo(
     photo_id: str,

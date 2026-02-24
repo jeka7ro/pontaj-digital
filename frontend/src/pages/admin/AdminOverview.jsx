@@ -118,9 +118,13 @@ export default function AdminOverview() {
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 
-    const activeCount = activeWorkers.filter(w => w.status === 'activ').length
-    const breakCount = activeWorkers.filter(w => w.status === 'pauză' || w.is_on_break).length
-    const finishedCount = activeWorkers.filter(w => w.status === 'terminat').length
+    const isWorking = (w) => w.status === 'activ' || w.status === 'gps_pierdut' || w.status === 'outside_geofence'
+    const isOnBreak = (w) => w.status === 'pauză' || w.is_on_break
+    const isDone = (w) => w.status === 'terminat'
+
+    const activeCount = activeWorkers.filter(w => isWorking(w) && !isOnBreak(w)).length
+    const breakCount = activeWorkers.filter(w => isOnBreak(w)).length
+    const finishedCount = activeWorkers.filter(w => isDone(w)).length
     const totalHoursToday = activeWorkers.reduce((sum, w) => sum + getLiveHours(w), 0)
 
     // Compute top performers
@@ -135,8 +139,8 @@ export default function AdminOverview() {
         const site = w.site_name || 'Necunoscut'
         if (!siteDistribution[site]) siteDistribution[site] = { name: site, total: 0, active: 0, onBreak: 0, done: 0 }
         siteDistribution[site].total++
-        if (w.status === 'activ') siteDistribution[site].active++
-        else if (w.status === 'pauză' || w.is_on_break) siteDistribution[site].onBreak++
+        if (isOnBreak(w)) siteDistribution[site].onBreak++
+        else if (isWorking(w)) siteDistribution[site].active++
         else siteDistribution[site].done++
     })
     const siteList = Object.values(siteDistribution)

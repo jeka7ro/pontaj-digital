@@ -676,7 +676,7 @@ export default function ClockInPage() {
             ) : (
                 <div className="max-w-md mx-auto p-4 space-y-4">
                     {/* === MAP SECTION === */}
-                    <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-white" style={{ height: '280px' }}>
+                    <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-white" style={{ height: '200px' }}>
                         <MapContainer
                             center={mapCenter}
                             zoom={16}
@@ -1102,17 +1102,35 @@ export default function ClockInPage() {
                                 ÎNCHEIE TURA
                             </button>
                         </>
+                    ) : hadPreviousShift ? (
+                        /* Shift completed today — show summary */
+                        <div className="bg-white rounded-2xl shadow-lg p-6 text-center space-y-4">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                                <CheckCircle className="w-8 h-8 text-green-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Tura încheiată ✅</h3>
+                                <p className="text-sm text-slate-500 mt-1">Ai terminat tura pentru astăzi.</p>
+                            </div>
+                            <button
+                                onClick={() => navigate('/history')}
+                                className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+                            >
+                                <Calendar className="w-5 h-5" />
+                                Vezi ce ai lucrat azi
+                            </button>
+                        </div>
                     ) : (
                         <>
                             {/* Site Selection */}
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <div className="bg-white rounded-2xl shadow-lg p-4">
                                 <label className="block text-sm font-semibold text-slate-700 mb-3">
                                     📍 Selectează Șantierul
                                 </label>
                                 <select
                                     value={selectedSite || ''}
                                     onChange={(e) => setSelectedSite(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base font-medium text-slate-800 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all appearance-none"
                                 >
                                     <option value="">Alege șantier...</option>
                                     {sites.map((site) => (
@@ -1139,29 +1157,24 @@ export default function ClockInPage() {
                                 )}
                             </div>
 
-                            {/* Start Shift Button - Big green circle like reference */}
-                            <div className="flex flex-col items-center py-4">
+                            {/* Start Shift Button — full width rounded rectangle */}
+                            <div className="py-4">
                                 <button
                                     onClick={handleClockIn}
                                     disabled={loading || !selectedSite}
-                                    className="w-32 h-32 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 disabled:from-slate-300 disabled:to-slate-400 text-white font-bold text-lg flex flex-col items-center justify-center shadow-2xl shadow-green-500/40 transition-all disabled:cursor-not-allowed disabled:shadow-none active:scale-95"
+                                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 disabled:from-slate-300 disabled:to-slate-400 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-2xl shadow-green-500/40 transition-all disabled:cursor-not-allowed disabled:shadow-none active:scale-[0.98]"
                                 >
                                     {loading ? (
-                                        <Loader2 className="w-8 h-8 animate-spin" />
+                                        <Loader2 className="w-6 h-6 animate-spin" />
                                     ) : (
                                         <>
-                                            <Play className="w-8 h-8 mb-1" />
-                                            <span className="text-sm">{hadPreviousShift ? 'CONTINUĂ' : 'ÎNCEPE'}</span>
-                                            <span className="text-sm">TURA</span>
+                                            <Play className="w-6 h-6" />
+                                            <span>ÎNCEPE TURA</span>
                                         </>
                                     )}
                                 </button>
                             </div>
 
-                            <p className="text-center text-sm text-slate-500">
-                                <MapPin className="w-4 h-4 inline mr-1" />
-                                Locația ta va fi înregistrată
-                            </p>
                         </>
                     )}
 

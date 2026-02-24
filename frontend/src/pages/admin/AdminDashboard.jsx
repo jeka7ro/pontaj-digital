@@ -63,6 +63,7 @@ export default function AdminDashboard() {
         { path: '/admin/site-photos', icon: Camera, label: 'Poze Șantier' },
         { path: '/admin/teams', icon: Users, label: 'Echipe' },
         { path: '/admin/settings', icon: Settings, label: 'Setări' },
+        { path: '/admin/notifications', icon: Bell, label: 'Notificări' },
     ]
 
     return (

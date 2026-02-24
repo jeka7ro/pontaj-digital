@@ -24,6 +24,7 @@ const ActivitiesManagement = lazy(() => import('./pages/admin/ActivitiesManageme
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'))
 const SitePhotosPage = lazy(() => import('./pages/admin/SitePhotosPage'))
 const TeamsManagement = lazy(() => import('./pages/admin/TeamsManagement'))
+const NotificationsPage = lazy(() => import('./pages/admin/NotificationsPage'))
 
 // Loading fallback for lazy-loaded pages
 function PageLoader() {
@@ -58,6 +59,7 @@ function App() {
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="site-photos" element={<SitePhotosPage />} />
                         <Route path="teams" element={<TeamsManagement />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
 
                     {/* Employee Routes */}

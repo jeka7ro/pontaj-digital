@@ -17,7 +17,7 @@ export default function SitePhotosPage() {
     const [siteFilter, setSiteFilter] = useState('')
     const [sites, setSites] = useState([])
     const [lightbox, setLightbox] = useState(null)
-    const [viewMode, setViewMode] = useState('grid') // grid or list
+    const [viewMode, setViewMode] = useState('list') // grid or list
     const [selected, setSelected] = useState(new Set())
     const [editingId, setEditingId] = useState(null)
     const [editDesc, setEditDesc] = useState('')

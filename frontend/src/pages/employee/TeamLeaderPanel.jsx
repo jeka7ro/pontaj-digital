@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../lib/api'
-import { Users, Plus, Search, Coffee, MapPin, Clock, CheckCircle, XCircle, Loader2, UserPlus, Trash2, Building2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, Plus, Search, Coffee, MapPin, Clock, CheckCircle, XCircle, Loader2, UserPlus, Trash2, Building2, RefreshCw, ChevronDown, ChevronUp, Edit3 } from 'lucide-react'
 
 export default function TeamLeaderPanel() {
     const [teams, setTeams] = useState([])
@@ -8,6 +8,8 @@ export default function TeamLeaderPanel() {
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [newTeamName, setNewTeamName] = useState('')
     const [creating, setCreating] = useState(false)
+    const [editingName, setEditingName] = useState(false)
+    const [editName, setEditName] = useState('')
 
     // Members management
     const [availableWorkers, setAvailableWorkers] = useState([])
@@ -134,6 +136,17 @@ export default function TeamLeaderPanel() {
         } finally {
             setCreating(false)
         }
+    }
+
+    const handleRenameTeam = async (teamId) => {
+        if (!editName.trim()) { setEditingName(false); return }
+        try {
+            await api.put(`/teams/${teamId}`, { name: editName.trim() })
+        } catch (e) {
+            alert(e.response?.data?.detail || 'Eroare la redenumire')
+        }
+        setEditingName(false)
+        fetchTeams()
     }
 
     const handleAddMemberToTeam = async (teamId, userId) => {
@@ -319,7 +332,35 @@ export default function TeamLeaderPanel() {
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-bold">{team.name}</h2>
+                        {editingName ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') handleRenameTeam(team.id)
+                                        if (e.key === 'Escape') setEditingName(false)
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-slate-900 text-sm font-bold focus:ring-2 focus:ring-white/50 outline-none"
+                                    autoFocus
+                                />
+                                <button onClick={() => handleRenameTeam(team.id)} className="p-1 bg-white/20 rounded-lg hover:bg-white/30">
+                                    <CheckCircle className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-lg font-bold">{team.name}</h2>
+                                <button
+                                    onClick={() => { setEditingName(true); setEditName(team.name) }}
+                                    className="p-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                                    title="Redenumește echipa"
+                                >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
                         <p className="text-blue-100 text-sm">{team.member_count} membri</p>
                     </div>
                     <button

@@ -4,14 +4,43 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 
 load_dotenv()
 
 # Import routers
-from app.api import auth
-from app.api import admin_auth, admin_users, admin_sites, admin_roles, photo_upload, admin_reports, timesheets, clockin, teams, sites, site_photos
+from app.api import auth, admin_auth, admin_users, admin_sites, admin_roles, admin_reports, clockin, timesheets, teams, sites, photo_upload, site_photos, admin_teams
+
+import threading
+
+_scheduler_stop = threading.Event()
+
+def _daily_clockin_loop():
+    """Background thread: auto-clock-in test workers at ~06:05 UTC (08:05 RO)."""
+    import time
+    last_run_date = None
+    while not _scheduler_stop.is_set():
+        now = datetime.utcnow()
+        today = now.date()
+        # Run once per day after 06:05 UTC
+        if now.hour >= 6 and last_run_date != today:
+            try:
+                from seed_test_workers import auto_clockin_today
+                from app.database import SessionLocal
+                from app.models import User
+                db = SessionLocal()
+                users = db.query(User).filter(User.employee_code.like("TEST%"), User.is_active == True).all()
+                if users:
+                    auto_clockin_today(db, users)
+                    print(f"🤖 Auto clock-in done for {len(users)} test workers")
+                db.close()
+            except Exception as e:
+                print(f"⚠️  Auto clock-in error: {e}")
+            last_run_date = today
+        _scheduler_stop.wait(60)  # check every 60s
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,8 +49,15 @@ async def lifespan(app: FastAPI):
     from app import models  # noqa: ensure all models are imported
     Base.metadata.create_all(bind=engine)
     print("🚀 Starting Pontaj Digital API...")
+
+    # Start daily scheduler
+    t = threading.Thread(target=_daily_clockin_loop, daemon=True)
+    t.start()
+    print("📅 Daily auto-clock-in scheduler started")
+
     yield
     # Shutdown
+    _scheduler_stop.set()
     print("👋 Shutting down Pontaj Digital API...")
 
 app = FastAPI(
@@ -89,6 +125,7 @@ app.include_router(timesheets.router, prefix="/api", tags=["timesheets"])
 app.include_router(teams.router, prefix="/api", tags=["teams"])
 app.include_router(sites.router, prefix="/api", tags=["sites"])
 app.include_router(site_photos.router, prefix="/api", tags=["site-photos"])
+app.include_router(admin_teams.router, prefix="/api", tags=["admin-teams"])
 
 # Serve uploaded files (ID cards, etc.)
 uploads_dir = Path(__file__).parent / "uploads"

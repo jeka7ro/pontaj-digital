@@ -259,6 +259,32 @@ def create_team(
     )
 
 
+@router.put("/{team_id}")
+def update_team(
+    team_id: str,
+    team_data: TeamUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update team (rename, change site, etc.) — only team leader"""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    if team.team_leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only team leader can update the team")
+
+    if team_data.name is not None:
+        team.name = team_data.name
+    if team_data.site_id is not None:
+        team.site_id = team_data.site_id
+    if team_data.is_active is not None:
+        team.is_active = team_data.is_active
+
+    db.commit()
+    db.refresh(team)
+    return {"message": "Team updated", "name": team.name}
+
+
 @router.put("/{team_id}/members")
 def update_team_members(
     team_id: str,

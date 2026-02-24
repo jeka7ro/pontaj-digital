@@ -61,6 +61,7 @@ export default function AdminDashboard() {
         { path: '/admin/activities', icon: Activity, label: 'Activități' },
         { path: '/admin/reports', icon: FileText, label: 'Rapoarte' },
         { path: '/admin/site-photos', icon: Camera, label: 'Poze Șantier' },
+        { path: '/admin/teams', icon: Users, label: 'Echipe' },
         { path: '/admin/settings', icon: Settings, label: 'Setări' },
     ]
 

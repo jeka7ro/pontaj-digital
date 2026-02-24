@@ -23,6 +23,7 @@ const TimesheetApprovalPage = lazy(() => import('./pages/admin/TimesheetApproval
 const ActivitiesManagement = lazy(() => import('./pages/admin/ActivitiesManagement'))
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'))
 const SitePhotosPage = lazy(() => import('./pages/admin/SitePhotosPage'))
+const TeamsManagement = lazy(() => import('./pages/admin/TeamsManagement'))
 
 // Loading fallback for lazy-loaded pages
 function PageLoader() {
@@ -56,6 +57,7 @@ function App() {
                         <Route path="activities" element={<ActivitiesManagement />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="site-photos" element={<SitePhotosPage />} />
+                        <Route path="teams" element={<TeamsManagement />} />
                     </Route>
 
                     {/* Employee Routes */}

@@ -310,37 +310,26 @@ export default function SiteManagerPanel() {
                         </button>
                     </div>
 
-                    {/* Description input - always visible, compact */}
-                    <input
-                        type="text"
-                        placeholder="Descriere poză (opțional)..."
-                        value={photoDescription}
-                        onChange={(e) => setPhotoDescription(e.target.value)}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all mb-3"
-                    />
-
-                    {/* Photo Grid */}
+                    {/* Photo Grid - 2 columns, bigger */}
                     {photos.length > 0 ? (
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                             {photos.map(photo => (
                                 <div
                                     key={photo.id}
-                                    className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
+                                    className="relative group rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
+                                    style={{ aspectRatio: '4/3' }}
                                     onClick={() => { setSelectedPhoto(photo); setShowPhotoModal(true) }}
                                 >
                                     <img
                                         src={photo.photo_path?.startsWith('http') ? photo.photo_path : `${API_BASE}${photo.photo_path}`}
-                                        alt={photo.description || 'Poză șantier'}
+                                        alt={'Poză șantier'}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent">
-                                        <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                            {photo.description && <p className="text-white text-[10px] font-medium truncate">{photo.description}</p>}
-                                            <p className="text-white/70 text-[9px]">
-                                                {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
-                                        </div>
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
+                                        <p className="text-white/80 text-[10px]">
+                                            {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
                                     </div>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id) }}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '../../lib/api'
 import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,
@@ -29,19 +29,22 @@ export default function AdminOverview() {
     const [workerDetail, setWorkerDetail] = useState(null)
     const [detailLoading, setDetailLoading] = useState(false)
 
-    // Live clock
-    const [now, setNow] = useState(Date.now())
+    // Live clock — use ref to avoid re-rendering charts every second
+    const nowRef = useRef(Date.now())
+    const [clockTick, setClockTick] = useState(0)
     useEffect(() => {
-        const t = setInterval(() => setNow(Date.now()), 1000)
+        const t = setInterval(() => {
+            nowRef.current = Date.now()
+            setClockTick(c => c + 1)
+        }, 10000) // update every 10s instead of 1s
         return () => clearInterval(t)
     }, [])
 
     const getLiveHours = (w) => {
         if (w.status === 'terminat' || !w.check_in_time) return w.worked_hours || 0
-        // Freeze timer for GPS-lost workers
         if (w.gps_lost || w.status === 'gps_pierdut') return w.worked_hours || 0
         const checkin = new Date(w.check_in_time).getTime()
-        let elapsed = (now - checkin) / 3600000
+        let elapsed = (nowRef.current - checkin) / 3600000
         let breakH = w.break_hours || 0
         return Math.max(0, elapsed - breakH)
     }
@@ -181,7 +184,7 @@ export default function AdminOverview() {
                     <p className="text-sm text-slate-500">
                         {new Date().toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         <span className="ml-2 text-slate-400">•</span>
-                        <span className="ml-2 font-mono text-xs">{new Date(now).toLocaleTimeString('ro-RO')}</span>
+                        <span className="ml-2 font-mono text-xs">{new Date(nowRef.current).toLocaleTimeString('ro-RO')}</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -226,29 +229,27 @@ export default function AdminOverview() {
                         </div>
                     </div>
                     <div style={{ width: '100%', height: 250 }}>
-                        {useMemo(() => (
-                            <ResponsiveContainer>
-                                <ComposedChart data={daily} barSize={36}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                    <YAxis yAxisId="left" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="h" />
-                                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="" hide />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                                        formatter={(value, name) => [name === 'hours' ? `${value}h` : value, name === 'hours' ? 'Ore' : 'Muncitori']}
-                                        labelFormatter={(label) => `Data: ${label}`}
-                                    />
-                                    <defs>
-                                        <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#3b82f6" />
-                                            <stop offset="100%" stopColor="#6366f1" />
-                                        </linearGradient>
-                                    </defs>
-                                    <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} />
-                                    <Line yAxisId="left" type="monotone" dataKey="workers" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        ), [daily])}
+                        <ResponsiveContainer>
+                            <ComposedChart data={daily} barSize={36}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <YAxis yAxisId="left" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="h" />
+                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="" hide />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                                    formatter={(value, name) => [name === 'hours' ? `${value}h` : value, name === 'hours' ? 'Ore' : 'Muncitori']}
+                                    labelFormatter={(label) => `Data: ${label}`}
+                                />
+                                <defs>
+                                    <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#3b82f6" />
+                                        <stop offset="100%" stopColor="#6366f1" />
+                                    </linearGradient>
+                                </defs>
+                                <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} />
+                                <Line yAxisId="left" type="monotone" dataKey="workers" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
+                            </ComposedChart>
+                        </ResponsiveContainer>
                     </div>
                     <div className="flex items-center gap-6 mt-2 px-2">
                         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -441,28 +442,26 @@ export default function AdminOverview() {
                     </h3>
                     {(chartData.sites || []).length > 0 ? (
                         <div style={{ width: '100%', height: 220 }}>
-                            {useMemo(() => (
-                                <ResponsiveContainer>
-                                    <PieChart>
-                                        <Pie
-                                            data={chartData.sites || []}
-                                            dataKey="workers"
-                                            nameKey="name"
-                                            cx="50%"
-                                            cy="50%"
-                                            outerRadius={85}
-                                            innerRadius={50}
-                                            paddingAngle={3}
-                                            label={({ name, workers }) => `${name} (${workers})`}
-                                        >
-                                            {(chartData.sites || []).map((_, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ), [chartData.sites])}
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={chartData.sites || []}
+                                        dataKey="workers"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={85}
+                                        innerRadius={50}
+                                        paddingAngle={3}
+                                        label={({ name, workers }) => `${name} (${workers})`}
+                                    >
+                                        {(chartData.sites || []).map((_, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
@@ -480,26 +479,24 @@ export default function AdminOverview() {
                         Muncitori pe Zi — Ultimele 7 Zile
                     </h3>
                     <div style={{ width: '100%', height: 220 }}>
-                        {useMemo(() => (
-                            <ResponsiveContainer>
-                                <BarChart data={daily} barSize={28}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                                        formatter={(value) => [value, 'Muncitori']}
-                                    />
-                                    <defs>
-                                        <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#8b5cf6" />
-                                            <stop offset="100%" stopColor="#a78bfa" />
-                                        </linearGradient>
-                                    </defs>
-                                    <Bar dataKey="workers" fill="url(#violetGrad)" radius={[6, 6, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ), [daily])}
+                        <ResponsiveContainer>
+                            <BarChart data={daily} barSize={28}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                                    formatter={(value) => [value, 'Muncitori']}
+                                />
+                                <defs>
+                                    <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#8b5cf6" />
+                                        <stop offset="100%" stopColor="#a78bfa" />
+                                    </linearGradient>
+                                </defs>
+                                <Bar dataKey="workers" fill="url(#violetGrad)" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>

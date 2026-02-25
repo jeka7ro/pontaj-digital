@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import api from '../../lib/api'
 import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,
@@ -226,7 +226,7 @@ export default function AdminOverview() {
                         </div>
                     </div>
                     <div style={{ width: '100%', height: 250 }}>
-                        {React.useMemo(() => (
+                        {useMemo(() => (
                             <ResponsiveContainer>
                                 <ComposedChart data={daily} barSize={36}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -441,7 +441,7 @@ export default function AdminOverview() {
                     </h3>
                     {(chartData.sites || []).length > 0 ? (
                         <div style={{ width: '100%', height: 220 }}>
-                            {React.useMemo(() => (
+                            {useMemo(() => (
                                 <ResponsiveContainer>
                                     <PieChart>
                                         <Pie
@@ -480,7 +480,7 @@ export default function AdminOverview() {
                         Muncitori pe Zi — Ultimele 7 Zile
                     </h3>
                     <div style={{ width: '100%', height: 220 }}>
-                        {React.useMemo(() => (
+                        {useMemo(() => (
                             <ResponsiveContainer>
                                 <BarChart data={daily} barSize={28}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

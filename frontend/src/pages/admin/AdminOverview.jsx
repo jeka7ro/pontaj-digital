@@ -61,17 +61,11 @@ export default function AdminOverview() {
     const fetchStats = async () => {
         try {
             setLoading(true)
-            const [usersRes, sitesRes, tsRes] = await Promise.allSettled([
-                api.get('/admin/users'),
-                api.get('/admin/sites'),
-                api.get('/admin/timesheets/stats')
-            ])
-            const usersCount = usersRes.status === 'fulfilled' ? (usersRes.value.data.users?.length || 0) : 0
-            const sitesCount = sitesRes.status === 'fulfilled' ? (sitesRes.value.data.sites?.length || 0) : 0
-            const tsStats = tsRes.status === 'fulfilled' ? tsRes.value.data : {}
+            const res = await api.get('/admin/timesheets/stats')
+            const tsStats = res.data || {}
             setStats({
-                total_users: tsStats.total_users || usersCount,
-                total_sites: tsStats.total_sites || sitesCount,
+                total_users: tsStats.total_users || 0,
+                total_sites: tsStats.total_sites || 0,
                 pending: tsStats.pending || 0,
                 total_hours_week: tsStats.total_hours_week || 0,
             })

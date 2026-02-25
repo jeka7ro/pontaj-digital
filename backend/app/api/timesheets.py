@@ -579,28 +579,28 @@ async def get_timesheet_stats(
         Timesheet.owner_type == "USER"
     ).count()
     
-    # Total hours this week (ALL timesheets)
+    # Total hours this week — BULK fetch
     week_timesheets = db.query(Timesheet).filter(
         Timesheet.date >= week_start,
         Timesheet.owner_type == "USER"
     ).all()
     
     total_hours_week = 0
-    for ts in week_timesheets:
-        segments = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == ts.id
+    if week_timesheets:
+        ts_ids = [ts.id for ts in week_timesheets]
+        all_segs = db.query(TimesheetSegment).filter(
+            TimesheetSegment.timesheet_id.in_(ts_ids)
         ).all()
-        for seg in segments:
+        for seg in all_segs:
             end_time = seg.check_out_time or now
             hours = (end_time - seg.check_in_time).total_seconds() / 3600
             if seg.break_start_time:
                 break_end = seg.break_end_time or now
-                break_hours = (break_end - seg.break_start_time).total_seconds() / 3600
-                hours -= break_hours
+                hours -= (break_end - seg.break_start_time).total_seconds() / 3600
             total_hours_week += max(0, hours)
     
-    total_users = db.query(User).filter(User.is_active == True).count()
-    total_sites = db.query(ConstructionSite).count()
+    total_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+    total_sites = db.query(func.count(ConstructionSite.id)).scalar()
     
     return {
         "pending": today_count,

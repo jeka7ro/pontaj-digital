@@ -203,9 +203,9 @@ export default function AdminOverview() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                 <KPICard label="Angajați" value={stats.total_users} icon={Users} gradient="from-[#0f172a] to-[#1e3a5f]" onClick={() => navigate('/admin/users')} />
                 <KPICard label="Șantiere" value={stats.total_sites} icon={Building2} gradient="from-[#1e3a5f] to-[#1e40af]" onClick={() => navigate('/admin/sites')} />
-                <KPICard label="Lucrează Acum" value={activeCount} icon={Timer} gradient="from-[#0f172a] to-[#164e63]" pulse={activeCount > 0} onClick={() => navigate('/admin/timesheets')} />
-                <KPICard label="În Pauză" value={breakCount} icon={Coffee} gradient="from-[#1e3a5f] to-[#7c3aed]" onClick={() => navigate('/admin/timesheets')} />
-                <KPICard label="Ore Azi (Live)" value={formatTime(totalHoursToday)} icon={Clock} gradient="from-[#0f172a] to-[#1e40af]" isText pulse onClick={() => navigate('/admin/timesheets')} />
+                <KPICard label="Lucrează Acum" value={activeCount} icon={Timer} gradient="from-[#0f172a] to-[#164e63]" pulse={activeCount > 0} onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                <KPICard label="În Pauză" value={breakCount} icon={Coffee} gradient="from-[#1e3a5f] to-[#7c3aed]" onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                <KPICard label="Ore Azi (Live)" value={formatTime(totalHoursToday)} icon={Clock} gradient="from-[#0f172a] to-[#1e40af]" isText pulse onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
                 <KPICard label="Ore Săptămâna" value={`${stats.total_hours_week}h`} icon={TrendingUp} gradient="from-[#1e3a5f] to-[#0f172a]" isText onClick={() => navigate('/admin/reports')} />
             </div>
 
@@ -226,27 +226,29 @@ export default function AdminOverview() {
                         </div>
                     </div>
                     <div style={{ width: '100%', height: 250 }}>
-                        <ResponsiveContainer>
-                            <ComposedChart data={daily} barSize={36}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <YAxis yAxisId="left" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="h" />
-                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="" hide />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                                    formatter={(value, name) => [name === 'hours' ? `${value}h` : value, name === 'hours' ? 'Ore' : 'Muncitori']}
-                                    labelFormatter={(label) => `Data: ${label}`}
-                                />
-                                <defs>
-                                    <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#3b82f6" />
-                                        <stop offset="100%" stopColor="#6366f1" />
-                                    </linearGradient>
-                                </defs>
-                                <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} />
-                                <Line yAxisId="left" type="monotone" dataKey="workers" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
-                            </ComposedChart>
-                        </ResponsiveContainer>
+                        {React.useMemo(() => (
+                            <ResponsiveContainer>
+                                <ComposedChart data={daily} barSize={36}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                    <YAxis yAxisId="left" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="h" />
+                                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="" hide />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                                        formatter={(value, name) => [name === 'hours' ? `${value}h` : value, name === 'hours' ? 'Ore' : 'Muncitori']}
+                                        labelFormatter={(label) => `Data: ${label}`}
+                                    />
+                                    <defs>
+                                        <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3b82f6" />
+                                            <stop offset="100%" stopColor="#6366f1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} />
+                                    <Line yAxisId="left" type="monotone" dataKey="workers" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        ), [daily])}
                     </div>
                     <div className="flex items-center gap-6 mt-2 px-2">
                         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -439,26 +441,28 @@ export default function AdminOverview() {
                     </h3>
                     {(chartData.sites || []).length > 0 ? (
                         <div style={{ width: '100%', height: 220 }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie
-                                        data={chartData.sites || []}
-                                        dataKey="workers"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={85}
-                                        innerRadius={50}
-                                        paddingAngle={3}
-                                        label={({ name, workers }) => `${name} (${workers})`}
-                                    >
-                                        {(chartData.sites || []).map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {React.useMemo(() => (
+                                <ResponsiveContainer>
+                                    <PieChart>
+                                        <Pie
+                                            data={chartData.sites || []}
+                                            dataKey="workers"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={85}
+                                            innerRadius={50}
+                                            paddingAngle={3}
+                                            label={({ name, workers }) => `${name} (${workers})`}
+                                        >
+                                            {(chartData.sites || []).map((_, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ), [chartData.sites])}
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
@@ -476,24 +480,26 @@ export default function AdminOverview() {
                         Muncitori pe Zi — Ultimele 7 Zile
                     </h3>
                     <div style={{ width: '100%', height: 220 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={daily} barSize={28}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                                    formatter={(value) => [value, 'Muncitori']}
-                                />
-                                <defs>
-                                    <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#8b5cf6" />
-                                        <stop offset="100%" stopColor="#a78bfa" />
-                                    </linearGradient>
-                                </defs>
-                                <Bar dataKey="workers" fill="url(#violetGrad)" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {React.useMemo(() => (
+                            <ResponsiveContainer>
+                                <BarChart data={daily} barSize={28}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                                        formatter={(value) => [value, 'Muncitori']}
+                                    />
+                                    <defs>
+                                        <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#8b5cf6" />
+                                            <stop offset="100%" stopColor="#a78bfa" />
+                                        </linearGradient>
+                                    </defs>
+                                    <Bar dataKey="workers" fill="url(#violetGrad)" radius={[6, 6, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ), [daily])}
                     </div>
                 </div>
             </div>
@@ -573,7 +579,7 @@ export default function AdminOverview() {
                 return (
                     <>
                         {/* Active Workers */}
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden mb-4">
+                        <div id="live-workers-table" className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden mb-4 scroll-mt-6">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />

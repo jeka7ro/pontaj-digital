@@ -752,72 +752,118 @@ async def get_active_workers(
     from datetime import datetime
     
     query_date = date.fromisoformat(target_date) if target_date else today_ro()
+    now = now_ro()
     
-    # Find all timesheets for the given date
+    # ── BULK FETCH 1: All timesheets for the date ──
     today_timesheets = db.query(Timesheet).filter(
         Timesheet.date == query_date,
         Timesheet.owner_type == "USER"
     ).all()
     
+    if not today_timesheets:
+        return {"active_workers": [], "total_active": 0, "total_today": 0, "timestamp": str(now)}
+    
+    ts_ids = [ts.id for ts in today_timesheets]
+    user_ids = list(set([ts.owner_user_id for ts in today_timesheets]))
+    
+    # ── BULK FETCH 2: All segments for these timesheets ──
+    all_segments = db.query(TimesheetSegment).filter(
+        TimesheetSegment.timesheet_id.in_(ts_ids)
+    ).order_by(TimesheetSegment.check_in_time.asc()).all()
+    
+    # Map segments by timesheet_id
+    segs_by_ts = {}
+    for seg in all_segments:
+        segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
+    
+    # ── BULK FETCH 3: All users ──
+    users_list = db.query(User).filter(User.id.in_(user_ids)).all()
+    users_dict = {u.id: u for u in users_list}
+    
+    # ── BULK FETCH 4: All sites ──
+    site_ids = list(set([seg.site_id for seg in all_segments if seg.site_id]))
+    sites_list = db.query(ConstructionSite).filter(ConstructionSite.id.in_(site_ids)).all() if site_ids else []
+    sites_dict = {s.id: s for s in sites_list}
+    
+    # ── BULK FETCH 5: All geofence pauses for all segments ──
+    seg_ids = [seg.id for seg in all_segments]
+    all_geo_pauses = db.query(GeofencePause).filter(
+        GeofencePause.segment_id.in_(seg_ids)
+    ).all() if seg_ids else []
+    geo_by_seg = {}
+    for gp in all_geo_pauses:
+        geo_by_seg.setdefault(gp.segment_id, []).append(gp)
+    
+    # ── BULK FETCH 6: All activity lines + activities ──
+    all_lines = db.query(TimesheetLine).filter(
+        TimesheetLine.timesheet_id.in_(ts_ids)
+    ).all()
+    act_ids = list(set([line.activity_id for line in all_lines if line.activity_id]))
+    acts_list = db.query(Activity).filter(Activity.id.in_(act_ids)).all() if act_ids else []
+    acts_dict = {a.id: a for a in acts_list}
+    lines_by_ts = {}
+    for line in all_lines:
+        lines_by_ts.setdefault(line.timesheet_id, []).append(line)
+    
+    # ── AUTO CLOCK-OUT: close segments past site work_end_time ──
+    needs_commit = False
+    for ts in today_timesheets:
+        ts_segs = segs_by_ts.get(ts.id, [])
+        if not ts_segs:
+            continue
+        last_seg = ts_segs[-1]
+        if last_seg.check_out_time:
+            continue
+        first_seg = ts_segs[0]
+        site = sites_dict.get(first_seg.site_id)
+        if site and site.work_end_time:
+            site_close_dt = datetime.combine(query_date, site.work_end_time)
+            if now > site_close_dt:
+                for seg in ts_segs:
+                    if not seg.check_out_time:
+                        seg.check_out_time = site_close_dt
+                        if seg.break_start_time and not seg.break_end_time:
+                            seg.break_end_time = site_close_dt
+                        # Close open geofence pauses
+                        for gp in geo_by_seg.get(seg.id, []):
+                            if not gp.pause_end:
+                                gp.pause_end = site_close_dt
+                        needs_commit = True
+    
+    if needs_commit:
+        db.commit()
+        # Re-fetch segments after auto-close
+        all_segments = db.query(TimesheetSegment).filter(
+            TimesheetSegment.timesheet_id.in_(ts_ids)
+        ).order_by(TimesheetSegment.check_in_time.asc()).all()
+        segs_by_ts = {}
+        for seg in all_segments:
+            segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
+    
+    # ── BUILD RESPONSE (in-memory, no more DB queries) ──
     active_workers = []
     
     for ts in today_timesheets:
-        # Get the worker
-        worker = db.query(User).filter(User.id == ts.owner_user_id).first()
+        worker = users_dict.get(ts.owner_user_id)
         if not worker:
             continue
         
-        # Get ALL segments for this timesheet, ordered by check_in
-        all_segments = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == ts.id
-        ).order_by(TimesheetSegment.check_in_time.asc()).all()
-        
-        if not all_segments:
+        ts_segs = segs_by_ts.get(ts.id, [])
+        if not ts_segs:
             continue
         
-        first_segment = all_segments[0]
-        last_segment = all_segments[-1]
+        first_segment = ts_segs[0]
+        last_segment = ts_segs[-1]
+        site = sites_dict.get(first_segment.site_id)
         
-        # Get the site from the first segment
-        site = db.query(ConstructionSite).filter(
-            ConstructionSite.id == first_segment.site_id
-        ).first()
-        
-        # ── Auto clock-out: close segments past site work_end_time + overtime ──
-        now = now_ro()
-        if site and site.work_end_time and not all_segments[-1].check_out_time:
-            site_close_dt = datetime.combine(query_date, site.work_end_time)
-            if now > site_close_dt:
-                # Auto-close the open segment at exact site_close_dt
-                for seg in all_segments:
-                    if not seg.check_out_time:
-                        seg.check_out_time = site_close_dt
-                        # Also end any open break
-                        if seg.break_start_time and not seg.break_end_time:
-                            seg.break_end_time = site_close_dt
-                        # Also end any open geofence pause
-                        open_gp = db.query(GeofencePause).filter(
-                            GeofencePause.segment_id == seg.id,
-                            GeofencePause.pause_end == None
-                        ).first()
-                        if open_gp:
-                            open_gp.pause_end = site_close_dt
-                db.commit()
-                # Refresh segments after auto-close
-                all_segments = db.query(TimesheetSegment).filter(
-                    TimesheetSegment.timesheet_id == ts.id
-                ).order_by(TimesheetSegment.check_in_time.asc()).all()
-                first_segment = all_segments[0]
-                last_segment = all_segments[-1]
         is_on_break = False
         is_outside_geofence = False
         total_worked = 0
         total_break = 0
         total_geofence_pause = 0
-        
-        # Aggregate hours from ALL segments
         all_checked_out = True
-        for seg in all_segments:
+        
+        for seg in ts_segs:
             if seg.check_out_time:
                 seg_hours = (seg.check_out_time - seg.check_in_time).total_seconds() / 3600
             else:
@@ -832,33 +878,30 @@ async def get_active_workers(
                     seg_break = (now - seg.break_start_time).total_seconds() / 3600
                     is_on_break = True
             
-            # Calculate geofence pause time for this segment
+            # Geofence pauses from pre-fetched data
             seg_geofence = 0
-            geo_pauses = db.query(GeofencePause).filter(
-                GeofencePause.segment_id == seg.id
-            ).all()
-            for gp in geo_pauses:
+            seg_geos = geo_by_seg.get(seg.id, [])
+            for gp in seg_geos:
                 gp_end = gp.pause_end or now
                 seg_geofence += (gp_end - gp.pause_start).total_seconds() / 3600
             
-            # Check if currently outside geofence (active pause on this segment)
-            active_geo = db.query(GeofencePause).filter(
-                GeofencePause.segment_id == seg.id,
-                GeofencePause.pause_end == None
-            ).first()
-            if active_geo and not seg.check_out_time:
-                is_outside_geofence = True
+            # Check if currently outside geofence
+            if not seg.check_out_time:
+                for gp in seg_geos:
+                    if not gp.pause_end:
+                        is_outside_geofence = True
+                        break
             
             total_worked += max(0, seg_hours - max(0, seg_break) - max(0, seg_geofence))
             total_break += max(0, seg_break)
             total_geofence_pause += max(0, seg_geofence)
         
-        # Detect GPS loss on active segment
+        # GPS loss detection
         gps_lost = False
         if not all_checked_out and last_segment and not last_segment.check_out_time:
             if last_segment.last_ping_at:
                 since_last_ping = (now - last_segment.last_ping_at).total_seconds()
-                gps_lost = since_last_ping > 120  # 2 minutes
+                gps_lost = since_last_ping > 120
             else:
                 since_checkin = (now - last_segment.check_in_time).total_seconds()
                 gps_lost = since_checkin > 120
@@ -875,14 +918,10 @@ async def get_active_workers(
         else:
             status = "activ"
         
-        # Get activities for this timesheet
-        activity_lines = db.query(TimesheetLine).filter(
-            TimesheetLine.timesheet_id == ts.id
-        ).all()
-        
+        # Activities from pre-fetched data
         activity_list = []
-        for tl in activity_lines:
-            act = db.query(Activity).filter(Activity.id == tl.activity_id).first()
+        for tl in lines_by_ts.get(ts.id, []):
+            act = acts_dict.get(tl.activity_id)
             if act:
                 activity_list.append({
                     "name": act.name,
@@ -916,7 +955,7 @@ async def get_active_workers(
         "active_workers": active_workers,
         "total_active": len([w for w in active_workers if w["status"] != "terminat"]),
         "total_today": len(active_workers),
-        "timestamp": str(now_ro())
+        "timestamp": str(now)
     }
 
 
@@ -1560,26 +1599,43 @@ async def get_notification_feed(
     today = today_ro()
     now = now_ro()
     
-    # Fetch all today timesheets with segments
+    # ── Bulk fetch all data in 4 queries ──
     today_timesheets = db.query(Timesheet).filter(
         Timesheet.date == today,
         Timesheet.owner_type == "USER"
     ).all()
     
+    if not today_timesheets:
+        return {"events": [], "total": 0}
+    
+    ts_ids = [ts.id for ts in today_timesheets]
+    user_ids = list(set([ts.owner_user_id for ts in today_timesheets]))
+    
+    users_list = db.query(User).filter(User.id.in_(user_ids)).all()
+    users_dict = {u.id: u for u in users_list}
+    
+    all_segs = db.query(TimesheetSegment).filter(
+        TimesheetSegment.timesheet_id.in_(ts_ids)
+    ).all()
+    segs_by_ts = {}
+    for seg in all_segs:
+        segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
+    
+    site_ids = list(set([seg.site_id for seg in all_segs if seg.site_id]))
+    sites_list = db.query(ConstructionSite).filter(ConstructionSite.id.in_(site_ids)).all() if site_ids else []
+    sites_dict = {s.id: s for s in sites_list}
+    
     events = []
     for ts in today_timesheets:
-        worker = db.query(User).filter(User.id == ts.owner_user_id).first()
+        worker = users_dict.get(ts.owner_user_id)
         if not worker:
             continue
         wname = worker.full_name or "Necunoscut"
         avatar = worker.avatar_path
         
-        segments = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == ts.id
-        ).all()
-        
+        segments = segs_by_ts.get(ts.id, [])
         first_seg = segments[0] if segments else None
-        site = db.query(ConstructionSite).filter(ConstructionSite.id == first_seg.site_id).first() if first_seg else None
+        site = sites_dict.get(first_seg.site_id) if first_seg else None
         site_name = site.name if site else "Necunoscut"
         
         for seg in segments:

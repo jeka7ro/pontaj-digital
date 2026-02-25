@@ -623,25 +623,41 @@ async def get_dashboard_stats(
     today = today_ro()
     now = now_ro()
     
-    # Last 7 days breakdown
+    # ── Bulk Fetch Last 7 Days ──
+    start_date = today - timedelta(days=6)
+    all_7d_ts = db.query(Timesheet).filter(
+        Timesheet.date >= start_date,
+        Timesheet.date <= today,
+        Timesheet.owner_type == "USER"
+    ).all()
+    
+    ts_ids = [ts.id for ts in all_7d_ts]
+    all_7d_segs = db.query(TimesheetSegment).filter(
+        TimesheetSegment.timesheet_id.in_(ts_ids)
+    ).all() if ts_ids else []
+    
+    # Map segments by timesheet_id for fast lookup
+    segs_by_ts = {}
+    for seg in all_7d_segs:
+        segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
+    
+    # Group timesheets by date
+    ts_by_date = {}
+    for ts in all_7d_ts:
+        ts_by_date.setdefault(ts.date, []).append(ts)
+
+    # ── Last 7 days breakdown ──
     daily_data = []
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
         day_name = day.strftime("%a")
         day_label = day.strftime("%d/%m")
         
-        day_timesheets = db.query(Timesheet).filter(
-            Timesheet.date == day,
-            Timesheet.owner_type == "USER"
-        ).all()
-        
+        day_timesheets = ts_by_date.get(day, [])
         day_hours = 0
-        day_workers = len(day_timesheets)
         
         for ts in day_timesheets:
-            segments = db.query(TimesheetSegment).filter(
-                TimesheetSegment.timesheet_id == ts.id
-            ).all()
+            segments = segs_by_ts.get(ts.id, [])
             for seg in segments:
                 end_time = seg.check_out_time or now
                 hours = (end_time - seg.check_in_time).total_seconds() / 3600
@@ -655,27 +671,18 @@ async def get_dashboard_stats(
             "day": day_name,
             "date": day_label,
             "hours": round(day_hours, 1),
-            "workers": day_workers
+            "workers": len(day_timesheets)
         })
     
-    # Today's hourly breakdown
+    # ── Today's hourly breakdown ──
     hourly_data = []
-    today_timesheets = db.query(Timesheet).filter(
-        Timesheet.date == today,
-        Timesheet.owner_type == "USER"
-    ).all()
-    
-    all_segs = []
-    for ts in today_timesheets:
-        segs = db.query(TimesheetSegment).filter(
-            TimesheetSegment.timesheet_id == ts.id
-        ).all()
-        all_segs.extend(segs)
+    today_timesheets = ts_by_date.get(today, [])
+    today_segs = [seg for ts in today_timesheets for seg in segs_by_ts.get(ts.id, [])]
     
     for hour in range(6, 21):
         hour_time = datetime(today.year, today.month, today.day, hour, 0)
         active = 0
-        for seg in all_segs:
+        for seg in today_segs:
             end_t = seg.check_out_time or now
             if seg.check_in_time <= hour_time < end_t:
                 on_break = False
@@ -687,29 +694,37 @@ async def get_dashboard_stats(
                     active += 1
         hourly_data.append({"hour": f"{hour}:00", "workers": active})
     
-    # Activity breakdown today
-    activity_data = {}
-    for ts in today_timesheets:
-        lines = db.query(TimesheetLine).filter(
-            TimesheetLine.timesheet_id == ts.id
-        ).all()
-        for line in lines:
-            act = db.query(Activity).filter(Activity.id == line.activity_id).first()
-            if act:
-                if act.name not in activity_data:
-                    activity_data[act.name] = {"quantity": 0, "unit_type": line.unit_type or "buc"}
-                activity_data[act.name]["quantity"] += float(line.quantity_numeric) if line.quantity_numeric else 0
+    # ── Activity breakdown today ──
+    today_ts_ids = [ts.id for ts in today_timesheets]
+    today_lines = db.query(TimesheetLine).filter(
+        TimesheetLine.timesheet_id.in_(today_ts_ids)
+    ).all() if today_ts_ids else []
     
+    act_ids = list(set([line.activity_id for line in today_lines if line.activity_id]))
+    activities_in_db = db.query(Activity).filter(Activity.id.in_(act_ids)).all() if act_ids else []
+    act_dict = {a.id: a.name for a in activities_in_db}
+    
+    activity_data = {}
+    for line in today_lines:
+        act_name = act_dict.get(line.activity_id)
+        if act_name:
+            if act_name not in activity_data:
+                activity_data[act_name] = {"quantity": 0, "unit_type": line.unit_type or "buc"}
+            activity_data[act_name]["quantity"] += float(line.quantity_numeric) if line.quantity_numeric else 0
+            
     activities_list = [{"name": k, "quantity": round(v["quantity"], 1), "unit_type": v["unit_type"]} for k, v in activity_data.items()]
     
-    # Site breakdown
+    # ── Site breakdown today ──
     site_data = {}
-    for seg in all_segs:
-        if seg.site_id:
-            site = db.query(ConstructionSite).filter(ConstructionSite.id == seg.site_id).first()
-            if site:
-                site_data.setdefault(site.name, 0)
-                site_data[site.name] += 1
+    site_ids = list(set([s.site_id for s in today_segs if s.site_id]))
+    sites_in_db = db.query(ConstructionSite).filter(ConstructionSite.id.in_(site_ids)).all() if site_ids else []
+    site_dict = {s.id: s.name for s in sites_in_db}
+    
+    for seg in today_segs:
+        site_name = site_dict.get(seg.site_id)
+        if site_name:
+            site_data[site_name] = site_data.get(site_name, 0) + 1
+            
     sites_list = [{"name": k, "workers": v} for k, v in site_data.items()]
     
     return {

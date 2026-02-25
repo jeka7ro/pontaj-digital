@@ -71,7 +71,8 @@ def seed_workers(db):
 
 def auto_clockin_today(db, users):
     """Create full day shifts (08:00-16:00) with break + activities for today."""
-    today = date.today()
+    from app.timezone import today_ro
+    today = today_ro()
 
     org = db.query(Organization).first()
     sites = db.query(Site).filter(Site.organization_id == org.id).all()
@@ -86,12 +87,11 @@ def auto_clockin_today(db, users):
     if not activities:
         print("⚠️  No activities found — shifts will be created without activities.")
 
-    # 08:00 Romania ≈ 06:00 UTC (EET winter) / 05:00 UTC (EEST summer)
-    # Current time is Feb, so EET (UTC+2)
-    checkin_utc = datetime(today.year, today.month, today.day, 6, 0, 0)
-    checkout_utc = datetime(today.year, today.month, today.day, 14, 0, 0)  # 16:00 RO
-    break_start_utc = datetime(today.year, today.month, today.day, 10, 0, 0)  # 12:00 RO
-    break_end_utc = datetime(today.year, today.month, today.day, 10, 30, 0)   # 12:30 RO
+    # Use Romanian clock times directly (system stores naive RO time)
+    checkin_ro = datetime(today.year, today.month, today.day, 8, 0, 0)
+    checkout_ro = datetime(today.year, today.month, today.day, 16, 0, 0)
+    break_start_ro = datetime(today.year, today.month, today.day, 12, 0, 0)
+    break_end_ro = datetime(today.year, today.month, today.day, 12, 30, 0)
 
     count = 0
     for user in users:
@@ -105,12 +105,27 @@ def auto_clockin_today(db, users):
 
         site = random.choice(sites)
 
+        # Make it realistic based on the current actual time
+        now = today_ro()  # wait, today_ro returns date. We need now_ro
+        from app.timezone import now_ro
+        now_dt = now_ro()
+
         # Add some randomness to times (+/- 15 min)
         offset_min = random.randint(-15, 15)
-        ci = checkin_utc + timedelta(minutes=offset_min)
-        co = checkout_utc + timedelta(minutes=random.randint(-10, 30))
-        bs = break_start_utc + timedelta(minutes=random.randint(-10, 10))
-        be = bs + timedelta(minutes=random.randint(20, 40))
+        ci = checkin_ro + timedelta(minutes=offset_min)
+        target_co = checkout_ro + timedelta(minutes=random.randint(-10, 30))
+        target_bs = break_start_ro + timedelta(minutes=random.randint(-10, 10))
+        target_be = target_bs + timedelta(minutes=random.randint(20, 40))
+
+        # Only apply times if they have actually happened yet
+        actual_co = target_co if now_dt >= target_co else None
+        
+        actual_bs = None
+        actual_be = None
+        if now_dt >= target_bs:
+            actual_bs = target_bs
+            if now_dt >= target_be:
+                actual_be = target_be
 
         # Create timesheet
         ts = Timesheet(
@@ -119,23 +134,23 @@ def auto_clockin_today(db, users):
             owner_type="USER",
             owner_user_id=user.id,
             team_category="NO_TEAM",
-            status="DRAFT",
+            status="DRAFT" if not actual_co else "FINISHED",
         )
         db.add(ts)
         db.flush()
 
-        # Create segment (complete shift)
+        # Create segment
         seg = TimesheetSegment(
             timesheet_id=ts.id,
             site_id=site.id,
             check_in_time=ci,
-            check_out_time=co,
-            break_start_time=bs,
-            break_end_time=be,
+            check_out_time=actual_co,
+            break_start_time=actual_bs,
+            break_end_time=actual_be,
             check_in_latitude=getattr(site, 'latitude', None),
             check_in_longitude=getattr(site, 'longitude', None),
-            check_out_latitude=getattr(site, 'latitude', None),
-            check_out_longitude=getattr(site, 'longitude', None),
+            check_out_latitude=getattr(site, 'latitude', None) if actual_co else None,
+            check_out_longitude=getattr(site, 'longitude', None) if actual_co else None,
             is_within_geofence=True,
         )
         db.add(seg)
@@ -156,7 +171,7 @@ def auto_clockin_today(db, users):
                 db.add(line)
 
         count += 1
-        print(f"  🔨 {user.employee_code} — {site.name} — {ci.strftime('%H:%M')}-{co.strftime('%H:%M')} UTC — {len(chosen) if activities else 0} activități")
+        print(f"  🔨 {user.employee_code} — {site.name} — {ci.strftime('%H:%M')}-{target_co.strftime('%H:%M')} RO (Actual CO: {actual_co.strftime('%H:%M') if actual_co else 'Active'}) — {len(chosen) if activities else 0} activități")
 
     db.commit()
     print(f"\n⏰ {count} test workers clocked in+out for {today}")

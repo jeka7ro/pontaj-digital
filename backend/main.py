@@ -18,14 +18,15 @@ import threading
 _scheduler_stop = threading.Event()
 
 def _daily_clockin_loop():
-    """Background thread: auto-clock-in test workers at ~06:05 UTC (08:05 RO)."""
-    import time
+    """Background thread: auto-clock-in test workers at ~08:05 Romanian time."""
+    import time as time_mod
+    from app.timezone import now_ro, today_ro
     last_run_date = None
     while not _scheduler_stop.is_set():
-        now = datetime.utcnow()
-        today = now.date()
-        # Run once per day after 06:05 UTC
-        if now.hour >= 6 and last_run_date != today:
+        now = now_ro()
+        today = today_ro()
+        # Run once per day after 08:05 Romanian time
+        if now.hour >= 8 and last_run_date != today:
             try:
                 from seed_test_workers import auto_clockin_today
                 from app.database import SessionLocal

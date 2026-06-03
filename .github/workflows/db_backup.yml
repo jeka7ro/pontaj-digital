@@ -1,0 +1,52 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # Rulează la ora 01:00 UTC (04:00 AM ora României vara / 03:00 iarna)
+    - cron: '0 1 * * *'
+  workflow_dispatch: # Permite rularea manuală direct din interfața GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up PostgreSQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Create backup directory
+      run: mkdir -p backups
+
+    - name: Create database dump
+      env:
+        PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+      run: |
+        if [ -z "$PROD_DATABASE_URL" ]; then
+          echo "Error: PROD_DATABASE_URL secret is not set!"
+          exit 1
+        fi
+        
+        # Extragem data curentă pentru numele fișierului
+        TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
+        FILENAME="backups/pontaj_db_backup_$TIMESTAMP.sql"
+        
+        echo "Starting database dump..."
+        # Folosim --clean pentru a putea suprascrie tabelele la restaurare
+        # și --no-owner pentru a evita probleme de permisiuni la import
+        pg_dump "$PROD_DATABASE_URL" --clean --no-owner --no-acl > "$FILENAME"
+        
+        # Comprimăm fișierul pentru a salva spațiu pe GitHub
+        gzip "$FILENAME"
+        echo "Backup created successfully: $FILENAME.gz"
+
+    - name: Upload Backup as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-backup-${{ github.run_id }}
+        path: backups/*.sql.gz
+        retention-days: 90 # Va fi păstrat timp de 90 de zile pe GitHub, apoi șters automat

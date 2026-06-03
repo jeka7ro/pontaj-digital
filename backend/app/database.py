@@ -19,7 +19,9 @@ else:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+from sqlalchemy import MetaData
+metadata = MetaData(schema="saas_app")
+Base = declarative_base(metadata=metadata)
 
 def get_db():
     """Dependency for database sessions"""

@@ -13,6 +13,19 @@ class Organization(Base):
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
     name = Column(String(255), nullable=False)
+    
+    # White-labeling & SaaS features
+    slug = Column(String(100), unique=True, nullable=True)
+    custom_domain = Column(String(255), unique=True, nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    favicon_url = Column(String(500), nullable=True)
+    primary_color = Column(String(7), default="#3b82f6", nullable=True)
+    secondary_color = Column(String(7), nullable=True)
+    support_email = Column(String(255), nullable=True)
+    plan_tier = Column(String(50), default="basic", nullable=False)
+    max_users = Column(Integer, nullable=True)
+    features = Column(JSON, nullable=True)
+    
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

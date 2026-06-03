@@ -54,3 +54,6 @@ logs/
 htmlcov/
 .pytest_cache/
 coverage/
+uploads/
+*.pdf
+*.jpg

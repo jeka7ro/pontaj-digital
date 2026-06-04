@@ -173,19 +173,3 @@ def refresh_token(current_admin: Admin = Depends(get_current_admin)):
         "token_type": "bearer",
         "admin": current_admin
     }
-
-@router.get("/me/calendar-token")
-def get_calendar_token(current_admin: Admin = Depends(get_current_admin), db: Session = Depends(get_db)):
-    """Get the organization's calendar token"""
-    import uuid
-    from app.models import Organization
-    org = db.query(Organization).filter(Organization.id == current_admin.organization_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    
-    if not org.calendar_token:
-        org.calendar_token = str(uuid.uuid4())
-        db.commit()
-        db.refresh(org)
-    
-    return {"calendar_token": org.calendar_token, "organization_id": org.id}

@@ -12,7 +12,7 @@ from math import radians, cos, sin, asin, sqrt
 from app.timezone import get_local_now, get_local_today
 
 from app.database import get_db
-from app.models import User, ConstructionSite, Timesheet, TimesheetSegment, GeofencePause, Role, TimesheetLine, Activity, WorkOrder
+from app.models import User, ConstructionSite, Timesheet, TimesheetSegment, GeofencePause, Role, TimesheetLine, Activity
 from app.api.auth import get_current_user
 
 router = APIRouter()
@@ -24,7 +24,6 @@ class ClockInRequest(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     self_declaration: bool = False  # "pe proprie raspundere"
-    work_order_id: Optional[str] = None  # Comanda de lucru opțională
 
 
 class ClockOutRequest(BaseModel):
@@ -247,8 +246,7 @@ def clock_in(
         check_in_latitude=request.latitude,
         check_in_longitude=request.longitude,
         is_within_geofence=is_within_geofence and not self_declared,
-        distance_from_site=distance_from_site,
-        work_order_id=request.work_order_id if request.work_order_id else None,
+        distance_from_site=distance_from_site
     )
     
     db.add(segment)
@@ -569,14 +567,7 @@ def get_active_shift(
         # Daca nu a trimis niciodata un ping, nu marcam GPS pierdut
         
         max_overtime = int(site.max_overtime_minutes) if site and site.max_overtime_minutes else 120
-
-        # Work Order info
-        work_order_title = None
-        if active_segment.work_order_id:
-            wo = db.query(WorkOrder).filter(WorkOrder.id == active_segment.work_order_id).first()
-            if wo:
-                work_order_title = wo.title
-
+        
         return {
             "timesheet_id": active_timesheet.id,
             "segment_id": active_segment.id,
@@ -600,10 +591,7 @@ def get_active_shift(
             "work_end_time": work_end_time.strftime('%H:%M') if work_end_time else None,
             "max_overtime_minutes": max_overtime,
             "schedule_end_datetime": str(datetime.combine(today, work_end_time)) if work_end_time else None,
-            "overtime_limit_datetime": str(datetime.combine(today, work_end_time) + timedelta(minutes=max_overtime)) if work_end_time else None,
-            # Work Order
-            "work_order_id": active_segment.work_order_id,
-            "work_order_title": work_order_title,
+            "overtime_limit_datetime": str(datetime.combine(today, work_end_time) + timedelta(minutes=max_overtime)) if work_end_time else None
         }
     except Exception as e:
         import traceback

@@ -1,15 +1,12 @@
-import asyncio
-from sqlalchemy import text
-from app.database import engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, text
+import os
+from dotenv import load_dotenv
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+load_dotenv()
+engine = create_engine(os.getenv("DATABASE_URL"))
 
-def main():
-    db = SessionLocal()
-    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='construction_sites'"))
-    cols = [r[0] for r in result.fetchall()]
-    print("Columns:", cols)
+with engine.connect() as conn:
+    res = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='warehouse_transactions'"))
+    cols = [r[0] for r in res]
+    print(cols)
 
-if __name__ == "__main__":
-    main()

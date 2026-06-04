@@ -4,7 +4,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../lib/api'
-import { useTenantStore } from '../store/tenantStore'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
@@ -23,45 +22,24 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
     const markersRef = useRef([])
     const workerMarkersRef = useRef([])
     const circleRef = useRef(null)
-    const { tenant } = useTenantStore()
-    const hasLongTerm = tenant?.has_long_term_sites !== false
-    const hasShortTerm = tenant?.has_short_term_interventions === true
-
     const [sites, setSites] = useState([])
-    const [shortSites, setShortSites] = useState([])
-    const [timeFilter, setTimeFilter] = useState('current_month')
     const [selectedSite, setSelectedSite] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     // Fetch map data from backend
     useEffect(() => {
-        const promises = []
-        if (hasLongTerm) {
-            promises.push(api.get('/admin/sites/map-data/all').then(r => setSites(r.data || [])))
-        } else {
-            setSites([])
-        }
-        
-        if (hasShortTerm) {
-            promises.push(api.get(`/admin/sites/map-data/short-term?period=${timeFilter}`).then(r => setShortSites(r.data || [])))
-        } else {
-            setShortSites([])
-        }
-
-        if (promises.length > 0) {
-            setLoading(true)
-            Promise.all(promises)
-                .then(() => setError(null))
-                .catch(e => {
-                    console.error('SiteMap fetch error:', e)
-                    setError('Nu s-au putut incarca datele hartii.')
-                })
-                .finally(() => setLoading(false))
-        } else {
-            setLoading(false)
-        }
-    }, [hasLongTerm, hasShortTerm, timeFilter])
+        api.get('/admin/sites/map-data/all')
+            .then(r => {
+                setSites(r.data || [])
+                setError(null)
+            })
+            .catch(e => {
+                console.error('SiteMap fetch error:', e)
+                setError('Nu s-au putut incarca datele hartii.')
+            })
+            .finally(() => setLoading(false))
+    }, [])
 
     // Initialize Leaflet map once
     useEffect(() => {
@@ -90,32 +68,18 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
     // Add markers when sites load
     useEffect(() => {
         const map = mapInstanceRef.current
-        const allMapSites = [...sites, ...shortSites]
-        if (!map || allMapSites.length === 0) return
+        if (!map || sites.length === 0) return
 
         // Clear old markers
         markersRef.current.forEach(m => m.remove())
         markersRef.current = []
         if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
 
-        const withCoords = allMapSites.filter(s => s.latitude && s.longitude)
+        const withCoords = sites.filter(s => s.latitude && s.longitude)
 
         withCoords.forEach(site => {
-            const isShortTerm = site.project_type === 'short_term'
-            
-            // Long-term active uses blue, inactive uses slate.
-            // Short-term uses orange.
-            let color = '#64748b'
-            let borderColor = '#cbd5e1'
-            if (isShortTerm) {
-                color = '#f59e0b' // amber
-                borderColor = '#fcd34d'
-            } else if (site.active_workers > 0) {
-                color = '#1d4ed8' // blue
-                borderColor = '#93c5fd'
-            }
-
-            const activeOrInterventions = isShortTerm ? site.total_interventions : site.active_workers
+            const color = site.active_workers > 0 ? '#1d4ed8' : '#64748b'
+            const borderColor = site.active_workers > 0 ? '#93c5fd' : '#cbd5e1'
 
             const icon = L.divIcon({
                 className: '',
@@ -130,7 +94,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                         box-shadow:0 2px 8px rgba(0,0,0,0.3);
                         display:flex;align-items:center;gap:6px;">
                         ${site.name.length > 20 ? site.name.substring(0, 18) + '…' : site.name}
-                        ${activeOrInterventions > 0 ? `<span style="background:rgba(255,255,255,0.25);border-radius:999px;padding:1px 7px;font-size:11px;">${activeOrInterventions}</span>` : ''}
+                        ${site.active_workers > 0 ? `<span style="background:rgba(255,255,255,0.25);border-radius:999px;padding:1px 7px;font-size:11px;">${site.active_workers}</span>` : ''}
                     </div>`,
                 iconAnchor: [0, 0],
                 popupAnchor: [0, -10],
@@ -144,7 +108,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                     if (circleRef.current) circleRef.current.remove()
                     circleRef.current = L.circle([site.latitude, site.longitude], {
                         radius: site.geofence_radius || 100,
-                        color: color, fillColor: color,
+                        color: '#3b82f6', fillColor: '#3b82f6',
                         fillOpacity: 0.12, weight: 2, dashArray: '6 4',
                     }).addTo(map)
                     map.flyTo([site.latitude, site.longitude], 14, { duration: 1.2 })
@@ -160,7 +124,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                 map.fitBounds(group.getBounds().pad(0.2))
             } catch (e) { /* ignore if bounds fail */ }
         }
-    }, [sites, shortSites])
+    }, [sites])
 
     // Draw worker markers based on GPS Check-in
     useEffect(() => {
@@ -279,9 +243,8 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
         }
     }
 
-    const allMapSites = [...sites, ...shortSites]
-    const sitesWithCoords = allMapSites.filter(s => s.latitude && s.longitude)
-    const sitesNoCoords = allMapSites.filter(s => !s.latitude || !s.longitude)
+    const sitesWithCoords = sites.filter(s => s.latitude && s.longitude)
+    const sitesNoCoords = sites.filter(s => !s.latitude || !s.longitude)
 
     return (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm bg-white dark:bg-slate-900">
@@ -294,19 +257,6 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold tracking-widest">
                         {t('dashboard.live')}
                     </span>
-                    
-                    {hasShortTerm && (
-                        <select
-                            value={timeFilter}
-                            onChange={(e) => setTimeFilter(e.target.value)}
-                            className="ml-4 text-xs font-bold text-slate-600 bg-slate-100 border-none rounded-lg px-2 py-1 outline-none"
-                        >
-                            <option value="current_month">Luna Curenta</option>
-                            <option value="last_month">Luna Trecuta</option>
-                            <option value="this_year">Anul Curent</option>
-                            <option value="all">Toate</option>
-                        </select>
-                    )}
                 </div>
                 {selectedSite && (
                     <button
@@ -315,9 +265,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                             if (onSiteSelect) onSiteSelect(null)
                             if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
                             const map = mapInstanceRef.current
-                            const allMapSites = [...sites, ...shortSites]
-                            const sWithC = allMapSites.filter(s => s.latitude && s.longitude)
-                            if (map && sWithC.length > 0) {
+                            if (map && sitesWithCoords.length > 0) {
                                 try {
                                     const group = L.featureGroup(markersRef.current)
                                     map.fitBounds(group.getBounds().pad(0.2))
@@ -458,8 +406,8 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                         + {sitesNoCoords.length} fara GPS: {sitesNoCoords.map(s => s.name).join(', ')}
                     </span>
                 )}
-                {allMapSites.length === 0 && !loading && (
-                    <span className="text-xs text-slate-400">Niciun santier activ in aceasta perioada</span>
+                {sites.length === 0 && !loading && (
+                    <span className="text-xs text-slate-400">Niciun santier activ</span>
                 )}
             </div>
         </div>

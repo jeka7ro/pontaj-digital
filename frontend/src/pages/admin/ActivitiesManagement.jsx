@@ -7,7 +7,6 @@ import {
     CheckCircle, XCircle, X, ChevronDown, ChevronRight, Palette,
     FolderPlus, GripVertical, Layers, FileDown, FileSpreadsheet, Search, Save, Folder
 } from 'lucide-react'
-import KPICard from '../../components/KPICard'
 
 export default function ActivitiesManagement() {
     const { t } = useTranslation()
@@ -339,11 +338,11 @@ export default function ActivitiesManagement() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <KPICard label={t('activities.categories')} value={categoryList.length} icon={Layers} colorTheme="purple" />
-                <KPICard label={t('activities.total_activities')} value={totalActivities} icon={ActivityIcon} colorTheme="blue" />
-                <KPICard label={t('activities.active_count')} value={activeCount} icon={CheckCircle} colorTheme="green" />
-                <KPICard label={t('activities.inactive_count')} value={inactiveCount} icon={XCircle} colorTheme="slate" />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <StatsCard label={t('activities.categories')} value={categoryList.length} icon={Layers} color="from-violet-500 to-violet-600" />
+                <StatsCard label={t('activities.total_activities')} value={totalActivities} icon={ActivityIcon} color="from-blue-500 to-blue-600" />
+                <StatsCard label={t('activities.active_count')} value={activeCount} icon={CheckCircle} color="from-green-500 to-green-600" />
+                <StatsCard label={t('activities.inactive_count')} value={inactiveCount} icon={XCircle} color="from-slate-500 to-slate-600" />
             </div>
 
             {/* Categories + Activities */}
@@ -749,6 +748,22 @@ export default function ActivitiesManagement() {
                     </div>
                 </div>
             )}
+        </div>
+    )
+}
+
+function StatsCard({ label, value, icon: Icon, color }) {
+    return (
+        <div className="bg-white rounded-3xl border border-slate-300 shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+                <div className={`p-3 bg-gradient-to-br ${color} rounded-xl`}>
+                    <Icon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                    <p className="text-sm text-slate-600">{label}</p>
+                    <p className="text-2xl font-bold text-slate-900">{value}</p>
+                </div>
+            </div>
         </div>
     )
 }

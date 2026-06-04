@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Save, Building2, Clock, Bell, Globe, Upload, Image, X, LayoutDashboard } from 'lucide-react'
+import { Save, Building2, Clock, Bell, Globe, Upload, Image, X } from 'lucide-react'
 import api from '../../lib/api'
 import { useUIStore } from '../../store/uiStore'
 import { useTranslation } from 'react-i18next'
@@ -33,25 +33,6 @@ export default function SettingsPage() {
         time_format: '24h',
         language: 'ro',
         timezone: 'Europe/Bucharest'
-    })
-
-    const [dashboardLayout, setDashboardLayout] = useState(() => {
-        try {
-            const saved = localStorage.getItem('pontaj_dashboard_layout')
-            if (saved) return JSON.parse(saved)
-        } catch {}
-        return {
-            recent_work_orders: { visible: true, size: 'L', label: 'Comenzi Recente (Lucrări Scurte)' },
-            hours_chart: { visible: false, size: 'M', label: 'Ore Lucrate (Grafic 7 Zile)' },
-            live_sites: { visible: true, size: 'S', label: 'Șantiere Live (Distribuție)' },
-            hourly_activity: { visible: true, size: 'S', label: 'Activitate pe Ore (Azi)' },
-            top_performers: { visible: true, size: 'S', label: 'Top Performanți & Sosiri Târzii' },
-            alerts_production: { visible: true, size: 'M', label: 'Alerte & Producție (Documente, Activități)' },
-            worker_complaints: { visible: true, size: 'S', label: 'Sesizări Muncitori' },
-            warehouse_requests: { visible: true, size: 'S', label: 'Cereri Magazie' },
-            warehouse_status: { visible: true, size: 'S', label: 'Status Livrări Magazie' },
-            live_workers: { visible: true, size: 'L', label: 'Muncitori Activi (Tabel)' }
-        }
     })
 
     const [activeTab, setActiveTab] = useState('organization')
@@ -90,7 +71,6 @@ export default function SettingsPage() {
 
     const handleSave = () => {
         // TODO: Save to backend
-        localStorage.setItem('pontaj_dashboard_layout', JSON.stringify(dashboardLayout))
         openDialog({ type: 'info', title: 'Salvat', message: 'Setările au fost salvate cu succes!', confirmText: 'OK', cancelText: null })
     }
 
@@ -128,12 +108,6 @@ export default function SettingsPage() {
                         onClick={() => setActiveTab('system')}
                         icon={Globe}
                         label="Sistem"
-                    />
-                    <TabButton
-                        active={activeTab === 'dashboard'}
-                        onClick={() => setActiveTab('dashboard')}
-                        icon={LayoutDashboard}
-                        label="Dashboard"
                     />
                 </div>
             </div>
@@ -393,55 +367,6 @@ export default function SettingsPage() {
                                 <option value="Europe/London">Europe/London (GMT+0)</option>
                                 <option value="America/New_York">America/New_York (GMT-5)</option>
                             </select>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'dashboard' && (
-                    <div className="space-y-6">
-                        <h2 className="text-xl font-bold text-slate-900 mb-2">Aspect Dashboard</h2>
-                        <p className="text-sm text-slate-500 mb-6">Alege ce module vrei să vezi pe prima pagină și ce dimensiune să aibă.</p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {Object.entries(dashboardLayout).map(([key, config]) => (
-                                <div key={key} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={config.visible}
-                                                onChange={(e) => setDashboardLayout(prev => ({
-                                                    ...prev,
-                                                    [key]: { ...prev[key], visible: e.target.checked }
-                                                }))}
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm font-semibold text-slate-700">{config.label}</span>
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center gap-2 pl-7">
-                                        <span className="text-xs text-slate-500">Mărime:</span>
-                                        {['S', 'M', 'L'].map(size => (
-                                            <button
-                                                key={size}
-                                                onClick={() => setDashboardLayout(prev => ({
-                                                    ...prev,
-                                                    [key]: { ...prev[key], size }
-                                                }))}
-                                                disabled={!config.visible}
-                                                className={`w-8 h-8 rounded-full text-xs font-bold transition-colors ${
-                                                    !config.visible ? 'bg-slate-200 text-slate-400 cursor-not-allowed' :
-                                                    config.size === size 
-                                                        ? 'bg-blue-600 text-white shadow-md' 
-                                                        : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                {size}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}

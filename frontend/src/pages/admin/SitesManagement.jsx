@@ -11,21 +11,18 @@ L.Icon.Default.mergeOptions({
 })
 import { useAdminStore } from '../../store/adminStore'
 import useViewPreferencesStore from '../../store/viewPreferencesStore'
-import { useTenantStore } from '../../store/tenantStore'
 import api from '../../lib/api'
 import {
     Building2, Plus, Search, Edit2, MapPin, Calendar, CheckCircle,
-    Clock, XCircle, Zap, Hash, Loader2, Camera, X, Save, Trash2,
-    Timer, Users, UserCheck, FileText, ClipboardList, Filter, Grid, List
+    Clock, XCircle, Zap, Hash, Loader2, Camera, X, Save, Trash2
 } from 'lucide-react'
 import ViewToggle from '../../components/ViewToggle'
 import Pagination from '../../components/Pagination'
 import PhotoUpload from '../../components/PhotoUpload'
 import PhotoGallery from '../../components/PhotoGallery'
-import MiniMapSelector from '../../components/MiniMapSelector'
 import { useUIStore } from '../../store/uiStore'
 import SiteDetailView from '../../components/SiteDetailView'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 const PAGE_ID = 'admin-sites'
 
@@ -47,52 +44,75 @@ const EMPTY_SITE = {
     work_end_time: '16:00',
     lunch_break_start: '12:00',
     lunch_break_end: '13:00',
-    max_overtime_minutes: 120,
-    // lucrare scurta durata
-    project_type: 'standard',
-    planned_start_date: '',
-    planned_end_date: '',
+    max_overtime_minutes: 120
 }
 
-// ─── Urgency badge ────────────────────────────────────────────────────────────
-const URGENCY_MAP = {
-    on_track:  { label: 'In grafic',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900' },
-    urgent:    { label: 'Urgent',      cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900' },
-    overdue:   { label: 'Depasit',     cls: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900' },
-    completed: { label: 'Finalizat',   cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900' },
-}
+const MiniMapSelector = ({ latitude, longitude, onLocationChange }) => {
+    const mapRef = useRef(null)
+    const mapInstance = useRef(null)
+    const markerInstance = useRef(null)
 
-function UrgencyBadge({ urgency }) {
-    const u = URGENCY_MAP[urgency] || URGENCY_MAP.on_track
+    useEffect(() => {
+        if (!mapRef.current) return
+        
+        const defaultLat = latitude ? parseFloat(latitude) : 45.9432 // Romania center
+        const defaultLon = longitude ? parseFloat(longitude) : 24.9668
+        const zoom = latitude && longitude ? 15 : 6
+
+        if (!mapInstance.current) {
+            mapInstance.current = L.map(mapRef.current).setView([defaultLat, defaultLon], zoom)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap',
+                maxZoom: 19
+            }).addTo(mapInstance.current)
+
+            mapInstance.current.on('click', (e) => {
+                const { lat, lng } = e.latlng
+                onLocationChange(lat, lng)
+            })
+        }
+        
+        return () => {
+            if (mapInstance.current) {
+                mapInstance.current.remove()
+                mapInstance.current = null
+            }
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!mapInstance.current) return
+        if (latitude && longitude) {
+            const lat = parseFloat(latitude)
+            const lon = parseFloat(longitude)
+            mapInstance.current.setView([lat, lon], 15)
+            
+            if (markerInstance.current) {
+                markerInstance.current.setLatLng([lat, lon])
+            } else {
+                markerInstance.current = L.marker([lat, lon]).addTo(mapInstance.current)
+            }
+        } else {
+            if (markerInstance.current) {
+                markerInstance.current.remove()
+                markerInstance.current = null
+            }
+        }
+    }, [latitude, longitude])
+
     return (
-        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${u.cls}`}>{u.label}</span>
-    )
-}
-
-// ─── Progress Bar ─────────────────────────────────────────────────────────────
-function ProgressBar({ pct, urgency }) {
-    const color = urgency === 'overdue' ? 'bg-red-500'
-        : urgency === 'urgent'  ? 'bg-amber-500'
-        : urgency === 'completed' ? 'bg-blue-500'
-        : 'bg-emerald-500'
-    return (
-        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+        <div className="mt-4 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative" style={{ height: 200, zIndex: 10 }}>
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }}></div>
+            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-xs px-2 py-1 rounded shadow text-slate-600 font-semibold z-[400] pointer-events-none">
+                {latitude && longitude ? 'Locație selectată' : 'Click pe hartă pentru a selecta locația'}
+            </div>
         </div>
     )
 }
 
-
-
 export default function SitesManagement() {
     const { showDialog, showToast } = useUIStore()
     const { token, admin } = useAdminStore()
-    const { tenant } = useTenantStore()
-    const navigate = useNavigate()
-
-    // Feature flags din configuratia tenantului
-    const hasLongTerm  = tenant?.has_long_term_sites !== false   // default true
-    const hasShortTerm = tenant?.has_short_term_interventions === true  // default false
     const [sites, setSites] = useState([])
     const [totalSites, setTotalSites] = useState(0)
     const [loading, setLoading] = useState(true)
@@ -111,24 +131,7 @@ export default function SitesManagement() {
     const [detailSite, setDetailSite] = useState(null)
     const [clients, setClients] = useState([])
 
-    // Comenzi de Lucru (pentru tab-ul Interventii)
-    const [activeTab, setActiveTab] = useState('standard')
-    const [workOrders, setWorkOrders] = useState([])
-    const [loadingWorkOrders, setLoadingWorkOrders] = useState(false)
-
-    // State-uri pentru modaluri (inca folosite la santiere standard)
-    const [workerAssignModal, setWorkerAssignModal] = useState(null)
-    const [allWorkers, setAllWorkers] = useState([])
-    const [workerSearch, setWorkerSearch] = useState('')
-    const [assigningSite, setAssigningSite] = useState(false)
-    const [reportModal, setReportModal] = useState(null)
-    const [loadingReport, setLoadingReport] = useState(false)
-
-    // New Client inline modal state
-    const [showNewClientModal, setShowNewClientModal] = useState(false)
-    const [newClientData, setNewClientData] = useState({ name: '', address: '', phone: '' })
-    const [savingClient, setSavingClient] = useState(false)
-
+    
     // Bulk Select states
     const [selectedSiteIds, setSelectedSiteIds] = useState([])
 
@@ -159,61 +162,6 @@ export default function SitesManagement() {
         }
     }, [location.state, sites, detailSite])
 
-    useEffect(() => {
-        if (activeTab === 'short_term') fetchWorkOrders()
-    }, [activeTab])
-
-    const fetchWorkOrders = async () => {
-        setLoadingWorkOrders(true)
-        try {
-            const res = await api.get('/admin/work-orders?limit=100')
-            setWorkOrders(res.data?.items || res.data || [])
-        } catch (e) {
-            console.error('fetchWorkOrders error:', e)
-        } finally {
-            setLoadingWorkOrders(false)
-        }
-    }
-
-    const openWorkerAssign = async (site) => {
-        setWorkerAssignModal(site)
-        try {
-            const res = await api.get('/admin/users?limit=200')
-            setAllWorkers(res.data?.users || [])
-        } catch { setAllWorkers([]) }
-    }
-
-    const handleAssignWorkers = async (workerIds) => {
-        setAssigningSite(true)
-        try {
-            await api.post(`/admin/sites/${workerAssignModal.id}/assign-workers`, { worker_ids: workerIds })
-            setWorkerAssignModal(null)
-        } catch (e) {
-            console.error('assign workers error:', e)
-        } finally { setAssigningSite(false) }
-    }
-
-    const openFinalReport = async (site) => {
-        setReportModal({ site, data: null })
-        setLoadingReport(true)
-        try {
-            const res = await api.get(`/admin/sites/${site.id}/final-report`)
-            setReportModal({ site, data: res.data })
-        } catch (e) {
-            console.error('final report error:', e)
-        } finally { setLoadingReport(false) }
-    }
-
-    const downloadFinalReport = async (site) => {
-        try {
-            const res = await api.get(`/admin/sites/${site.id}/final-report/excel`, { responseType: 'blob' })
-            const url = URL.createObjectURL(res.data)
-            const a = document.createElement('a')
-            a.href = url; a.download = `Raport_${site.name}.xlsx`; a.click()
-            URL.revokeObjectURL(url)
-        } catch (e) { console.error('download report error:', e) }
-    }
-
     const fetchClients = async () => {
         try {
             const response = await api.get('/admin/clients')
@@ -221,28 +169,6 @@ export default function SitesManagement() {
             setClients(response.data.filter(c => c.is_active) || [])
         } catch (error) {
             console.error('Error fetching clients:', error)
-        }
-    }
-
-    const handleSaveNewClient = async (e) => {
-        e.preventDefault()
-        if (!newClientData.name.trim()) {
-            showToast('Numele clientului este obligatoriu!', 'error')
-            return
-        }
-        setSavingClient(true)
-        try {
-            const res = await api.post('/admin/clients', newClientData)
-            const newClient = res.data
-            setClients(prev => [...prev, newClient])
-            setFormData(prev => ({ ...prev, client_id: newClient.id, client_name: newClient.name }))
-            setShowNewClientModal(false)
-            setNewClientData({ name: '', address: '', phone: '' })
-            showToast('Client adăugat cu succes!', 'success')
-        } catch (error) {
-            showToast(error.response?.data?.detail || 'Eroare la salvare client', 'error')
-        } finally {
-            setSavingClient(false)
         }
     }
 
@@ -336,7 +262,7 @@ export default function SitesManagement() {
                 let fetchedAddress = formData.address
                 
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ro,en`)
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
                     const data = await res.json()
                     if (data && data.display_name) {
                         fetchedAddress = data.display_name
@@ -521,135 +447,6 @@ export default function SitesManagement() {
                 </div>
             </div>
 
-            {/* ── Tab Switcher: Standard / Lucrari Scurte — vizibil doar daca tenantul are ambele tipuri activate ── */}
-            {hasLongTerm && hasShortTerm && (
-                <div className="flex gap-2 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl w-fit">
-                    <button
-                        id="tab-standard"
-                        onClick={() => setActiveTab('standard')}
-                        className={`px-5 h-9 rounded-xl text-sm font-bold transition-all ${
-                            activeTab === 'standard'
-                                ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                        }`}
-                    >
-                        Santiere Standard
-                    </button>
-                    <button
-                        id="tab-short-term"
-                        onClick={() => setActiveTab('short_term')}
-                        className={`px-5 h-9 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                            activeTab === 'short_term'
-                                ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                        }`}
-                    >
-                        <Timer className="w-3.5 h-3.5" />
-                        Intervenții / Lucrări
-                        {shortTermSites.filter(s => s.urgency === 'urgent' || s.urgency === 'overdue').length > 0 && (
-                            <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">
-                                {shortTermSites.filter(s => s.urgency === 'urgent' || s.urgency === 'overdue').length}
-                            </span>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* ── LUCRARI SCURTE PANEL ── */}
-            {hasShortTerm && activeTab === 'short_term' && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {workOrders.length} comenzi de lucru
-                        </p>
-                        <button
-                            onClick={() => navigate('/admin/work-orders/new')}
-                            className="px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" /> Comandă Nouă
-                        </button>
-                    </div>
-
-                    {loadingWorkOrders ? (
-                        <div className="py-12 flex items-center justify-center">
-                            <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
-                        </div>
-                    ) : workOrders.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center">
-                            <Timer className="w-10 h-10 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
-                            <p className="text-slate-500 font-semibold">Nu exista comenzi de lucru active.</p>
-                            <p className="text-sm text-slate-400 mt-1">Apasa "Comanda Noua" pentru a crea prima comanda.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {workOrders.map(wo => {
-                                const statusColors = {
-                                    draft:       'bg-slate-100 text-slate-600',
-                                    assigned:    'bg-blue-50 text-blue-700',
-                                    acknowledged:'bg-indigo-50 text-indigo-700',
-                                    in_progress: 'bg-amber-50 text-amber-700',
-                                    completed:   'bg-emerald-50 text-emerald-700',
-                                    signed:      'bg-green-50 text-green-700',
-                                }
-                                const statusLabel = {
-                                    draft:       'Ciornă',
-                                    assigned:    'Atribuit',
-                                    acknowledged:'Confirmat',
-                                    in_progress: 'În lucru',
-                                    completed:   'Finalizat',
-                                    signed:      'Semnat',
-                                }
-                                return (
-                                <div key={wo.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                                    <div className="h-1 w-full" style={{background: wo.status === 'in_progress' ? '#f59e0b' : wo.status === 'completed' || wo.status === 'signed' ? '#10b981' : '#3b82f6'}} />
-                                    <div className="px-5 py-4 flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{wo.title}</p>
-                                            {wo.client_name && (
-                                                <p className="text-xs text-slate-500 mt-0.5 truncate">{wo.client_name}</p>
-                                            )}
-                                            {wo.site_address && (
-                                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                                                    <span className="truncate">{wo.site_address}</span>
-                                                </p>
-                                            )}
-                                        </div>
-                                        <span className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold ${statusColors[wo.status] || 'bg-slate-100 text-slate-600'}`}>
-                                            {statusLabel[wo.status] || wo.status}
-                                        </span>
-                                    </div>
-                                    <div className="px-5 pb-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-3 text-xs text-slate-500">
-                                            {wo.start_date && (
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="w-3.5 h-3.5" />
-                                                    {wo.start_date}
-                                                </span>
-                                            )}
-                                            {wo.assigned_team_id && (
-                                                <span className="flex items-center gap-1">
-                                                    <Users className="w-3.5 h-3.5" />
-                                                    Echipă
-                                                </span>
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={() => navigate(`/admin/work-orders/${wo.id}`)}
-                                            className="px-3 h-8 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center gap-1.5"
-                                        >
-                                            <Edit2 className="w-3.5 h-3.5" /> Deschide
-                                        </button>
-                                    </div>
-                                </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'standard' && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
                     <div className="relative group flex items-center w-full sm:w-auto">
@@ -893,7 +690,6 @@ export default function SitesManagement() {
             </div>
             )}
         </div>
-            )}
 
             {/* Edit/Add Modal */}
             {showEditModal && (
@@ -902,10 +698,7 @@ export default function SitesManagement() {
                         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <Building2 className="w-5 h-5 text-slate-500" />
-                                {editingSite
-                                    ? (editingSite.project_type === 'short_term' ? 'Editează Lucrare' : 'Editează Șantier')
-                                    : (formData.project_type === 'short_term' ? 'Adaugă Lucrare Scurtă' : 'Adaugă Șantier Nou')
-                                }
+                                {editingSite ? 'Editează Șantier' : 'Adaugă Șantier Nou'}
                             </h2>
                             <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                 <X className="w-5 h-5" />
@@ -931,15 +724,13 @@ export default function SitesManagement() {
                             <div className={activeModalTab !== 'info' ? 'hidden' : ''}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">
-                                            {formData.project_type === 'short_term' ? 'Titlu Lucrare *' : 'Nume Șantier *'}
-                                        </label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Nume Șantier *</label>
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                                             className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
-                                            placeholder={formData.project_type === 'short_term' ? 'ex: Revizie instalatie electrica - Familia Pop' : 'ex: Instalare Panouri Solare - Familia Ionescu'}
+                                            placeholder="ex: Instalare Panouri Solare - Familia Ionescu"
                                         />
                                     </div>
 
@@ -1011,16 +802,7 @@ export default function SitesManagement() {
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center justify-between mb-1 ml-1">
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Client</label>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setShowNewClientModal(true)}
-                                                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                                            >
-                                                + Client Nou
-                                            </button>
-                                        </div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Client</label>
                                         <select
                                             value={formData.client_id}
                                             onChange={e => setFormData({ ...formData, client_id: e.target.value })}
@@ -1033,8 +815,6 @@ export default function SitesManagement() {
                                         </select>
                                     </div>
 
-                                    {/* Tip Instalare — doar pentru santiere standard */}
-                                    {formData.project_type !== 'short_term' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Tip Instalare</label>
                                         <select
@@ -1047,10 +827,7 @@ export default function SitesManagement() {
                                             <option value="industrial">Industrial</option>
                                         </select>
                                     </div>
-                                    )}
 
-                                    {/* Putere (kW) si Numar Panouri — doar pentru santiere standard */}
-                                    {formData.project_type !== 'short_term' && (<>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Putere Sistem (kW)</label>
                                         <input
@@ -1073,7 +850,6 @@ export default function SitesManagement() {
                                             placeholder="ex: 24"
                                         />
                                     </div>
-                                    </>)}
 
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Status</label>
@@ -1100,8 +876,7 @@ export default function SitesManagement() {
                                     </div>
                                 </div>
 
-                                {/* Program Lucru — ascuns pentru lucrari scurte */}
-                                {formData.project_type !== 'short_term' && (
+                                {/* Work Schedule Section */}
                                 <div className="border-t border-slate-200 dark:border-slate-800 pt-5 mt-5">
                                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
                                         <Clock className="w-4 h-4 text-blue-500" />
@@ -1159,7 +934,6 @@ export default function SitesManagement() {
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 ml-1">Pontajul se poate face cu max 30 min înainte. Overtime fără aprobare: {formData.max_overtime_minutes || 120} minute.</p>
                                 </div>
-                                )}
                             </div>
 
                             <div className={activeModalTab !== 'teams' ? 'hidden' : ''}>
@@ -1208,10 +982,7 @@ export default function SitesManagement() {
                                 className="px-5 h-10 rounded-full text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                {editingSite
-                                    ? 'Salvează'
-                                    : (formData.project_type === 'short_term' ? 'Creează Lucrare' : 'Creează Șantier')
-                                }
+                                {editingSite ? 'Salvează' : 'Creează Șantier'}
                             </button>
                         </div>
                     </div>
@@ -1255,227 +1026,6 @@ export default function SitesManagement() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-            )}
-            {/* Worker Assign Modal */}
-            {workerAssignModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <UserCheck className="w-5 h-5 text-blue-500" />
-                                Alocare Muncitori — {workerAssignModal.name}
-                            </h2>
-                            <button onClick={() => setWorkerAssignModal(null)} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-100 flex items-center justify-center">
-                                <X className="w-4 h-4 text-slate-500" />
-                            </button>
-                        </div>
-                        <div className="p-4 max-h-96 overflow-y-auto">
-                            <input
-                                type="text"
-                                placeholder="Cauta muncitor..."
-                                value={workerSearch}
-                                onChange={e => setWorkerSearch(e.target.value)}
-                                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm mb-3 outline-none focus:border-blue-500"
-                            />
-                            {allWorkers.filter(w => w.name?.toLowerCase().includes(workerSearch.toLowerCase()) || w.email?.toLowerCase().includes(workerSearch.toLowerCase())).map(w => {
-                                const checked = workerAssignModal.assigned_worker_ids?.includes(w.id) || false
-                                return (
-                                    <label key={w.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            defaultChecked={checked}
-                                            onChange={e => {
-                                                if (e.target.checked) {
-                                                    setWorkerAssignModal(prev => ({ ...prev, assigned_worker_ids: [...(prev.assigned_worker_ids || []), w.id] }))
-                                                } else {
-                                                    setWorkerAssignModal(prev => ({ ...prev, assigned_worker_ids: (prev.assigned_worker_ids || []).filter(id => id !== w.id) }))
-                                                }
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                        />
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800 dark:text-white">{w.name}</p>
-                                            <p className="text-xs text-slate-400">{w.email}</p>
-                                        </div>
-                                    </label>
-                                )
-                            })}
-                        </div>
-                        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
-                            <button onClick={() => setWorkerAssignModal(null)} className="px-5 h-10 rounded-full text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Anuleaza</button>
-                            <button
-                                onClick={() => handleAssignWorkers(workerAssignModal.assigned_worker_ids || [])}
-                                disabled={assigningSite}
-                                className="px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-60"
-                            >
-                                {assigningSite ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
-                                Salveaza Alocarea
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Final Report Modal */}
-            {reportModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8">
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <ClipboardList className="w-5 h-5 text-blue-500" />
-                                Raport Final — {reportModal.site.name}
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                {reportModal.data && (
-                                    <button
-                                        onClick={() => downloadFinalReport(reportModal.site)}
-                                        className="px-4 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5"
-                                    >
-                                        <FileText className="w-3.5 h-3.5" /> Export Excel
-                                    </button>
-                                )}
-                                <button onClick={() => setReportModal(null)} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-100 flex items-center justify-center">
-                                    <X className="w-4 h-4 text-slate-500" />
-                                </button>
-                            </div>
-                        </div>
-                        {loadingReport || !reportModal.data ? (
-                            <div className="p-12 flex items-center justify-center">
-                                <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
-                            </div>
-                        ) : (
-                            <div className="p-6 space-y-5">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[
-                                        { label: 'Muncitori', value: reportModal.data.summary.total_workers },
-                                        { label: 'Ore Lucrate', value: reportModal.data.summary.total_hours + 'h' },
-                                        { label: 'Materiale', value: reportModal.data.summary.total_material_types },
-                                        { label: 'KM Total', value: reportModal.data.summary.total_km_trips + ' km' },
-                                    ].map(kpi => (
-                                        <div key={kpi.label} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3 text-center">
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">{kpi.label}</p>
-                                            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{kpi.value}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {reportModal.data.workers.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Muncitori</p>
-                                        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 dark:bg-slate-800">
-                                                    <tr>
-                                                        {['Cod', 'Nume', 'Ore', 'Zile'].map(h => (
-                                                            <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                    {reportModal.data.workers.map(w => (
-                                                        <tr key={w.code}>
-                                                            <td className="px-3 py-2 text-slate-500 font-mono text-xs">{w.code}</td>
-                                                            <td className="px-3 py-2 font-semibold text-slate-800 dark:text-white">{w.name}</td>
-                                                            <td className="px-3 py-2 font-bold text-blue-600">{w.total_hours}h</td>
-                                                            <td className="px-3 py-2 text-slate-500">{w.days_worked} zile</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {reportModal.data.materials.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Materiale Folosite</p>
-                                        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 dark:bg-slate-800">
-                                                    <tr>
-                                                        {['Denumire', 'Categorie', 'Cantitate'].map(h => (
-                                                            <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                    {reportModal.data.materials.map(m => (
-                                                        <tr key={m.name}>
-                                                            <td className="px-3 py-2 font-semibold text-slate-800 dark:text-white">{m.name}</td>
-                                                            <td className="px-3 py-2 text-slate-500">{m.category}</td>
-                                                            <td className="px-3 py-2 font-bold text-slate-700 dark:text-slate-300">{m.quantity} {m.unit}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-            {/* ── New Client Modal ── */}
-            {showNewClientModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>
-                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Adaugă Client Rapid</h2>
-                            <button onClick={() => setShowNewClientModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleSaveNewClient} className="p-5 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1">Nume Companie *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full px-4 h-9 text-sm rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                    value={newClientData.name}
-                                    onChange={e => setNewClientData({...newClientData, name: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1">Adresă Sediu</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 h-9 text-sm rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                    value={newClientData.address}
-                                    onChange={e => setNewClientData({...newClientData, address: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1">Telefon</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 h-9 text-sm rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                    value={newClientData.phone}
-                                    onChange={e => setNewClientData({...newClientData, phone: e.target.value})}
-                                />
-                            </div>
-                            <div className="pt-2 flex justify-end gap-2 mt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowNewClientModal(false)}
-                                    className="px-4 h-9 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Anulează
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={savingClient}
-                                    className="px-4 h-9 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-70"
-                                >
-                                    {savingClient ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                    Salvează
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             )}

@@ -13,7 +13,6 @@ import {
 } from 'recharts'
 import DataTable from '../../components/DataTable'
 import SearchableSelect from '../../components/SearchableSelect'
-import KPICard from '../../components/KPICard'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 
@@ -328,13 +327,13 @@ export default function ReportsPage() {
                 <>
                     {/* Summary Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
-                        <KPICard label={t('reports.kpi.records')} value={charts.summaryCards.totalRecords} icon={BarChart3} colorTheme="blue" />
-                        <KPICard label={t('timesheets.kpi.hours_worked')} value={`${Math.round(charts.summaryCards.totalHours * 10) / 10}h`} icon={Clock} colorTheme="indigo" isText />
-                        <KPICard label={t('reports.kpi.employees')} value={charts.summaryCards.uniqueEmployees} icon={Users} colorTheme="green" />
-                        <KPICard label={t('reports.kpi.sites')} value={charts.summaryCards.uniqueSites} icon={Building2} colorTheme="orange" />
-                        <KPICard label={t('reports.kpi.days')} value={charts.summaryCards.uniqueDays} icon={Calendar} colorTheme="purple" />
-                        <KPICard label={t('reports.kpi.avg_employee')} value={`${Math.round(charts.summaryCards.avgHoursPerEmployee * 10) / 10}h`} icon={TrendingUp} colorTheme="blue" isText />
-                        <KPICard label={t('reports.kpi.avg_day')} value={`${Math.round(charts.summaryCards.avgHoursPerDay * 10) / 10}h`} icon={Activity} colorTheme="indigo" isText />
+                        <SummaryCard label={t('reports.kpi.records')} value={charts.summaryCards.totalRecords} icon={BarChart3} color="text-blue-600 bg-blue-50 border-blue-100" />
+                        <SummaryCard label={t('timesheets.kpi.hours_worked')} value={`${Math.round(charts.summaryCards.totalHours * 10) / 10}h`} icon={Clock} color="text-indigo-600 bg-indigo-50 border-indigo-100" />
+                        <SummaryCard label={t('reports.kpi.employees')} value={charts.summaryCards.uniqueEmployees} icon={Users} color="text-emerald-600 bg-emerald-50 border-emerald-100" />
+                        <SummaryCard label={t('reports.kpi.sites')} value={charts.summaryCards.uniqueSites} icon={Building2} color="text-orange-600 bg-orange-50 border-orange-100" />
+                        <SummaryCard label={t('reports.kpi.days')} value={charts.summaryCards.uniqueDays} icon={Calendar} color="text-violet-600 bg-violet-50 border-violet-100" />
+                        <SummaryCard label={t('reports.kpi.avg_employee')} value={`${Math.round(charts.summaryCards.avgHoursPerEmployee * 10) / 10}h`} icon={TrendingUp} color="text-sky-600 bg-sky-50 border-sky-100" />
+                        <SummaryCard label={t('reports.kpi.avg_day')} value={`${Math.round(charts.summaryCards.avgHoursPerDay * 10) / 10}h`} icon={Activity} color="text-pink-600 bg-pink-50 border-pink-100" />
                     </div>
 
                     {/* Charts */}
@@ -525,4 +524,14 @@ export default function ReportsPage() {
     )
 }
 
-
+function SummaryCard({ label, value, icon: Icon, color }) {
+    return (
+        <div className={`rounded-2xl p-4 border-2 shadow-md dark:bg-slate-900 dark:border-slate-700 ${color}`}>
+            <div className="flex items-center gap-2 mb-1">
+                <Icon className="w-4 h-4 opacity-70" />
+            </div>
+            <div className="text-lg font-bold">{value}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
+        </div>
+    )
+}

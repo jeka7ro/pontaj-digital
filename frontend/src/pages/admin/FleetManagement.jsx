@@ -851,13 +851,10 @@ export default function FleetManagement() {
                                                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                                                 className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
                                             >
-                                                {(() => {
-                                                    const filteredCats = categories.filter(cat => cat.group === (mainTab === 'cars' ? 'car' : 'equipment'));
-                                                    if (filteredCats.length > 0) {
-                                                        return filteredCats.map(cat => ({ name: cat.name, label: cat.name }));
-                                                    }
-                                                    return VEHICLE_TYPES.filter(vt => mainTab === 'cars' ? CAR_TYPES.includes(vt) : !CAR_TYPES.includes(vt)).map(vt => ({ name: vt, label: t(`fleet.types.${vt}`) }));
-                                                })().map(cat => (
+                                                {(categories.length > 0 
+                                                    ? categories.filter(cat => cat.group === (mainTab === 'cars' ? 'car' : 'equipment')).map(cat => ({ name: cat.name, label: cat.name }))
+                                                    : VEHICLE_TYPES.filter(vt => mainTab === 'cars' ? CAR_TYPES.includes(vt) : !CAR_TYPES.includes(vt)).map(vt => ({ name: vt, label: t(`fleet.types.${vt}`) }))
+                                                ).map(cat => (
                                                     <option key={cat.name} value={cat.name}>{cat.label}</option>
                                                 ))}
                                             </select>

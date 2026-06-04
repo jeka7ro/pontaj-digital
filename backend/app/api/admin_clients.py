@@ -16,8 +16,6 @@ class ClientBase(BaseModel):
     cui: Optional[str] = Field(None, max_length=50)
     reg_com: Optional[str] = Field(None, max_length=50)
     address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
     contact_person: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None
@@ -31,8 +29,6 @@ class ClientUpdate(BaseModel):
     cui: Optional[str] = Field(None, max_length=50)
     reg_com: Optional[str] = Field(None, max_length=50)
     address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
     contact_person: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None

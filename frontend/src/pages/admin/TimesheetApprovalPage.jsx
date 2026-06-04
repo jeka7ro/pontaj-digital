@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../../lib/api'
 import { Calendar, Clock, Users, Coffee, Building2, Activity, RefreshCw, CheckCircle, Loader2, Timer, Image, X, ChevronLeft, ChevronRight, Phone, Mail, MapPin, FileText, ArrowLeft, FileDown, FileSpreadsheet, Search } from 'lucide-react'
 import DataTable from '../../components/DataTable'
+import KPICard from '../../components/KPICard'
 import { useTranslation } from 'react-i18next'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -420,12 +421,12 @@ export default function TimesheetApprovalPage() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                <KPICard label={t('timesheets.kpi.total_workers')} value={workers.length} icon={Users} color="bg-gradient-to-br from-blue-500 to-blue-600" />
-                <KPICard label={t('timesheets.kpi.active_now')} value={activeCount} icon={Timer} color="bg-gradient-to-br from-green-500 to-green-600" pulse={activeCount > 0} />
-                <KPICard label={t('timesheets.kpi.on_break')} value={breakCount} icon={Coffee} color="bg-gradient-to-br from-orange-400 to-orange-500" />
-                <KPICard label={t('timesheets.kpi.finished')} value={finishedCount} icon={CheckCircle} color="bg-gradient-to-br from-slate-400 to-slate-500" />
-                <KPICard label={t('timesheets.kpi.hours_worked')} value={formatHours(totalWorked)} icon={Clock} color="bg-gradient-to-br from-indigo-500 to-indigo-600" isText />
-                <KPICard label={t('timesheets.kpi.break_hours')} value={formatHours(totalBreak)} icon={Coffee} color="bg-gradient-to-br from-amber-400 to-amber-500" isText />
+                <KPICard label={t('timesheets.kpi.total_workers')} value={workers.length} icon={Users} colorTheme="blue" />
+                <KPICard label={t('timesheets.kpi.active_now')} value={activeCount} icon={Timer} colorTheme="green" pulse={activeCount > 0} />
+                <KPICard label={t('timesheets.kpi.on_break')} value={breakCount} icon={Coffee} colorTheme="orange" />
+                <KPICard label={t('timesheets.kpi.finished')} value={finishedCount} icon={CheckCircle} colorTheme="slate" />
+                <KPICard label={t('timesheets.kpi.hours_worked')} value={formatHours(totalWorked)} icon={Clock} colorTheme="indigo" isText />
+                <KPICard label={t('timesheets.kpi.break_hours')} value={formatHours(totalBreak)} icon={Coffee} colorTheme="purple" isText />
             </div>
 
             {/* Site Photos */}
@@ -695,22 +696,6 @@ function AvatarImg({ path, name, size = 'w-10 h-12', textSize = 'text-sm', round
     return (
         <div className={`${size} ${rounded} bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0`}>
             {name?.substring(0, 2).toUpperCase() || 'W'}
-        </div>
-    )
-}
-
-function KPICard({ label, value, icon: Icon, color, pulse, isText }) {
-    return (
-        <div className={`${color} text-white rounded-xl p-4 shadow-lg relative overflow-hidden`}>
-            <div className="relative z-10">
-                <div className="flex items-center justify-between mb-2">
-                    <Icon className="w-5 h-5 opacity-80" />
-                    {pulse && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
-                </div>
-                <div className={`${isText ? 'text-xl' : 'text-3xl'} font-bold`}>{value}</div>
-                <div className="text-xs opacity-80 mt-1">{label}</div>
-            </div>
-            <div className="absolute -right-3 -bottom-3 opacity-10"><Icon className="w-20 h-20" /></div>
         </div>
     )
 }

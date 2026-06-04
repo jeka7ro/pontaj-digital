@@ -21,7 +21,10 @@ export default function DataTable({
     defaultPageSize = 25,
     emptyText,
     searchable = false,
-    searchPlaceholder = 'Caută...'
+    searchPlaceholder = 'Caută...',
+    rowStyle,
+    rowClassName,
+    onRowClick
 }) {
     const { t } = useTranslation()
     const [page, setPage] = useState(1)
@@ -156,7 +159,13 @@ export default function DataTable({
                             slice.map((row, idx) => (
                                 <tr
                                     key={row.id ?? idx}
-                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
+                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ? rowClassName(row) : ''}`}
+                                    style={rowStyle ? rowStyle(row) : undefined}
+                                    onClick={onRowClick ? (e) => {
+                                        // Nu naviga daca s-a dat click pe un buton/link/input din rand
+                                        if (e.target.closest('button,a,input,select,textarea')) return
+                                        onRowClick(row)
+                                    } : undefined}
                                 >
                                     <td className="px-6 py-4 text-center text-slate-500 font-medium tabular-nums">
                                         {from + idx + 1}

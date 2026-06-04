@@ -802,15 +802,19 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
         if existing_admin:
             raise HTTPException(status_code=400, detail="Adresa de email este deja folosită de alt administrator")
             
+        # SECURITATE CRITICA: un admin de tenant (cu organization_id) nu poate fi niciodata SUPER_ADMIN
+        # indiferent de numele rolului sau de orice alt parametru.
+        # Doar admini fara organization_id (platforma SaaS) pot fi super admini.
+        is_tenant_admin = bool(role.organization_id)
         new_admin = Admin(
             id=str(uuid.uuid4()),
             organization_id=role.organization_id,
             email=user_data.email,
             full_name=full_name,
             password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
-            role="SUPER_ADMIN" if role.name == "Super Administrator" else "ADMIN",
+            role="ADMIN",  # Toti adminii de tenant sunt ADMIN — niciodata SUPER_ADMIN
             is_active=user_data.is_active,
-            is_super_admin=True if role.name == "Super Administrator" else False
+            is_super_admin=False  # Niciodata True pentru admini de tenant
         )
         db.add(new_admin)
 

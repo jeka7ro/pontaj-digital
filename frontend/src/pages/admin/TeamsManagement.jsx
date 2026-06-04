@@ -23,6 +23,7 @@ export default function TeamsManagement() {
     const [newName, setNewName] = useState('')
     const [newLeader, setNewLeader] = useState('')
     const [newSite, setNewSite] = useState('')
+    const [newColor, setNewColor] = useState('#94a3b8')
     const [newMembers, setNewMembers] = useState([])
     const [searchQ, setSearchQ] = useState('')
     const [globalSearch, setGlobalSearch] = useState('')
@@ -75,7 +76,7 @@ export default function TeamsManagement() {
         if (!newName.trim() || !newLeader) return
         setSaving(true)
         try {
-            const payload = { name: newName, team_leader_id: newLeader, site_id: newSite || null, member_ids: newMembers }
+            const payload = { name: newName, team_leader_id: newLeader, site_id: newSite || null, color: newColor, member_ids: newMembers }
             if (editingTeamId) {
                 await api(`/admin/teams/${editingTeamId}`, { method: 'PUT', body: JSON.stringify(payload) })
             } else {
@@ -86,6 +87,7 @@ export default function TeamsManagement() {
             setNewName('')
             setNewLeader('')
             setNewSite('')
+            setNewColor('#94a3b8')
             setNewMembers([])
             fetchTeams()
         } catch (e) {
@@ -106,6 +108,7 @@ export default function TeamsManagement() {
         setNewName(team.name || '')
         setNewLeader(team.team_leader_id || '')
         setNewSite(team.site_id || '')
+        setNewColor(team.color || '#94a3b8')
         setNewMembers([])
         setShowModal(true)
     }
@@ -135,7 +138,7 @@ export default function TeamsManagement() {
         } catch (e) { console.error(e) }
     }
 
-    const leaders = users.filter(u => ['TEAM_LEAD', 'SITE_MANAGER'].includes(u.role_code))
+    const leaders = users // Allow any employee to be a team leader
     const workers = users.filter(u => {
         if (searchQ) {
             const q = searchQ.toLowerCase()
@@ -149,8 +152,11 @@ export default function TeamsManagement() {
             key: 'name', label: t('teams.team_name'), sortable: true,
             render: (team) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center">
-                        <Users className="w-4 h-4" />
+                    <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center border shadow-sm"
+                        style={{ backgroundColor: team.color || '#94a3b8', borderColor: team.color || '#94a3b8' }}
+                    >
+                        <Users className="w-4 h-4 text-white drop-shadow-md" />
                     </div>
                     <span className="font-bold text-slate-900 dark:text-white">{team.name}</span>
                 </div>
@@ -238,7 +244,7 @@ export default function TeamsManagement() {
                     </div>
                     
                     <button
-                        onClick={() => { setEditingTeamId(null); setNewName(''); setNewLeader(''); setNewSite(''); setNewMembers([]); setShowModal(true) }}
+                        onClick={() => { setEditingTeamId(null); setNewName(''); setNewLeader(''); setNewSite(''); setNewColor('#94a3b8'); setNewMembers([]); setShowModal(true) }}
                         className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
                     >
                         <Plus className="w-4 h-4" />
@@ -297,6 +303,17 @@ export default function TeamsManagement() {
                             </div>
 
                             <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Culoare Alocată pe Calendar</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
+                                        className="w-12 h-12 p-1 border border-slate-200 rounded-xl cursor-pointer bg-white"
+                                    />
+                                    <span className="text-sm text-slate-500 uppercase font-bold">{newColor}</span>
+                                </div>
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1">{t('teams.members')} ({newMembers.length})</label>
                                 <div className="relative mb-2">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -307,7 +324,7 @@ export default function TeamsManagement() {
                                     />
                                 </div>
                                 <div className="border border-slate-200 rounded-xl max-h-60 overflow-y-auto divide-y divide-slate-100 bg-slate-50/50">
-                                    {users.filter(u => ['WORKER', 'SUBCONTRACTOR'].includes(u.role_code)).map(u => {
+                                    {users.filter(u => u.id !== newLeader).map(u => {
                                         if (searchQ && !u.full_name.toLowerCase().includes(searchQ.toLowerCase())) return null
                                         const isSel = newMembers.includes(u.id)
                                         return (

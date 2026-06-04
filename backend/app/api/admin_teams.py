@@ -18,6 +18,7 @@ class AdminTeamCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     team_leader_id: str
     site_id: Optional[str] = None
+    color: Optional[str] = None
     member_ids: List[str] = Field(default_factory=list)
 
 
@@ -25,6 +26,7 @@ class AdminTeamUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     team_leader_id: Optional[str] = None
     site_id: Optional[str] = None
+    color: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -54,7 +56,8 @@ def team_to_dict(team, db):
         "site_id": team.site_id,
         "site_name": site.name if site else None,
         "is_active": team.is_active,
-        "member_count": len(members),
+        "color": team.color,
+        "member_count": len(members) + (1 if leader else 0),
         "members": members,
         "created_at": team.created_at.isoformat() if team.created_at else None,
     }
@@ -86,6 +89,7 @@ def create_team(
         team_leader_id=data.team_leader_id,
         organization_id=leader.organization_id,
         site_id=data.site_id,
+        color=data.color,
         is_active=True,
     )
     db.add(team)
@@ -118,6 +122,8 @@ def update_team(
         team.team_leader_id = data.team_leader_id
     if data.site_id is not None:
         team.site_id = data.site_id
+    if data.color is not None:
+        team.color = data.color
     if data.is_active is not None:
         team.is_active = data.is_active
 
@@ -172,7 +178,10 @@ def get_available_users(
     current_admin: Admin = Depends(get_current_admin),
 ):
     """Get all users that can be team leaders or members."""
-    users = db.query(User).filter(User.is_active == True).all()
+    users = db.query(User).join(Role).filter(
+        User.is_active == True,
+        Role.name != 'Super Administrator'
+    ).all()
     result = []
     for u in users:
         role = db.query(Role).filter(Role.id == u.role_id).first()

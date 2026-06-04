@@ -2,6 +2,8 @@ import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import { useAdminStore } from './store/adminStore'
+import { useTenantStore } from './store/tenantStore'
+import api from './lib/api'
 import Login from './pages/Login'
 import { Loader2 } from 'lucide-react'
 
@@ -21,6 +23,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const TodayTimesheet = lazy(() => import('./pages/TodayTimesheet'))
 const History = lazy(() => import('./pages/History'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const DemoSignup = lazy(() => import('./pages/DemoSignup'))
+const WorkspaceRouter = lazy(() => import('./pages/WorkspaceRouter'))
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'))
 const ClientsManagement = lazy(() => import('./pages/admin/ClientsManagement'))
 const PhotoTestPage = lazy(() => import('./pages/admin/PhotoTestPage'))
@@ -32,9 +36,11 @@ const SitePhotosPage = lazy(() => import('./pages/admin/SitePhotosPage'))
 const TeamsManagement = lazy(() => import('./pages/admin/TeamsManagement'))
 const NotificationsPage = lazy(() => import('./pages/admin/NotificationsPage'))
 const FleetManagement = lazy(() => import('./pages/admin/FleetManagement'))
+const TransportManagement = lazy(() => import('./pages/admin/TransportManagement'))
 const WarehouseManagement = lazy(() => import('./pages/admin/WarehouseManagement'))
 const ComplaintsManagement = lazy(() => import('./pages/admin/ComplaintsManagement'))
 const AccommodationsManagement = lazy(() => import('./pages/admin/AccommodationsManagement'))
+const LeavesManagement = lazy(() => import('./pages/admin/LeavesManagement'))
 const ExpensesManagement = lazy(() => import('./pages/admin/ExpensesManagement'))
 const AdminMaterialRequests = lazy(() => import('./pages/admin/AdminMaterialRequests'))
 const AdminEmergencies = lazy(() => import('./pages/admin/AdminEmergencies'))
@@ -42,6 +48,7 @@ const EmployeeComplaints = lazy(() => import('./pages/employee/EmployeeComplaint
 const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMaterialRequests'))
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
 const EmployeeInventory = lazy(() => import('./pages/employee/EmployeeInventory'))
+const WorkerOrdersPage = lazy(() => import('./pages/employee/WorkerOrdersPage'))
 import EmployeeLayout from './components/layout/EmployeeLayout'
 import { DialogOverlay } from './components/ui/DialogOverlay'
 import { ToastOverlay } from './components/ui/ToastOverlay'
@@ -89,8 +96,81 @@ class GlobalErrorBoundary extends React.Component {
     }
 }
 
+import OrganizationsManagement from './pages/admin/OrganizationsManagement'
+const WorkOrders = lazy(() => import('./pages/admin/WorkOrders'))
+const WorkOrderForm   = lazy(() => import('./pages/admin/WorkOrderForm'))
+const WorkOrderDetail = lazy(() => import('./pages/admin/WorkOrderDetail'))
+const WorkOrderConfirm = lazy(() => import('./pages/public/WorkOrderConfirm'))
+
 function App() {
     const { user } = useAuthStore()
+    
+    // Tenant Config Logic
+    const setTenant = useTenantStore((state) => state.setTenant)
+    const getCurrentSubdomain = useTenantStore((state) => state.getCurrentSubdomain)
+    const [invalidTenant, setInvalidTenant] = useState(false)
+
+    useEffect(() => {
+        const fetchTenantConfig = async () => {
+            const subdomain = getCurrentSubdomain()
+            if (subdomain) {
+                try {
+                    const res = await api.get('/public/tenant-config', { params: { slug: subdomain } })
+                    setTenant(res.data)
+                    if (res.data.name) {
+                        document.title = `${res.data.name} - Smart Timesheet`
+                    }
+                    
+                    let iconUrl = res.data.favicon_url || res.data.logo_url;
+                    if (!iconUrl && res.data.name) {
+                        const initial = res.data.name.charAt(0).toUpperCase();
+                        iconUrl = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%232563eb"/><text x="50" y="70" font-size="60" fill="white" font-weight="bold" font-family="Arial" text-anchor="middle">${initial}</text></svg>`;
+                    }
+                    
+                    if (iconUrl) {
+                        let link = document.querySelector("link[rel~='icon']");
+                        if (!link) {
+                            link = document.createElement('link');
+                            link.rel = 'icon';
+                            document.head.appendChild(link);
+                        }
+                        link.href = iconUrl;
+                    }
+                } catch (err) {
+                    console.error('Failed to load tenant config', err)
+                    if (err.response && err.response.status === 404) {
+                        setInvalidTenant(true)
+                    }
+                }
+            }
+        }
+        fetchTenantConfig()
+    }, [])
+
+    // Apply tenant styles synchronously when tenant state is available (from persist or fetch)
+    const tenantObj = useTenantStore((state) => state.tenant)
+    useEffect(() => {
+        if (tenantObj?.primary_color) {
+            document.documentElement.style.setProperty('--primary-tenant', tenantObj.primary_color)
+            let style = document.getElementById('tenant-dynamic-styles')
+            if (!style) {
+                style = document.createElement('style')
+                style.id = 'tenant-dynamic-styles'
+                document.head.appendChild(style)
+            }
+            style.innerHTML = `
+                .bg-blue-600, .bg-indigo-600 { background-color: ${tenantObj.primary_color} !important; }
+                .text-blue-600, .text-indigo-600 { color: ${tenantObj.primary_color} !important; }
+                .border-blue-600, .border-indigo-600 { border-color: ${tenantObj.primary_color} !important; }
+                .ring-blue-600, .ring-indigo-600 { --tw-ring-color: ${tenantObj.primary_color} !important; }
+                .focus\:border-blue-500:focus, .focus\:border-indigo-500:focus { border-color: ${tenantObj.primary_color} !important; }
+                
+                /* Extra states */
+                .hover\:bg-blue-700:hover, .hover\:bg-indigo-700:hover { background-color: ${tenantObj.primary_color} !important; filter: brightness(0.9); }
+                .hover\:text-blue-700:hover, .hover\:text-indigo-700:hover { color: ${tenantObj.primary_color} !important; filter: brightness(0.9); }
+            `
+        }
+    }, [tenantObj?.primary_color])
 
     // ─── Auto-reload la deploy nou (fara refresh manual de la angajati) ───────
     useEffect(() => {
@@ -117,6 +197,25 @@ function App() {
         return () => clearInterval(interval)
     }, [])
 
+    if (invalidTenant) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-slate-100">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-10 h-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-3">Compania nu există</h1>
+                    <p className="text-slate-600 mb-6">Link-ul pe care l-ai accesat este invalid sau compania a fost ștearsă din sistem.</p>
+                    <a href="http://localhost:5678" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-blue-500/20">
+                        Înapoi la Pagina Principală
+                    </a>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <GlobalErrorBoundary>
             <Router>
@@ -132,6 +231,8 @@ function App() {
                         <Route path="users" element={<UsersManagement />} />
                         <Route path="employees" element={<EmployeesManagement />} />
                         <Route path="employees/:id" element={<EmployeesManagement />} />
+                        <Route path="leaves" element={<LeavesManagement />} />
+                        <Route path="organizations" element={<OrganizationsManagement />} />
 
                         <Route path="clients" element={<ClientsManagement />} />
                         <Route path="sites" element={<SitesManagement />} />
@@ -143,6 +244,7 @@ function App() {
                         <Route path="site-photos" element={<SitePhotosPage />} />
                         <Route path="teams" element={<TeamsManagement />} />
                         <Route path="fleet" element={<FleetManagement />} />
+                        <Route path="transport" element={<TransportManagement />} />
                         <Route path="warehouse" element={<WarehouseManagement />} />
                         <Route path="complaints" element={<ComplaintsManagement />} />
                         <Route path="accommodations" element={<AccommodationsManagement />} />
@@ -151,7 +253,14 @@ function App() {
                                 <Route path="emergencies" element={<AdminEmergencies />} />
                                 <Route path="alerts" element={<AlertsManagement />} />
                         <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="work-orders" element={<WorkOrders />} />
+                        <Route path="work-orders/new" element={<WorkOrderForm />} />
+                        <Route path="work-orders/:id" element={<WorkOrderDetail />} />
+                        <Route path="work-orders/:id/edit" element={<WorkOrderForm />} />
                     </Route>
+
+                    {/* Public Routes - Work Order confirmation */}
+                    <Route path="/confirm/:token" element={<WorkOrderConfirm />} />
 
                     {/* Employee Routes */}
                     <Route path="/login" element={<Login />} />
@@ -169,6 +278,7 @@ function App() {
                             <Route path="/material-requests" element={<EmployeeMaterialRequests />} />
                             <Route path="/my-inventory" element={<EmployeeInventory />} />
                             <Route path="/emergencies" element={<EmployeeEmergencies />} />
+                            <Route path="/comenzi" element={<WorkerOrdersPage />} />
                         </Route>
                     ) : null}
 
@@ -184,6 +294,15 @@ function App() {
 // Smart redirect based on current path
 function SmartRedirect() {
     const location = window.location.pathname
+    const subdomain = useTenantStore.getState().getCurrentSubdomain()
+    
+    // If no subdomain, we are on root, redirect to workspace router
+    if (!subdomain) {
+        if (location === '/demo') {
+            return <DemoSignup />
+        }
+        return <WorkspaceRouter isAdmin={location.startsWith('/admin')} />
+    }
 
     // If trying to access admin routes, redirect to admin login
     if (location.startsWith('/admin')) {

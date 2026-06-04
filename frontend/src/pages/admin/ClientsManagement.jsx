@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Building, Plus, Search, MapPin, Phone, Mail, Edit2, Trash2, Check, X, FileText, Briefcase, Loader2 } from 'lucide-react'
+import MiniMapSelector from '../../components/MiniMapSelector'
 import api from '../../lib/api'
 
 export default function ClientsManagement() {
@@ -15,6 +16,8 @@ export default function ClientsManagement() {
         cui: '',
         reg_com: '',
         address: '',
+        latitude: '',
+        longitude: '',
         contact_person: '',
         phone: '',
         email: ''
@@ -53,6 +56,8 @@ export default function ClientsManagement() {
                 cui: client.cui || '',
                 reg_com: client.reg_com || '',
                 address: client.address || '',
+                latitude: client.latitude || '',
+                longitude: client.longitude || '',
                 contact_person: client.contact_person || '',
                 phone: client.phone || '',
                 email: client.email || ''
@@ -64,6 +69,8 @@ export default function ClientsManagement() {
                 cui: '',
                 reg_com: '',
                 address: '',
+                latitude: '',
+                longitude: '',
                 contact_person: '',
                 phone: '',
                 email: ''
@@ -349,6 +356,17 @@ export default function ClientsManagement() {
                                         className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
                                         value={formData.address}
                                         onChange={e => setFormData({...formData, address: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                    <div className="flex justify-between items-center mb-2 ml-1">
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Coordonate GPS (Opțional)</label>
+                                    </div>
+                                    <MiniMapSelector 
+                                        latitude={formData.latitude} 
+                                        longitude={formData.longitude} 
+                                        onLocationChange={(lat, lon) => setFormData({...formData, latitude: lat, longitude: lon})} 
                                     />
                                 </div>
 

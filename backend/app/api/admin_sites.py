@@ -639,6 +639,85 @@ def get_map_data(
 
     return result
 
+
+@router.get("/map-data/short-term")
+def get_map_data_short_term(
+    period: str = "current_month", # current_month, last_month, this_year, all
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """
+    Returns short term interventions (checkins) for the map, filtered by period.
+    """
+    from app.models import TimesheetSegment, Timesheet, ConstructionSite
+    from app.timezone import get_local_today
+    from datetime import datetime, timedelta
+    import calendar
+    import sqlalchemy
+
+    today = get_local_today()
+    start_date = None
+    end_date = today
+
+    if period == "current_month":
+        start_date = today.replace(day=1)
+    elif period == "last_month":
+        last_day_prev_month = today.replace(day=1) - timedelta(days=1)
+        start_date = last_day_prev_month.replace(day=1)
+        end_date = last_day_prev_month
+    elif period == "this_year":
+        start_date = today.replace(month=1, day=1)
+    elif period == "all":
+        start_date = None
+
+    # Query timesheet segments joined with sites where site.project_type == 'short_term'
+    query = db.query(TimesheetSegment, ConstructionSite).join(
+        ConstructionSite, TimesheetSegment.site_id == ConstructionSite.id
+    ).join(
+        Timesheet, TimesheetSegment.timesheet_id == Timesheet.id
+    ).filter(ConstructionSite.project_type == "short_term")
+
+    if start_date:
+        query = query.filter(Timesheet.date >= start_date)
+    if end_date:
+        query = query.filter(Timesheet.date <= end_date)
+
+    segments = query.all()
+
+    # Group by site
+    site_map = {}
+    for seg, site in segments:
+        if site.id not in site_map:
+            site_map[site.id] = {
+                "id": site.id,
+                "name": site.name,
+                "address": site.address,
+                "county": site.county,
+                "latitude": site.latitude,
+                "longitude": site.longitude,
+                "geofence_radius": site.geofence_radius or 100,
+                "status": site.status,
+                "project_type": site.project_type,
+                "client_id": site.client_id,
+                "client_name": site.client_name,
+                "total_interventions": 0,
+                "last_intervention": None
+            }
+        
+        site_map[site.id]["total_interventions"] += 1
+        checkin_dt = seg.check_in_time
+        if checkin_dt:
+            if not site_map[site.id]["last_intervention"] or checkin_dt > site_map[site.id]["last_intervention"]:
+                site_map[site.id]["last_intervention"] = checkin_dt
+
+    # Format the results
+    result = list(site_map.values())
+    for r in result:
+        if r["last_intervention"]:
+            r["last_intervention"] = r["last_intervention"].isoformat()
+
+    return result
+
 @router.put("/{site_id}/teams")
 def set_site_teams(
     site_id: str,

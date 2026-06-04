@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { Clock, Calendar, Users, Settings, TrendingUp, MapPin, Briefcase, ArrowRight, LogOut, PackageSearch, AlertTriangle, MessageSquareWarning } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
+import KPICard from '../components/KPICard'
 
 export default function Dashboard() {
     const { t } = useTranslation()
@@ -143,25 +144,23 @@ export default function Dashboard() {
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 slide-up stagger-1">
-                    <StatCard
-                        icon={<TrendingUp className="w-6 h-6" />}
+                    <KPICard
+                        icon={TrendingUp}
                         label={t('dashboard.hours_this_month')}
                         value="160h"
-                        change={t('dashboard.change_last_month')}
-                        positive
+                        colorTheme="blue"
                     />
-                    <StatCard
-                        icon={<Calendar className="w-6 h-6" />}
+                    <KPICard
+                        icon={Calendar}
                         label="Zile Lucrate"
                         value="20"
-                        change={t('dashboard.change_this_week')}
-                        positive
+                        colorTheme="green"
                     />
-                    <StatCard
-                        icon={<MapPin className="w-6 h-6" />}
+                    <KPICard
+                        icon={MapPin}
                         label="Șantiere Active"
                         value="3"
-                        change={t('dashboard.all_in_progress')}
+                        colorTheme="purple"
                     />
                 </div>
 
@@ -183,25 +182,6 @@ export default function Dashboard() {
                     </div>
                 </div>
             </main>
-        </div>
-    )
-}
-
-function StatCard({ icon, label, value, change, positive }) {
-    return (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
-            <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 bg-slate-100 rounded-xl text-slate-700">
-                    {icon}
-                </div>
-            </div>
-            <p className="text-3xl font-bold text-slate-900 mb-1">{value}</p>
-            <p className="text-sm font-medium text-slate-600 mb-2">{label}</p>
-            {change && (
-                <p className={`text-xs font-semibold ${positive ? 'text-emerald-600' : 'text-slate-500'}`}>
-                    {change}
-                </p>
-            )}
         </div>
     )
 }

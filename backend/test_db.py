@@ -1,14 +1,14 @@
-import asyncio
-from sqlalchemy import create_engine, func
-from sqlalchemy.orm import sessionmaker
-from app.models import User, ConstructionSite
+import sys
 import os
-from dotenv import load_dotenv
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from app.database import SessionLocal
+from app.models import Client, WorkOrder
 
-load_dotenv()
-engine = create_engine(os.getenv("DATABASE_URL"))
-SessionLocal = sessionmaker(bind=engine)
 db = SessionLocal()
+print("Clients:")
+for c in db.query(Client).all():
+    print(c.id, c.name, c.email)
 
-print("Users:", db.query(func.count(User.id)).scalar())
-print("Sites:", db.query(func.count(ConstructionSite.id)).scalar())
+print("\nWorkOrders:")
+for w in db.query(WorkOrder).all():
+    print(w.id, w.title, w.client_id, w.client_name)

@@ -4,7 +4,7 @@ import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,
     Loader2, Coffee, MapPin, RefreshCw, Timer, Trophy, AlertTriangle, Zap,
     ArrowUpRight, ArrowDownRight, ChevronRight, Eye, ShieldAlert, WifiOff,
-    X, Phone, Mail, FileText, ArrowLeft, Package
+    X, Phone, Mail, FileText, ArrowLeft, Package, ClipboardList, ExternalLink
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -13,17 +13,52 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, PieChart, Pie, Cell, Legend, ComposedChart, Line
 } from 'recharts'
+import KPICard from '../../components/KPICard'
 import DataTable from '../../components/DataTable'
+import ShortWorksCalendar from '../../components/ShortWorksCalendar'
+import { useTenantStore } from '../../store/tenantStore'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
 
 export default function AdminOverview() {
     const navigate = useNavigate()
     const { t } = useTranslation()
+    const { tenant } = useTenantStore()
     const [stats, setStats] = useState({ total_users: 0, total_sites: 0, pending: 0, total_hours_week: 0 })
     const [chartData, setChartData] = useState({ daily: [], hourly: [], activities: [], sites: [] })
     const [statsLoading, setStatsLoading] = useState(true)
     const [chartLoading, setChartLoading] = useState(true)
+
+    const DEFAULT_LAYOUT = {
+        recent_work_orders: { visible: true, size: 'L' },
+        live_sites: { visible: true, size: 'M' },
+        hours_chart: { visible: true, size: 'M' },
+        hourly_activity: { visible: true, size: 'M' },
+        top_performers: { visible: true, size: 'S' },
+        alerts_production: { visible: true, size: 'S' },
+        worker_complaints: { visible: true, size: 'M' },
+        warehouse_requests: { visible: true, size: 'S' },
+        warehouse_status: { visible: true, size: 'S' },
+        live_workers: { visible: true, size: 'L' }
+    }
+    
+    const [dashboardLayout, setDashboardLayout] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pontaj_dashboard_layout')
+            return saved ? { ...DEFAULT_LAYOUT, ...JSON.parse(saved) } : DEFAULT_LAYOUT
+        } catch {
+            return DEFAULT_LAYOUT
+        }
+    })
+    
+    const getLayoutClass = (key, baseClass) => {
+        const size = dashboardLayout[key]?.size || 'M'
+        let span = 'lg:col-span-1'
+        if (size === 'M') span = 'lg:col-span-2'
+        if (size === 'L') span = 'lg:col-span-3'
+        // For some containers we might need full width
+        return `${span} ${baseClass}`
+    }
     const [activeWorkers, setActiveWorkers] = useState([])
     const [fleetAlerts, setFleetAlerts] = useState([])
     const [sesizari, setSesizari] = useState([])       // cereri de material pending
@@ -33,6 +68,14 @@ export default function AdminOverview() {
     const [workersLoading, setWorkersLoading] = useState(true)
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
+    const [workOrdersStats, setWorkOrdersStats] = useState({ total: 0, active: 0, draft: 0 })
+    const [allWorkOrders, setAllWorkOrders] = useState([])
+    const [recentWorkOrders, setRecentWorkOrders] = useState([])
+
+    // Feature flags
+    const isShortTerm = tenant?.has_short_term_interventions === true
+    const isLongTerm = tenant?.has_long_term_sites !== false // default true
+    const hasWarehouse = tenant?.features?.includes('warehouse') || tenant?.has_warehouse === true
 
     // Worker detail drawer
     const [selectedWorker, setSelectedWorker] = useState(null)
@@ -82,6 +125,7 @@ export default function AdminOverview() {
         fetchFleetAlerts()
         fetchSesizariNecesar()
         fetchComplaints()
+        if (isShortTerm) fetchWorkOrdersStats()
 
         if (refreshTimer.current) clearInterval(refreshTimer.current)
         refreshTimer.current = setInterval(() => {
@@ -91,10 +135,11 @@ export default function AdminOverview() {
             fetchFleetAlerts()
             fetchSesizariNecesar()
             fetchComplaints()
+            if (isShortTerm) fetchWorkOrdersStats()
         }, 15000)
 
         return () => clearInterval(refreshTimer.current)
-    }, [globalSiteFilter])
+    }, [globalSiteFilter, isShortTerm])
 
     const fetchStats = async (isBackground = false) => {
         if (!isBackground) setStatsLoading(true)
@@ -110,6 +155,21 @@ export default function AdminOverview() {
             })
         } catch (e) { console.error(e) }
         finally { setStatsLoading(false) }
+    }
+
+    const fetchWorkOrdersStats = async () => {
+        try {
+            const res = await api.get('/admin/work-orders')
+            const all = res.data?.items || res.data || []
+            const total = res.data?.total || all.length
+            const active = Array.isArray(all) ? all.filter(w => w.status === 'in_progress' || w.status === 'sent' || w.status === 'confirmed').length : 0
+            const draft = Array.isArray(all) ? all.filter(w => w.status === 'draft').length : 0
+            setWorkOrdersStats({ total, active, draft })
+            if (Array.isArray(all)) {
+                setAllWorkOrders(all)
+                setRecentWorkOrders(all.slice(0, 10))
+            }
+        } catch {}
     }
 
     const fetchChartData = async () => {
@@ -224,6 +284,14 @@ export default function AdminOverview() {
         return checkin.getHours() > 8 || (checkin.getHours() === 8 && checkin.getMinutes() > 30)
     })
 
+    const tzOption = tenant?.timezone && tenant.timezone !== 'auto' ? { timeZone: tenant.timezone } : {}
+    const getTzName = () => {
+        if (!tenant?.timezone || tenant.timezone === 'auto') return 'Ora Locală'
+        if (tenant.timezone === 'Europe/Berlin') return 'Ora Germaniei'
+        if (tenant.timezone === 'Europe/Bucharest') return 'Ora României'
+        return tenant.timezone
+    }
+
 
     return (
         <div className="p-6 lg:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -240,17 +308,17 @@ export default function AdminOverview() {
                         {t('dashboard.title')}
                     </h1>
                     <p className="text-sm text-slate-500">
-                        {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date().toLocaleDateString('ro-RO', { ...tzOption, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         <span className="ml-2 text-slate-400">•</span>
                         <span className="ml-2 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
-                            {new Date(nowRef.current).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin' })} <span className="text-slate-500 font-medium ml-1">(Ora Germaniei)</span>
+                            {new Date(nowRef.current).toLocaleTimeString('ro-RO', { ...tzOption })} <span className="text-slate-500 font-medium ml-1">({getTzName()})</span>
                         </span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     {lastRefresh && (
                         <span className="text-xs text-slate-400">
-                            {t('admin.updated_at')}: {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {t('admin.updated_at')}: {lastRefresh.toLocaleTimeString('ro-RO', { ...tzOption, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
                     )}
                     <button
@@ -270,25 +338,108 @@ export default function AdminOverview() {
                     ))
                 ) : (
                     <>
-                        <KPICard label={t('dashboard.employees')} value={stats.total_users} icon={Users} gradient="from-[#0f172a] to-[#1e3a5f]" onClick={() => navigate('/admin/users')} />
-                        <KPICard label={t('dashboard.sites')} value={stats.total_sites} icon={Building2} gradient="from-[#1e3a5f] to-[#1e40af]" onClick={() => navigate('/admin/sites')} />
-                        <KPICard label={t('dashboard.working_now')} value={activeCount} icon={Timer} gradient="from-[#0f172a] to-[#164e63]" pulse={activeCount > 0} onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.on_break')} value={breakCount} icon={Coffee} gradient="from-[#1e3a5f] to-[#7c3aed]" onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.hours_today')} value={formatTime(totalHoursToday)} icon={Clock} gradient="from-[#0f172a] to-[#1e40af]" isText pulse onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.hours_week')} value={formatTime(stats.total_hours_week)} icon={TrendingUp} gradient="from-[#1e3a5f] to-[#0f172a]" isText onClick={() => navigate('/admin/reports')} />
+                        <KPICard label={t('dashboard.employees')} value={stats.total_users} icon={Users} colorTheme="blue" onClick={() => navigate('/admin/users')} />
+                        {/* Sites KPI — doar daca tenant are santiere clasice */}
+                        {isLongTerm && (
+                            <KPICard label={t('dashboard.sites')} value={stats.total_sites} icon={Building2} colorTheme="indigo" onClick={() => navigate('/admin/sites')} />
+                        )}
+                        {/* Work Orders KPI — doar daca tenant are lucrari scurte */}
+                        {isShortTerm && (
+                            <KPICard label="Comenzi" value={workOrdersStats.total} icon={ClipboardList} colorTheme="violet" onClick={() => navigate('/admin/work-orders')} />
+                        )}
+                        <KPICard label={t('dashboard.working_now')} value={activeCount} icon={Timer} colorTheme="green" pulse={activeCount > 0} onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.on_break')} value={breakCount} icon={Coffee} colorTheme="orange" onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.hours_today')} value={formatTime(totalHoursToday)} icon={Clock} colorTheme="purple" isText pulse onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.hours_week')} value={formatTime(stats.total_hours_week)} icon={TrendingUp} colorTheme="slate" isText onClick={() => navigate('/admin/reports')} />
                     </>
                 )}
             </div>
 
-            {/* Live Site Map — full width below KPIs */}
-            <div className="mb-6">
-                <SiteMap selectedSiteId={globalSiteFilter} workers={activeWorkers} onSiteSelect={setGlobalSiteFilter} onWorkerSelect={openWorkerDetail} />
-            </div>
+            {/* Calendar Timesheet - Visible only for short term interventions */}
+            {isShortTerm && (
+                <div className="mb-6">
+                    <ShortWorksCalendar workOrders={allWorkOrders} />
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-start">
+{/* Recent Work Orders */}
+            {dashboardLayout.recent_work_orders?.visible && (
+                <div className={getLayoutClass("recent_work_orders", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5")}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4 text-violet-500" />
+                            Comenzi Recente
+                        </h3>
+                        <button onClick={() => navigate('/admin/work-orders')} className="text-xs font-bold text-blue-600 hover:text-blue-700">Vezi toate →</button>
+                    </div>
+                    {recentWorkOrders.length === 0 ? (
+                        <div className="text-center py-6 text-slate-400 text-sm">
+                            Nicio comandă recentă.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-slate-100 dark:border-slate-700">
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Titlu</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500 hidden sm:table-cell">Client</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Status</th>
+                                        <th className="px-4 py-2 text-right text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Acțiuni</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                    {recentWorkOrders.map(wo => {
+                                        const cfg = {
+                                            draft:       { label: 'Draft',       color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' },
+                                            sent:        { label: 'Trimisă',     color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+                                            confirmed:   { label: 'Confirmată',  color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
+                                            in_progress: { label: 'În Execuție', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' },
+                                            completed:   { label: 'Finalizată',  color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400', dot: 'bg-violet-500' },
+                                            cancelled:   { label: 'Anulată',     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' }
+                                        }[wo.status] || { label: 'Draft', color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' }
+                                        
+                                        return (
+                                            <tr key={wo.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-bold text-slate-900 dark:text-white text-sm">{wo.title}</div>
+                                                    {wo.site_name && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {wo.site_name}</div>}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hidden sm:table-cell">{wo.client_name || '—'}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                                                        {cfg.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors inline-block">
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+
+            {/* Live Site Map — afiseaza doar daca tenant are santiere clasice */}
+            {isLongTerm && (
+                <div className="mb-6">
+                    <SiteMap selectedSiteId={globalSiteFilter} workers={activeWorkers} onSiteSelect={setGlobalSiteFilter} onWorkerSelect={openWorkerDetail} />
+                </div>
+            )}
 
             {/* Row 2: Weekly Comparison + Site Live Map */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-start">
+            
                 {/* Weekly Hours Chart — takes 2 cols */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5">
+                {dashboardLayout.hours_chart?.visible && (
+<div className={getLayoutClass("hours_chart", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5")}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-blue-500" />
@@ -333,9 +484,11 @@ export default function AdminOverview() {
                         </div>
                     </div>
                 </div>
+)}
 
                 {/* Live Site Map — same height as chart card */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col" style={{height: '360px'}}>
+                {dashboardLayout.live_sites?.visible && (
+<div className={getLayoutClass("live_sites", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col")} style={{height: '360px'}}>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
                         <MapPin className="w-4 h-4 text-emerald-500" />
                         {t('dashboard.live_sites')}
@@ -384,17 +537,18 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Row 3: Hourly Chart + Top Performers + Late Arrivals/Production */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
                 {/* Hourly Activity */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col">
+                {dashboardLayout.hourly_activity?.visible && (
+<div className={getLayoutClass("hourly_activity", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col")}>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
                         <Activity className="w-4 h-4 text-green-500" />
                         {t('dashboard.hourly_activity')}
                     </h3>
-                    <div className="flex-1 min-h-[180px]">
+                    <div style={{ width: '100%', height: 180 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData.hourly || []}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#f1f5f9'} />
@@ -415,9 +569,11 @@ export default function AdminOverview() {
                         </ResponsiveContainer>
                     </div>
                 </div>
+)}
 
                 {/* Top Performers & Late Arrivals */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col max-h-[500px] overflow-y-auto custom-scrollbar">
+                {dashboardLayout.top_performers?.visible && (
+<div className={getLayoutClass("top_performers", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col max-h-[500px] overflow-y-auto custom-scrollbar")}>
                     <div className="flex-1">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
                             <Trophy className="w-4 h-4 text-amber-500" />
@@ -469,7 +625,7 @@ export default function AdminOverview() {
                                         <AvatarImg path={w.avatar_path} name={w.worker_name} size="w-6 h-6" textSize="text-[10px]" />
                                         <span className="font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{w.worker_name}</span>
                                         <span className="text-[11px] font-bold text-amber-700 bg-white dark:bg-amber-950 px-2 py-0.5 rounded-full shadow-sm">
-                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { ...tzOption, hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                 ))}
@@ -477,9 +633,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Alerts + Production — single card, two sections */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col gap-5 max-h-[500px] overflow-y-auto custom-scrollbar">
+                {dashboardLayout.alerts_production?.visible && (
+<div className={getLayoutClass("alerts_production", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col gap-5 max-h-[500px] overflow-y-auto custom-scrollbar")}>
                     
                     {/* Fleet Expiry Alerts */}
                     {fleetAlerts.length > 0 && (
@@ -535,10 +693,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Site Distribution Pie + Workers per Day */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {isLongTerm && (
+            <>
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-orange-500" />
@@ -603,13 +762,15 @@ export default function AdminOverview() {
                         </ResponsiveContainer>
                     </div>
                 </div>
-            </div>
+            </>
+            )}
 
             {/* ── Sesizări + Necesar ──────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
                 
                 {/* Reclamații / Sesizări Reale */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+                {dashboardLayout.worker_complaints?.visible && (
+<div className={getLayoutClass("worker_complaints", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden")}>
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-red-500" />
@@ -647,9 +808,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+)}
 
                 {/* Cereri Magazie — cereri noi neaprobate */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+                {dashboardLayout.warehouse_requests?.visible && hasWarehouse && (
+                <div className={getLayoutClass("warehouse_requests", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden")}>
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                             <Package className="w-4 h-4 text-amber-500" />
@@ -688,9 +851,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Necesar + Livrat — aprobat nelivrat + istoric */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden flex flex-col">
+                {dashboardLayout.warehouse_status?.visible && hasWarehouse && (
+                <div className={getLayoutClass("warehouse_status", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden flex flex-col")}>
                     {/* Secțiunea: De Livrat */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
@@ -777,10 +942,13 @@ export default function AdminOverview() {
                         )}
                     </div>
                 </div>
-            </div>
+                )}
 
-            {/* Live Workers Table */}
-            {(() => {
+            
+</div>
+
+{/* Live Workers Table */}
+            {dashboardLayout.live_workers?.visible && (() => {
                 const liveWorkers = activeWorkers.filter(w => w.status !== 'terminat')
                 const doneWorkers = activeWorkers.filter(w => w.status === 'terminat')
                 const columns = [
@@ -1150,24 +1318,6 @@ function StatusBadge({ status, is_on_break, is_outside_geofence, gps_lost }) {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {t('dashboard.working')}</span>
 }
 
-function KPICard({ label, value, icon: Icon, gradient, onClick, pulse, isText }) {
-    return (
-        <div
-            onClick={onClick}
-            className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-4 shadow-xl relative overflow-hidden ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
-        >
-            <div className="relative z-10">
-                <div className="flex items-center justify-between mb-1">
-                    <Icon className="w-4 h-4 opacity-80" />
-                    {pulse && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
-                </div>
-                <div className={`${isText ? 'text-xl' : 'text-2xl'} font-bold`}>{value}</div>
-                <div className="text-[11px] opacity-80 mt-0.5">{label}</div>
-            </div>
-            <div className="absolute -right-2 -bottom-2 opacity-10"><Icon className="w-16 h-16" /></div>
-        </div>
-    )
-}
 
 function QuickAction({ icon: Icon, title, desc, color, onClick }) {
     return (

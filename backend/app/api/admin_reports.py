@@ -20,7 +20,7 @@ from app.api.admin_auth import get_current_admin
 router = APIRouter()
 
 
-def _build_report_data(db: Session, date_from=None, date_to=None, employee_id=None, site_id=None, organization_id=None):
+def _build_report_data(db: Session, date_from=None, date_to=None, employee_id=None, site_id=None):
     """Build report data — optimized: bulk queries, no N+1"""
     from sqlalchemy import and_
 
@@ -32,9 +32,6 @@ def _build_report_data(db: Session, date_from=None, date_to=None, employee_id=No
         query = query.filter(Timesheet.date <= datetime.strptime(date_to, "%Y-%m-%d").date())
     if employee_id:
         query = query.filter(Timesheet.owner_user_id == employee_id)
-    # Org isolation — filter by organization_id at timesheet level
-    if organization_id:
-        query = query.filter(Timesheet.organization_id == organization_id)
 
     timesheets = query.order_by(Timesheet.date.desc()).all()
     if not timesheets:
@@ -155,9 +152,8 @@ async def preview_timesheets(
     db: Session = Depends(get_db),
     admin: Admin = Depends(get_current_admin)
 ):
-    """Preview timesheet data — scoped to admin's organization"""
-    org_id = None if admin.is_super_admin else admin.organization_id
-    results = _build_report_data(db, date_from, date_to, employee_id, site_id, organization_id=org_id)
+    """Preview timesheet data"""
+    results = _build_report_data(db, date_from, date_to, employee_id, site_id)
     total_hours = sum(r["hours_worked"] for r in results)
 
     return {
@@ -176,13 +172,12 @@ async def export_timesheets_excel(
     db: Session = Depends(get_db),
     admin: Admin = Depends(get_current_admin)
 ):
-    """Export timesheets to Excel — scoped to admin's organization"""
+    """Export timesheets to Excel"""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
-    org_id = None if admin.is_super_admin else admin.organization_id
-    results = _build_report_data(db, date_from, date_to, employee_id, site_id, organization_id=org_id)
+    results = _build_report_data(db, date_from, date_to, employee_id, site_id)
 
     wb = Workbook()
     ws = wb.active

@@ -518,10 +518,6 @@ def get_users(
 ):
     """Get paginated list of users with optional filters"""
     query = db.query(User).join(Role)
-
-    # Isolate data per organization for local admins
-    if not current_admin.is_super_admin and current_admin.organization_id:
-        query = query.filter(User.organization_id == current_admin.organization_id)
     
     if search:
         query = query.filter(or_(
@@ -545,21 +541,10 @@ def get_users_stats(
     current_admin: Admin = Depends(get_current_admin)
 ):
     """Get user statistics"""
-    base_q = db.query(func.count(User.id))
-    if not current_admin.is_super_admin and current_admin.organization_id:
-        base_q = base_q.filter(User.organization_id == current_admin.organization_id)
-
-    total_users = base_q.filter(User.is_active == True).scalar()
-    active_users = total_users
-    inactive_q = db.query(func.count(User.id))
-    if not current_admin.is_super_admin and current_admin.organization_id:
-        inactive_q = inactive_q.filter(User.organization_id == current_admin.organization_id)
-    inactive_users = inactive_q.filter(User.is_active == False).scalar()
-
-    role_q = db.query(Role.name, func.count(User.id).label('count')).join(User)
-    if not current_admin.is_super_admin and current_admin.organization_id:
-        role_q = role_q.filter(User.organization_id == current_admin.organization_id)
-    users_by_role = role_q.group_by(Role.name).all()
+    total_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+    active_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+    inactive_users = db.query(func.count(User.id)).filter(User.is_active == False).scalar()
+    users_by_role = db.query(Role.name, func.count(User.id).label('count')).join(User).group_by(Role.name).all()
     
     return {
         "total_users": total_users,
@@ -794,8 +779,7 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
             birth_date_val = None
     
     new_user = User(
-        # Local admins always create users in their own org; super admins use role's org
-        organization_id=current_admin.organization_id if (not current_admin.is_super_admin and current_admin.organization_id) else role.organization_id,
+        organization_id=role.organization_id,
         employee_code=user_data.employee_code,
         full_name=full_name, role_id=user_data.role_id,
         pin_hash=hash_pin(user_data.pin), is_active=user_data.is_active,

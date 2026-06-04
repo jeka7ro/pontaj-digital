@@ -14,8 +14,7 @@ import useViewPreferencesStore from '../../store/viewPreferencesStore'
 import api from '../../lib/api'
 import {
     Building2, Plus, Search, Edit2, MapPin, Calendar, CheckCircle,
-    Clock, XCircle, Zap, Hash, Loader2, Camera, X, Save, Trash2,
-    Timer, Users, UserCheck, FileText, ClipboardList, Filter, Grid, List
+    Clock, XCircle, Zap, Hash, Loader2, Camera, X, Save, Trash2
 } from 'lucide-react'
 import ViewToggle from '../../components/ViewToggle'
 import Pagination from '../../components/Pagination'
@@ -45,39 +44,7 @@ const EMPTY_SITE = {
     work_end_time: '16:00',
     lunch_break_start: '12:00',
     lunch_break_end: '13:00',
-    max_overtime_minutes: 120,
-    // lucrare scurta durata
-    project_type: 'standard',
-    planned_start_date: '',
-    planned_end_date: '',
-}
-
-// ─── Urgency badge ────────────────────────────────────────────────────────────
-const URGENCY_MAP = {
-    on_track:  { label: 'In grafic',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900' },
-    urgent:    { label: 'Urgent',      cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900' },
-    overdue:   { label: 'Depasit',     cls: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900' },
-    completed: { label: 'Finalizat',   cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900' },
-}
-
-function UrgencyBadge({ urgency }) {
-    const u = URGENCY_MAP[urgency] || URGENCY_MAP.on_track
-    return (
-        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${u.cls}`}>{u.label}</span>
-    )
-}
-
-// ─── Progress Bar ─────────────────────────────────────────────────────────────
-function ProgressBar({ pct, urgency }) {
-    const color = urgency === 'overdue' ? 'bg-red-500'
-        : urgency === 'urgent'  ? 'bg-amber-500'
-        : urgency === 'completed' ? 'bg-blue-500'
-        : 'bg-emerald-500'
-    return (
-        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
-        </div>
-    )
+    max_overtime_minutes: 120
 }
 
 const MiniMapSelector = ({ latitude, longitude, onLocationChange }) => {
@@ -164,17 +131,7 @@ export default function SitesManagement() {
     const [detailSite, setDetailSite] = useState(null)
     const [clients, setClients] = useState([])
 
-    // Short-term sites (Lucrari Scurte)
-    const [activeTab, setActiveTab] = useState('standard')
-    const [shortTermSites, setShortTermSites] = useState([])
-    const [loadingShortTerm, setLoadingShortTerm] = useState(false)
-    const [workerAssignModal, setWorkerAssignModal] = useState(null)
-    const [allWorkers, setAllWorkers] = useState([])
-    const [workerSearch, setWorkerSearch] = useState('')
-    const [assigningSite, setAssigningSite] = useState(false)
-    const [reportModal, setReportModal] = useState(null)
-    const [loadingReport, setLoadingReport] = useState(false)
-
+    
     // Bulk Select states
     const [selectedSiteIds, setSelectedSiteIds] = useState([])
 
@@ -204,62 +161,6 @@ export default function SitesManagement() {
             }
         }
     }, [location.state, sites, detailSite])
-
-    useEffect(() => {
-        if (activeTab === 'short_term') fetchShortTermSites()
-    }, [activeTab])
-
-    const fetchShortTermSites = async () => {
-        setLoadingShortTerm(true)
-        try {
-            const res = await api.get('/admin/sites/short-term')
-            setShortTermSites(res.data || [])
-        } catch (e) {
-            console.error('fetchShortTermSites error:', e)
-        } finally {
-            setLoadingShortTerm(false)
-        }
-    }
-
-    const openWorkerAssign = async (site) => {
-        setWorkerAssignModal(site)
-        try {
-            const res = await api.get('/admin/users?limit=200')
-            setAllWorkers(res.data?.users || [])
-        } catch { setAllWorkers([]) }
-    }
-
-    const handleAssignWorkers = async (workerIds) => {
-        setAssigningSite(true)
-        try {
-            await api.post(`/admin/sites/${workerAssignModal.id}/assign-workers`, { worker_ids: workerIds })
-            setWorkerAssignModal(null)
-            fetchShortTermSites()
-        } catch (e) {
-            console.error('assign workers error:', e)
-        } finally { setAssigningSite(false) }
-    }
-
-    const openFinalReport = async (site) => {
-        setReportModal({ site, data: null })
-        setLoadingReport(true)
-        try {
-            const res = await api.get(`/admin/sites/${site.id}/final-report`)
-            setReportModal({ site, data: res.data })
-        } catch (e) {
-            console.error('final report error:', e)
-        } finally { setLoadingReport(false) }
-    }
-
-    const downloadFinalReport = async (site) => {
-        try {
-            const res = await api.get(`/admin/sites/${site.id}/final-report/excel`, { responseType: 'blob' })
-            const url = URL.createObjectURL(res.data)
-            const a = document.createElement('a')
-            a.href = url; a.download = `Raport_${site.name}.xlsx`; a.click()
-            URL.revokeObjectURL(url)
-        } catch (e) { console.error('download report error:', e) }
-    }
 
     const fetchClients = async () => {
         try {
@@ -546,141 +447,6 @@ export default function SitesManagement() {
                 </div>
             </div>
 
-            {/* ── Tab Switcher: Standard / Lucrari Scurte ── */}
-            <div className="flex gap-2 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl w-fit">
-                <button
-                    id="tab-standard"
-                    onClick={() => setActiveTab('standard')}
-                    className={`px-5 h-9 rounded-xl text-sm font-bold transition-all ${
-                        activeTab === 'standard'
-                            ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
-                >
-                    Santiere Standard
-                </button>
-                <button
-                    id="tab-short-term"
-                    onClick={() => setActiveTab('short_term')}
-                    className={`px-5 h-9 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                        activeTab === 'short_term'
-                            ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
-                >
-                    <Timer className="w-3.5 h-3.5" />
-                    Lucrari Scurte
-                    {shortTermSites.filter(s => s.urgency === 'urgent' || s.urgency === 'overdue').length > 0 && (
-                        <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">
-                            {shortTermSites.filter(s => s.urgency === 'urgent' || s.urgency === 'overdue').length}
-                        </span>
-                    )}
-                </button>
-            </div>
-
-            {/* ── LUCRARI SCURTE PANEL ── */}
-            {activeTab === 'short_term' && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {shortTermSites.length} lucrari de scurta durata
-                        </p>
-                        <button
-                            onClick={() => { setFormData({ ...EMPTY_SITE, project_type: 'short_term', planned_start_date: new Date().toISOString().slice(0,10) }); setActiveModalTab('info'); setSelectedTeamIds([]); setShowEditModal(true) }}
-                            className="px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" /> Lucrare Noua
-                        </button>
-                    </div>
-
-                    {loadingShortTerm ? (
-                        <div className="py-12 flex items-center justify-center">
-                            <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
-                        </div>
-                    ) : shortTermSites.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center">
-                            <Timer className="w-10 h-10 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
-                            <p className="text-slate-500 font-semibold">Nu exista lucrari de scurta durata.</p>
-                            <p className="text-sm text-slate-400 mt-1">Adauga o lucrare si selecteaza tipul Lucrare Scurta in modal.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {shortTermSites.map(site => (
-                                <div key={site.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                                    <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{site.name}</p>
-                                            {site.address && (
-                                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                                                    <span className="truncate">{site.address}</span>
-                                                </p>
-                                            )}
-                                        </div>
-                                        <UrgencyBadge urgency={site.urgency} />
-                                    </div>
-
-                                    <div className="px-5 py-3 space-y-2">
-                                        {site.planned_start_date && site.planned_end_date ? (
-                                            <>
-                                                <ProgressBar pct={site.progress_pct || 0} urgency={site.urgency} />
-                                                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                                                    <span>{site.planned_start_date}</span>
-                                                    <span className="font-semibold text-slate-600 dark:text-slate-300">
-                                                        {site.days_remaining != null && site.days_remaining >= 0
-                                                            ? `${site.days_remaining} zile ramase`
-                                                            : site.days_remaining != null
-                                                                ? `${Math.abs(site.days_remaining)} zile depasit`
-                                                                : ''}
-                                                    </span>
-                                                    <span>{site.planned_end_date}</span>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <p className="text-[11px] text-slate-400">Fara termen planificat</p>
-                                        )}
-                                        <div className="flex items-center gap-3 pt-1">
-                                            <span className="flex items-center gap-1 text-xs text-slate-500">
-                                                <Users className="w-3.5 h-3.5" />
-                                                {site.assigned_workers} muncitori
-                                            </span>
-                                            {site.client_name && (
-                                                <span className="flex items-center gap-1 text-xs text-slate-500 truncate">
-                                                    <Building2 className="w-3.5 h-3.5" />
-                                                    {site.client_name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                                        <button
-                                            onClick={() => openWorkerAssign(site)}
-                                            className="flex-1 px-3 h-8 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
-                                        >
-                                            <UserCheck className="w-3.5 h-3.5" /> Aloca Muncitori
-                                        </button>
-                                        <button
-                                            onClick={() => openFinalReport(site)}
-                                            className="flex-1 px-3 h-8 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
-                                        >
-                                            <FileText className="w-3.5 h-3.5" /> Raport Final
-                                        </button>
-                                        <button
-                                            onClick={() => { setFormData({...site, project_type: 'short_term'}); setActiveModalTab('info'); setSelectedTeamIds(site.team_ids || []); setEditingSite(site); setShowEditModal(true) }}
-                                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 flex items-center justify-center flex-shrink-0 transition-colors"
-                                        >
-                                            <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'standard' && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
                     <div className="relative group flex items-center w-full sm:w-auto">
@@ -924,7 +690,6 @@ export default function SitesManagement() {
             </div>
             )}
         </div>
-            )}
 
             {/* Edit/Add Modal */}
             {showEditModal && (
@@ -1263,168 +1028,6 @@ export default function SitesManagement() {
                         </div>
                     </div>
                 </div>
-
-            )}
-            {/* Worker Assign Modal */}
-            {workerAssignModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <UserCheck className="w-5 h-5 text-blue-500" />
-                                Alocare Muncitori — {workerAssignModal.name}
-                            </h2>
-                            <button onClick={() => setWorkerAssignModal(null)} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-100 flex items-center justify-center">
-                                <X className="w-4 h-4 text-slate-500" />
-                            </button>
-                        </div>
-                        <div className="p-4 max-h-96 overflow-y-auto">
-                            <input
-                                type="text"
-                                placeholder="Cauta muncitor..."
-                                value={workerSearch}
-                                onChange={e => setWorkerSearch(e.target.value)}
-                                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm mb-3 outline-none focus:border-blue-500"
-                            />
-                            {allWorkers.filter(w => w.name?.toLowerCase().includes(workerSearch.toLowerCase()) || w.email?.toLowerCase().includes(workerSearch.toLowerCase())).map(w => {
-                                const checked = workerAssignModal.assigned_worker_ids?.includes(w.id) || false
-                                return (
-                                    <label key={w.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            defaultChecked={checked}
-                                            onChange={e => {
-                                                if (e.target.checked) {
-                                                    setWorkerAssignModal(prev => ({ ...prev, assigned_worker_ids: [...(prev.assigned_worker_ids || []), w.id] }))
-                                                } else {
-                                                    setWorkerAssignModal(prev => ({ ...prev, assigned_worker_ids: (prev.assigned_worker_ids || []).filter(id => id !== w.id) }))
-                                                }
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                        />
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800 dark:text-white">{w.name}</p>
-                                            <p className="text-xs text-slate-400">{w.email}</p>
-                                        </div>
-                                    </label>
-                                )
-                            })}
-                        </div>
-                        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
-                            <button onClick={() => setWorkerAssignModal(null)} className="px-5 h-10 rounded-full text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Anuleaza</button>
-                            <button
-                                onClick={() => handleAssignWorkers(workerAssignModal.assigned_worker_ids || [])}
-                                disabled={assigningSite}
-                                className="px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-60"
-                            >
-                                {assigningSite ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
-                                Salveaza Alocarea
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Final Report Modal */}
-            {reportModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8">
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <ClipboardList className="w-5 h-5 text-blue-500" />
-                                Raport Final — {reportModal.site.name}
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                {reportModal.data && (
-                                    <button
-                                        onClick={() => downloadFinalReport(reportModal.site)}
-                                        className="px-4 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5"
-                                    >
-                                        <FileText className="w-3.5 h-3.5" /> Export Excel
-                                    </button>
-                                )}
-                                <button onClick={() => setReportModal(null)} className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-100 flex items-center justify-center">
-                                    <X className="w-4 h-4 text-slate-500" />
-                                </button>
-                            </div>
-                        </div>
-                        {loadingReport || !reportModal.data ? (
-                            <div className="p-12 flex items-center justify-center">
-                                <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
-                            </div>
-                        ) : (
-                            <div className="p-6 space-y-5">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[
-                                        { label: 'Muncitori', value: reportModal.data.summary.total_workers },
-                                        { label: 'Ore Lucrate', value: reportModal.data.summary.total_hours + 'h' },
-                                        { label: 'Materiale', value: reportModal.data.summary.total_material_types },
-                                        { label: 'KM Total', value: reportModal.data.summary.total_km_trips + ' km' },
-                                    ].map(kpi => (
-                                        <div key={kpi.label} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3 text-center">
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">{kpi.label}</p>
-                                            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{kpi.value}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {reportModal.data.workers.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Muncitori</p>
-                                        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 dark:bg-slate-800">
-                                                    <tr>
-                                                        {['Cod', 'Nume', 'Ore', 'Zile'].map(h => (
-                                                            <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                    {reportModal.data.workers.map(w => (
-                                                        <tr key={w.code}>
-                                                            <td className="px-3 py-2 text-slate-500 font-mono text-xs">{w.code}</td>
-                                                            <td className="px-3 py-2 font-semibold text-slate-800 dark:text-white">{w.name}</td>
-                                                            <td className="px-3 py-2 font-bold text-blue-600">{w.total_hours}h</td>
-                                                            <td className="px-3 py-2 text-slate-500">{w.days_worked} zile</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {reportModal.data.materials.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Materiale Folosite</p>
-                                        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 dark:bg-slate-800">
-                                                    <tr>
-                                                        {['Denumire', 'Categorie', 'Cantitate'].map(h => (
-                                                            <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                    {reportModal.data.materials.map(m => (
-                                                        <tr key={m.name}>
-                                                            <td className="px-3 py-2 font-semibold text-slate-800 dark:text-white">{m.name}</td>
-                                                            <td className="px-3 py-2 text-slate-500">{m.category}</td>
-                                                            <td className="px-3 py-2 font-bold text-slate-700 dark:text-slate-300">{m.quantity} {m.unit}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
             )}
         </div>
     )

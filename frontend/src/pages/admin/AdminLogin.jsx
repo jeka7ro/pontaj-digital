@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
-import { useTenantStore } from '../../store/tenantStore'
 import api from '../../lib/api'
 import { Shield, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export default function AdminLogin() {
     const { t } = useTranslation()
-    const tenant = useTenantStore((state) => state.tenant)
-    const getCurrentSubdomain = useTenantStore((state) => state.getCurrentSubdomain)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -41,8 +38,7 @@ export default function AdminLogin() {
         try {
             const response = await api.post('/admin/login', {
                 email,
-                password,
-                tenant_id: tenant?.id || null
+                password
             })
 
             const { access_token, admin } = response.data
@@ -84,10 +80,10 @@ export default function AdminLogin() {
                 {/* Logo & Title */}
                 <div className="text-center mb-6 fade-in">
                     <div className="inline-flex items-center justify-center w-32 h-32 mb-2 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)]">
-                        <img src={tenant?.logo_url || "/favicon.png"} alt={tenant?.name || "Logo Elephant"} className="w-full h-full object-contain" />
+                        <img src="/favicon.png" alt="Logo Elephant" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        {tenant?.name || "Smart Timesheet"}
+                        Smart Timesheet
                     </h1>
                 </div>
 

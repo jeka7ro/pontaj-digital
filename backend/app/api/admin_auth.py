@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+from typing import Optional
 import hashlib
 import os
 
@@ -25,6 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/admin/login")
 class AdminLogin(BaseModel):
     email: EmailStr
     password: str
+    tenant_id: Optional[str] = None
 
 
 from typing import Optional
@@ -36,6 +38,7 @@ class AdminResponse(BaseModel):
     role: str
     is_active: bool
     is_super_admin: bool = False
+    organization_id: Optional[str] = None
     avatar_path: Optional[str] = None
     created_at: datetime
 
@@ -118,7 +121,7 @@ def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
     # Create access token with super admin flag
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": admin.id, "email": admin.email, "role": admin.role, "is_super_admin": bool(admin.is_super_admin)},
+        data={"sub": admin.id, "email": admin.email, "role": admin.role, "is_super_admin": bool(admin.is_super_admin), "organization_id": admin.organization_id},
         expires_delta=access_token_expires
     )
     
@@ -135,7 +138,7 @@ def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
             "full_name": admin.full_name,
             "role": admin.role,
             "is_active": admin.is_active,
-            "is_super_admin": bool(admin.is_super_admin),
+            "is_super_admin": bool(admin.is_super_admin), "organization_id": admin.organization_id,
             "avatar_path": avatar_path,
             "created_at": admin.created_at,
         }
@@ -153,7 +156,7 @@ def get_admin_profile(current_admin: Admin = Depends(get_current_admin), db: Ses
         "full_name": current_admin.full_name,
         "role": current_admin.role,
         "is_active": current_admin.is_active,
-        "is_super_admin": bool(current_admin.is_super_admin),
+        "is_super_admin": bool(current_admin.is_super_admin), "organization_id": current_admin.organization_id,
         "avatar_path": avatar_path,
         "created_at": current_admin.created_at,
     }
@@ -164,7 +167,7 @@ def refresh_token(current_admin: Admin = Depends(get_current_admin)):
     """Refresh access token"""
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": current_admin.id, "email": current_admin.email, "role": current_admin.role, "is_super_admin": bool(current_admin.is_super_admin)},
+        data={"sub": current_admin.id, "email": current_admin.email, "role": current_admin.role, "is_super_admin": bool(current_admin.is_super_admin), "organization_id": current_admin.organization_id},
         expires_delta=access_token_expires
     )
     

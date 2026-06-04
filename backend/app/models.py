@@ -26,6 +26,17 @@ class Organization(Base):
     max_users = Column(Integer, nullable=True)
     features = Column(JSON, nullable=True)
     
+    # ── Program Transport (Parc Auto) ─────────────────────────────────────
+    # Intervalul în care se permite crearea foilor de parcurs
+    transport_start_time = Column(String(5), default="06:00", nullable=True)  # HH:MM
+    transport_end_time   = Column(String(5), default="20:00", nullable=True)  # HH:MM
+    # Zilele săptămânii permise: JSON array [0=Luni ... 6=Duminică]
+    # Ex: [0,1,2,3,4] = Luni-Vineri  |  [0,1,2,3,4,5] = Luni-Sâmbătă
+    transport_allowed_days = Column(JSON, default=lambda: [0,1,2,3,4], nullable=True)
+    # Dacă True, drumul este blocat complet în afara programului
+    # Dacă False, se permite dar se marchează ca "out_of_schedule"
+    transport_strict_schedule = Column(Boolean, default=False, nullable=True)
+
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -324,6 +335,14 @@ class ConstructionSite(Base):
     lunch_break_end = Column(Time, default=time(13, 0))     # Break end (default 13:00)
     max_overtime_minutes = Column(Integer, default=120)    # Max overtime without approval (default 2h)
     
+    # ── Lucrari de scurta durata ──────────────────────────────────────────────
+    # Tipul proiectului: 'standard' (santier obisnuit) | 'short_term' (lucrare 3-15 zile)
+    project_type = Column(String(20), default="standard", nullable=False)
+    planned_start_date = Column(Date, nullable=True)   # Data planificata de incepere
+    planned_end_date   = Column(Date, nullable=True)   # Termenul planificat de finalizare
+    # planned_duration_days e calculat runtime (planned_end_date - planned_start_date)
+    # Nu il stocam — evitam datele divergente
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -746,3 +765,215 @@ class AlertAcknowledgement(Base):
     
     alert = relationship("Alert")
     user = relationship("User", foreign_keys=[user_id])
+
+
+# =============================================================================
+# MODULE TRANSPORT — FOI DE PARCURS
+# =============================================================================
+
+class TripLog(Base):
+    """
+    Foaie de Parcurs — echivalentul foii de pontaj, dar pentru vehicule.
+    Creat de admin sau de șofer (mobil). GPS traseul stocat în TripGPSPoint.
+    """
+    __tablename__ = "trip_logs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+
+    # Vehicul și șofer
+    vehicle_id = Column(String(36), ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
+    driver_id  = Column(String(36), ForeignKey("users.id",    ondelete="SET NULL"), nullable=True)
+
+    # Destinație (opțional — poate fi un șantier existent)
+    site_id    = Column(String(36), ForeignKey("construction_sites.id", ondelete="SET NULL"), nullable=True)
+
+    # Date generale
+    date        = Column(Date, nullable=False, default=date.today)
+    status      = Column(String(20), nullable=False, default="in_progress")
+    # Valori: in_progress | completed | cancelled | approved | rejected
+
+    # Timpi
+    start_time  = Column(DateTime, nullable=True)
+    end_time    = Column(DateTime, nullable=True)
+
+    # Locații (text + coordonate)
+    start_address   = Column(String(500), nullable=True)
+    start_lat       = Column(Float, nullable=True)
+    start_lng       = Column(Float, nullable=True)
+
+    end_address     = Column(String(500), nullable=True)
+    end_lat         = Column(Float, nullable=True)
+    end_lng         = Column(Float, nullable=True)
+
+    # Odometru (km introduși manual de șofer)
+    start_odometer  = Column(Float, nullable=True)   # km la plecare
+    end_odometer    = Column(Float, nullable=True)   # km la sosire
+    distance_km     = Column(Float, nullable=True)   # calculat automat
+
+    # Scopul deplasării
+    purpose_category = Column(String(50), nullable=True)
+    # Valori: transport_materiale | deplasare_personal | service | livrare | alte
+    purpose_notes    = Column(Text, nullable=True)
+
+    # ── Program transport (snapshot din org la momentul creării) ────────────
+    scheduled_start_time = Column(String(5), nullable=True)  # ex: "06:00"
+    scheduled_end_time   = Column(String(5), nullable=True)  # ex: "20:00"
+    # True dacă drumul a fost pornit/oprit în afara programului
+    out_of_schedule      = Column(Boolean, default=False, nullable=True)
+    out_of_schedule_note = Column(Text, nullable=True)        # detalii (de ce e în afara programului)
+
+    # Validare admin
+    approved_by_id  = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    approved_at     = Column(DateTime, nullable=True)
+    rejection_note  = Column(Text, nullable=True)
+
+    # Cine a creat foaia
+    created_by_admin_id = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+
+    notes       = Column(Text, nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    organization = relationship("Organization")
+    vehicle      = relationship("Vehicle")
+    driver       = relationship("User", foreign_keys=[driver_id])
+    site         = relationship("ConstructionSite")
+    approved_by  = relationship("Admin", foreign_keys=[approved_by_id])
+    gps_points   = relationship("TripGPSPoint", back_populates="trip", order_by="TripGPSPoint.timestamp", cascade="all, delete-orphan")
+
+
+class TripGPSPoint(Base):
+    """
+    Puncte GPS înregistrate pe durata unui drum.
+    Trimise batch de la aplicația mobilă a șoferului.
+    """
+    __tablename__ = "trip_gps_points"
+
+    id          = Column(String(36), primary_key=True, default=generate_uuid)
+    trip_id     = Column(String(36), ForeignKey("trip_logs.id", ondelete="CASCADE"), nullable=False)
+
+    latitude    = Column(Float, nullable=False)
+    longitude   = Column(Float, nullable=False)
+    speed_kmh   = Column(Float, nullable=True)      # viteza în acel moment
+    accuracy_m  = Column(Float, nullable=True)      # acuratețe GPS (metri)
+    altitude_m  = Column(Float, nullable=True)      # altitudine (opțional)
+    timestamp   = Column(DateTime, nullable=False)  # momentul înregistrării
+
+    # Relationships
+    trip = relationship("TripLog", back_populates="gps_points")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# WORK ORDERS (Comenzi de Lucru) — Modul B2B
+# ══════════════════════════════════════════════════════════════════════════════
+class WorkOrder(Base):
+    """Work Orders — comenzi de lucru B2B trimise clienților pentru confirmare"""
+    __tablename__ = "work_orders"
+
+    id              = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+
+    # Token unic pentru link-ul public (fără autentificare)
+    token           = Column(String(64), unique=True, nullable=False, index=True)
+
+    # Titlu și date generale
+    title           = Column(String(255), nullable=False)
+    notes           = Column(Text, nullable=True)           # Note interne
+    start_date      = Column(Date, nullable=True)           # Data de start planificată
+    deadline_date   = Column(Date, nullable=True)           # Termen limită
+
+    # ── Locație ──────────────────────────────────────────────────────────────
+    site_id         = Column(String(36), ForeignKey("construction_sites.id", ondelete="SET NULL"), nullable=True)
+    site_address    = Column(Text, nullable=True)           # Adresă ad-hoc dacă nu e șantier ales
+
+    # ── Client ───────────────────────────────────────────────────────────────
+    client_id       = Column(String(36), ForeignKey("clients.id", ondelete="SET NULL"), nullable=True)
+    client_name     = Column(String(255), nullable=True)    # Nume client (ad-hoc sau cache)
+    client_email    = Column(String(255), nullable=True)    # Email la care se trimite link-ul
+    client_phone    = Column(String(50), nullable=True)
+
+    # ── Conținut comandă (JSON arrays) ───────────────────────────────────────
+    # requirements: [{"description": "...", "category": "...", "qty": "..."}]
+    requirements    = Column(JSON, default=list, nullable=False)
+    # materials: [{"name": "...", "quantity": "...", "unit": "..."}]
+    materials       = Column(JSON, default=list, nullable=False)
+    # volumes: [{"label": "...", "quantity": "...", "unit": "...", "price": "..."}]
+    volumes         = Column(JSON, default=list, nullable=False)
+
+    # ── Status & Workflow ─────────────────────────────────────────────────────
+    # draft | sent | confirmed | in_progress | completed | cancelled
+    status          = Column(String(50), default="draft", nullable=False, index=True)
+
+    # ── Confirmare client ─────────────────────────────────────────────────────
+    confirmed_at        = Column(DateTime, nullable=True)
+    confirmed_by_name   = Column(String(255), nullable=True)
+    confirmed_ip        = Column(String(45), nullable=True)
+
+    # ── PDF ───────────────────────────────────────────────────────────────────
+    pdf_path        = Column(String(500), nullable=True)
+
+    # ── Meta ──────────────────────────────────────────────────────────────────
+    created_by      = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    organization    = relationship("Organization")
+    site            = relationship("ConstructionSite")
+    client          = relationship("Client")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CONCEDII & ABSENȚE
+# ══════════════════════════════════════════════════════════════════════════════
+
+class LeaveRequest(Base):
+    """Cerere de concediu / absență pentru un angajat."""
+    __tablename__ = "leave_requests"
+
+    id              = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id         = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # CO | CM | CFS | CNP | ABSENCE | OTHER
+    leave_type  = Column(String(20), nullable=False, default="CO")
+    start_date  = Column(Date, nullable=False)
+    end_date    = Column(Date, nullable=False)
+    work_days   = Column(Integer, nullable=False, default=0)
+
+    # pending | approved | rejected
+    status      = Column(String(20), nullable=False, default="pending")
+
+    notes       = Column(Text, nullable=True)
+    admin_notes = Column(Text, nullable=True)
+
+    approved_by_id = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    approved_at    = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    user         = relationship("User", foreign_keys=[user_id])
+    approved_by  = relationship("Admin", foreign_keys=[approved_by_id])
+
+
+class LeaveBalance(Base):
+    """Balanță zile concediu pe angajat pe an."""
+    __tablename__ = "leave_balances"
+
+    id              = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id         = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    year            = Column(Integer, nullable=False)
+    total_co_days   = Column(Integer, nullable=False, default=21)
+    used_co_days    = Column(Integer, nullable=False, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    user         = relationship("User", foreign_keys=[user_id])

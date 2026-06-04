@@ -30,8 +30,11 @@ def get_roles(
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin)
 ):
-    """Get all active roles"""
-    roles = db.query(Role).filter(Role.is_active == True).all()
+    """Get all active roles — scoped to current admin's organization"""
+    q = db.query(Role).filter(Role.is_active == True)
+    if not current_admin.is_super_admin and current_admin.organization_id:
+        q = q.filter(Role.organization_id == current_admin.organization_id)
+    roles = q.all()
     return [RoleResponse(
         id=r.id,
         code=r.code,

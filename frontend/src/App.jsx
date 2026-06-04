@@ -2,6 +2,8 @@ import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import { useAdminStore } from './store/adminStore'
+import { useTenantStore } from './store/tenantStore'
+import api from './lib/api'
 import Login from './pages/Login'
 import { Loader2 } from 'lucide-react'
 
@@ -32,6 +34,7 @@ const SitePhotosPage = lazy(() => import('./pages/admin/SitePhotosPage'))
 const TeamsManagement = lazy(() => import('./pages/admin/TeamsManagement'))
 const NotificationsPage = lazy(() => import('./pages/admin/NotificationsPage'))
 const FleetManagement = lazy(() => import('./pages/admin/FleetManagement'))
+const TransportManagement = lazy(() => import('./pages/admin/TransportManagement'))
 const WarehouseManagement = lazy(() => import('./pages/admin/WarehouseManagement'))
 const ComplaintsManagement = lazy(() => import('./pages/admin/ComplaintsManagement'))
 const AccommodationsManagement = lazy(() => import('./pages/admin/AccommodationsManagement'))
@@ -42,6 +45,7 @@ const EmployeeComplaints = lazy(() => import('./pages/employee/EmployeeComplaint
 const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMaterialRequests'))
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
 const EmployeeInventory = lazy(() => import('./pages/employee/EmployeeInventory'))
+const LeavesManagement = lazy(() => import('./pages/admin/LeavesManagement'))
 import EmployeeLayout from './components/layout/EmployeeLayout'
 import { DialogOverlay } from './components/ui/DialogOverlay'
 import { ToastOverlay } from './components/ui/ToastOverlay'
@@ -89,8 +93,57 @@ class GlobalErrorBoundary extends React.Component {
     }
 }
 
+import OrganizationsManagement from './pages/admin/OrganizationsManagement'
+const WorkOrders = lazy(() => import('./pages/admin/WorkOrders'))
+const WorkOrderForm = lazy(() => import('./pages/admin/WorkOrderForm'))
+const WorkOrderConfirm = lazy(() => import('./pages/public/WorkOrderConfirm'))
+
 function App() {
     const { user } = useAuthStore()
+    
+    // Tenant Config Logic
+    const setTenant = useTenantStore((state) => state.setTenant)
+    const getCurrentSubdomain = useTenantStore((state) => state.getCurrentSubdomain)
+
+    useEffect(() => {
+        const fetchTenantConfig = async () => {
+            const subdomain = getCurrentSubdomain()
+            if (subdomain) {
+                try {
+                    const res = await api.get('/public/tenant-config', { params: { slug: subdomain } })
+                    setTenant(res.data)
+                    // Set CSS Variables dynamically for the tenant
+                    if (res.data.primary_color) {
+                        document.documentElement.style.setProperty('--primary-tenant', res.data.primary_color)
+                        const style = document.createElement('style')
+                        style.innerHTML = `
+                            .bg-blue-600 { background-color: ${res.data.primary_color} !important; }
+                            .text-blue-600 { color: ${res.data.primary_color} !important; }
+                            .border-blue-600 { border-color: ${res.data.primary_color} !important; }
+                            .ring-blue-600 { --tw-ring-color: ${res.data.primary_color} !important; }
+                            .focus\:border-blue-500:focus { border-color: ${res.data.primary_color} !important; }
+                        `
+                        document.head.appendChild(style)
+                    }
+                    if (res.data.name) {
+                        document.title = `${res.data.name} - Smart Timesheet`
+                    }
+                    if (res.data.favicon_url) {
+                        let link = document.querySelector("link[rel~='icon']");
+                        if (!link) {
+                            link = document.createElement('link');
+                            link.rel = 'icon';
+                            document.head.appendChild(link);
+                        }
+                        link.href = res.data.favicon_url;
+                    }
+                } catch (err) {
+                    console.error('Failed to load tenant config', err)
+                }
+            }
+        }
+        fetchTenantConfig()
+    }, [])
 
     // ─── Auto-reload la deploy nou (fara refresh manual de la angajati) ───────
     useEffect(() => {
@@ -132,6 +185,7 @@ function App() {
                         <Route path="users" element={<UsersManagement />} />
                         <Route path="employees" element={<EmployeesManagement />} />
                         <Route path="employees/:id" element={<EmployeesManagement />} />
+                        <Route path="organizations" element={<OrganizationsManagement />} />
 
                         <Route path="clients" element={<ClientsManagement />} />
                         <Route path="sites" element={<SitesManagement />} />
@@ -143,6 +197,7 @@ function App() {
                         <Route path="site-photos" element={<SitePhotosPage />} />
                         <Route path="teams" element={<TeamsManagement />} />
                         <Route path="fleet" element={<FleetManagement />} />
+                        <Route path="transport" element={<TransportManagement />} />
                         <Route path="warehouse" element={<WarehouseManagement />} />
                         <Route path="complaints" element={<ComplaintsManagement />} />
                         <Route path="accommodations" element={<AccommodationsManagement />} />
@@ -150,8 +205,15 @@ function App() {
                                 <Route path="material-requests" element={<AdminMaterialRequests />} />
                                 <Route path="emergencies" element={<AdminEmergencies />} />
                                 <Route path="alerts" element={<AlertsManagement />} />
+                        <Route path="leaves" element={<LeavesManagement />} />
                         <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="work-orders" element={<WorkOrders />} />
+                        <Route path="work-orders/new" element={<WorkOrderForm />} />
+                        <Route path="work-orders/:id/edit" element={<WorkOrderForm />} />
                     </Route>
+
+                    {/* Public Routes - Work Order confirmation */}
+                    <Route path="/confirm/:token" element={<WorkOrderConfirm />} />
 
                     {/* Employee Routes */}
                     <Route path="/login" element={<Login />} />

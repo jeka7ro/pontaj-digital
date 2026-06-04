@@ -17,7 +17,9 @@ from app.api import (
     admin_reports, clockin, timesheets, teams, sites, site_photos,
     admin_teams, admin_vehicles, warehouse, admin_clients, admin_vehicle_categories,
     admin_material_requests, user_material_requests, user_warehouse, user_notifications,
-    alerts, admin_complaints, admin_accommodations, admin_expenses, admin_emergencies
+    alerts, admin_complaints, admin_accommodations, admin_expenses, admin_emergencies,
+    admin_organizations, admin_transport, public_tenant,
+    admin_work_orders, public_work_orders, admin_leaves
 )
 
 import threading
@@ -135,6 +137,92 @@ def _run_migrations(engine):
         "ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS pending_return BOOLEAN DEFAULT FALSE;",
         "ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS pending_return_at TIMESTAMP;",
         "ALTER TABLE warehouse_items ADD COLUMN IF NOT EXISTS pending_return_by_id VARCHAR(36);",
+        # ── Program Transport ───────────────────────────────────────────────────────────────
+        "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS transport_start_time VARCHAR(5) DEFAULT '06:00';",
+        "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS transport_end_time VARCHAR(5) DEFAULT '20:00';",
+        "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS transport_allowed_days JSONB DEFAULT '[0,1,2,3,4]'::jsonb;",
+        "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS transport_strict_schedule BOOLEAN DEFAULT FALSE;",
+        # ── Lucrari de scurta durata (ConstructionSite) ───────────────────────────
+        "ALTER TABLE construction_sites ADD COLUMN IF NOT EXISTS project_type VARCHAR(20) DEFAULT 'standard' NOT NULL;",
+        "ALTER TABLE construction_sites ADD COLUMN IF NOT EXISTS planned_start_date DATE;",
+        "ALTER TABLE construction_sites ADD COLUMN IF NOT EXISTS planned_end_date DATE;",
+        # ── Foi de Parcurs (TripLog + TripGPSPoint) ─────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS trip_logs (
+            id VARCHAR(36) PRIMARY KEY,
+            organization_id VARCHAR(36) NOT NULL,
+            vehicle_id VARCHAR(36),
+            driver_id VARCHAR(36),
+            site_id VARCHAR(36),
+            date DATE NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'in_progress',
+            start_time TIMESTAMP,
+            end_time TIMESTAMP,
+            start_address VARCHAR(500),
+            start_lat FLOAT,
+            start_lng FLOAT,
+            end_address VARCHAR(500),
+            end_lat FLOAT,
+            end_lng FLOAT,
+            start_odometer FLOAT,
+            end_odometer FLOAT,
+            distance_km FLOAT,
+            purpose_category VARCHAR(50),
+            purpose_notes TEXT,
+            scheduled_start_time VARCHAR(5),
+            scheduled_end_time VARCHAR(5),
+            out_of_schedule BOOLEAN DEFAULT FALSE,
+            out_of_schedule_note TEXT,
+            approved_by_id VARCHAR(36),
+            approved_at TIMESTAMP,
+            rejection_note TEXT,
+            created_by_admin_id VARCHAR(36),
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        );""",
+        """CREATE TABLE IF NOT EXISTS trip_gps_points (
+            id VARCHAR(36) PRIMARY KEY,
+            trip_id VARCHAR(36) NOT NULL REFERENCES trip_logs(id) ON DELETE CASCADE,
+            latitude FLOAT NOT NULL,
+            longitude FLOAT NOT NULL,
+            speed_kmh FLOAT,
+            accuracy_m FLOAT,
+            altitude_m FLOAT,
+            timestamp TIMESTAMP NOT NULL
+        );""",
+        # Index pentru performanță la căutare după trip_id
+        "CREATE INDEX IF NOT EXISTS idx_trip_gps_trip_id ON trip_gps_points(trip_id);",
+        "CREATE INDEX IF NOT EXISTS idx_trip_logs_org_date ON trip_logs(organization_id, date);",
+        # ── Concedii & Absențe ───────────────────────────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS leave_requests (
+            id VARCHAR(36) PRIMARY KEY,
+            organization_id VARCHAR(36) NOT NULL,
+            user_id VARCHAR(36) NOT NULL,
+            leave_type VARCHAR(20) NOT NULL DEFAULT 'CO',
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            work_days INTEGER NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            notes TEXT,
+            admin_notes TEXT,
+            approved_by_id VARCHAR(36),
+            approved_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        );""",
+        """CREATE TABLE IF NOT EXISTS leave_balances (
+            id VARCHAR(36) PRIMARY KEY,
+            organization_id VARCHAR(36) NOT NULL,
+            user_id VARCHAR(36) NOT NULL,
+            year INTEGER NOT NULL,
+            total_co_days INTEGER NOT NULL DEFAULT 21,
+            used_co_days INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        );""",
+        "CREATE INDEX IF NOT EXISTS idx_leave_requests_org ON leave_requests(organization_id);",
+        "CREATE INDEX IF NOT EXISTS idx_leave_requests_user ON leave_requests(user_id);",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_leave_balance_user_year ON leave_balances(user_id, year);",
     ]
     try:
         with engine.connect() as conn:
@@ -187,6 +275,7 @@ origins = os.getenv("CORS_ORIGINS", "http://localhost:6001").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https?://.*\.pontaj\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -267,6 +356,7 @@ def reverse_geocode(lat: float, lon: float):
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["admin"])
+app.include_router(admin_organizations.router, prefix="/api", tags=["admin-organizations"])
 app.include_router(admin_users.router, prefix="/api", tags=["admin-users"])
 app.include_router(admin_sites.router, prefix="/api", tags=["admin-sites"])
 app.include_router(admin_roles.router, prefix="/api", tags=["admin-roles"])
@@ -291,6 +381,11 @@ app.include_router(user_material_requests.router, prefix="/api")
 app.include_router(user_warehouse.router, prefix="/api")
 app.include_router(user_notifications.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api", tags=["alerts"])
+app.include_router(admin_transport.router, prefix="/api", tags=["admin-transport"])
+app.include_router(public_tenant.router)
+app.include_router(admin_work_orders.router, prefix="/api", tags=["work-orders"])
+app.include_router(public_work_orders.router, prefix="/api", tags=["public-work-orders"])
+app.include_router(admin_leaves.router, prefix="/api", tags=["admin-leaves"])
 
 # ─── User: Sesizari ───────────────────────────────────────────────────────────
 from fastapi import Body

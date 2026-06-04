@@ -65,8 +65,11 @@ def list_teams(
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin),
 ):
-    """List all teams."""
-    teams = db.query(Team).order_by(Team.created_at.desc()).all()
+    """List all teams — scoped to current admin's organization."""
+    q = db.query(Team)
+    if not current_admin.is_super_admin and current_admin.organization_id:
+        q = q.filter(Team.organization_id == current_admin.organization_id)
+    teams = q.order_by(Team.created_at.desc()).all()
     return {"teams": [team_to_dict(t, db) for t in teams]}
 
 
@@ -171,8 +174,11 @@ def get_available_users(
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin),
 ):
-    """Get all users that can be team leaders or members."""
-    users = db.query(User).filter(User.is_active == True).all()
+    """Get all users that can be team leaders or members — scoped to org."""
+    q = db.query(User).filter(User.is_active == True)
+    if not current_admin.is_super_admin and current_admin.organization_id:
+        q = q.filter(User.organization_id == current_admin.organization_id)
+    users = q.all()
     result = []
     for u in users:
         role = db.query(Role).filter(Role.id == u.role_id).first()

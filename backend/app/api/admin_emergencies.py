@@ -32,7 +32,7 @@ def emergency_to_dict(e: Emergency) -> dict:
     }
 
 def check_emergency_permission(admin: Admin):
-    allowed_roles = ["LOGISTIC", "SEF_SANTIER", "ADMIN", "SUPER_ADMIN", "VERIFICATOR_SANTIER", "SUPERVIZOR"]
+    allowed_roles = ["LOGISTIC", "LOGISTICS", "LOGISTICA", "SEF_SANTIER", "ADMIN", "SUPER_ADMIN", "VERIFICATOR_SANTIER", "SUPERVIZOR"]
     if admin.is_super_admin:
         return
     if admin.role.upper() not in allowed_roles:

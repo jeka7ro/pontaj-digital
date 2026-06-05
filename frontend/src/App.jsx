@@ -42,6 +42,7 @@ const EmployeeComplaints = lazy(() => import('./pages/employee/EmployeeComplaint
 const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMaterialRequests'))
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
 const EmployeeInventory = lazy(() => import('./pages/employee/EmployeeInventory'))
+const EmployeeFleet = lazy(() => import('./pages/employee/EmployeeFleet'))
 import EmployeeLayout from './components/layout/EmployeeLayout'
 import { DialogOverlay } from './components/ui/DialogOverlay'
 import { ToastOverlay } from './components/ui/ToastOverlay'
@@ -158,7 +159,11 @@ function App() {
 
                     {user ? (
                         <Route element={<EmployeeLayout />}>
-                            <Route path="/" element={<ClockInPage />} />
+                            <Route path="/" element={
+                                (user?.role_name === 'Logistica' || user?.role_id === 'logistica' || user?.role === 'Logistica') 
+                                    ? <Navigate to="/my-inventory" replace /> 
+                                    : <ClockInPage />
+                            } />
                             <Route path="/today" element={<TodayTimesheet />} />
                             <Route path="/history" element={<History />} />
                             <Route path="/clock-in" element={<ClockInPage />} />
@@ -168,6 +173,7 @@ function App() {
                             <Route path="/sesizari" element={<EmployeeComplaints />} />
                             <Route path="/material-requests" element={<EmployeeMaterialRequests />} />
                             <Route path="/my-inventory" element={<EmployeeInventory />} />
+                            <Route path="/my-fleet" element={<EmployeeFleet />} />
                             <Route path="/emergencies" element={<EmployeeEmergencies />} />
                         </Route>
                     ) : null}

@@ -37,7 +37,7 @@ def mr_to_dict(mr: MaterialRequest) -> dict:
     }
 
 def check_mr_permission(admin: Admin):
-    allowed_roles = ["LOGISTIC", "SEF_SANTIER", "ADMIN", "SUPER_ADMIN", "VERIFICATOR_SANTIER", "SUPERVIZOR"]
+    allowed_roles = ["LOGISTIC", "LOGISTICS", "LOGISTICA", "SEF_SANTIER", "ADMIN", "SUPER_ADMIN", "VERIFICATOR_SANTIER", "SUPERVIZOR"]
     # Check if role is among allowed OR if user is super admin
     if admin.is_super_admin:
         return

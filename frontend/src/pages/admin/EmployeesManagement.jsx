@@ -27,6 +27,8 @@ const EMPTY_USER = {
     id_card_series: '',
     phone: '',
     email: '',
+    password: '',
+    confirm_password: '',
     address: '',
     is_active: true,
     hourly_rate: '',
@@ -223,6 +225,8 @@ export default function EmployeesManagement() {
             id_card_series: user.id_card_series || '',
             phone: user.phone || '',
             email: user.email || '',
+            password: '',
+            confirm_password: '',
             address: user.address || '',
             is_active: user.is_active,
             hourly_rate: user.hourly_rate != null ? String(user.hourly_rate) : '',
@@ -250,6 +254,11 @@ export default function EmployeesManagement() {
             return
         }
 
+        if (formData.password && formData.password !== formData.confirm_password) {
+            showToast('Parolele nu coincid.', 'error')
+            return
+        }
+
         try {
             setSaving(true)
             let savedUser
@@ -265,6 +274,7 @@ export default function EmployeesManagement() {
                 if (formData.id_card_series !== (editingUser.id_card_series || '')) updatePayload.id_card_series = formData.id_card_series || null
                 if (formData.phone !== (editingUser.phone || '')) updatePayload.phone = formData.phone || null
                 if (formData.email !== (editingUser.email || '')) updatePayload.email = formData.email || null
+                if (formData.password) updatePayload.password = formData.password
                 if (formData.address !== (editingUser.address || '')) updatePayload.address = formData.address || null
                 // hourly_rate: always send if present (0 is valid)
                 const hrVal = formData.hourly_rate !== '' ? parseFloat(formData.hourly_rate) : null
@@ -835,6 +845,23 @@ export default function EmployeesManagement() {
                                     </select>
                                 </div>
 
+                                {roles.find(r => r.id === formData.role_id)?.name === 'Logistica' && (
+                                    <div className="md:col-span-2 pt-2 pb-1">
+                                        <label className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50/50 cursor-pointer hover:bg-blue-50 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.handle_materials || false}
+                                                onChange={e => setFormData({ ...formData, handle_materials: e.target.checked })}
+                                                className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500 shadow-sm"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-semibold text-blue-900">Gestionează Necesar Materiale</span>
+                                                <span className="text-xs text-blue-700/70">Primește notificări și are acces la aprobarea materialelor</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">CNP</label>
                                     <input
@@ -909,6 +936,33 @@ export default function EmployeesManagement() {
                                         placeholder="email@example.com"
                                     />
                                 </div>
+
+                                {roles.find(r => r.id === formData.role_id)?.name === 'Logistica' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                                                Parolă Web {editingUser ? <span className="normal-case font-normal">(lasă gol pentru a o păstra)</span> : '*'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.password || ''}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder={editingUser ? '••••••••' : 'Parolă de conectare laptop'}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Confirmă Parola</label>
+                                            <input
+                                                type="text"
+                                                value={formData.confirm_password || ''}
+                                                onChange={e => setFormData({ ...formData, confirm_password: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder="Repetă parola"
+                                            />
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="md:col-span-2">
                                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Domiciliu</label>

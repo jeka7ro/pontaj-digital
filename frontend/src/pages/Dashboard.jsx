@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
-import { Clock, Calendar, Users, Settings, TrendingUp, MapPin, Briefcase, ArrowRight, LogOut, PackageSearch, AlertTriangle, MessageSquareWarning } from 'lucide-react'
+import { Clock, Calendar, Users, Settings, TrendingUp, MapPin, Briefcase, ArrowRight, LogOut, PackageSearch, Package, Truck, AlertTriangle, MessageSquareWarning } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 
@@ -35,41 +35,62 @@ export default function Dashboard() {
         navigate('/login')
     }
 
-    const quickActions = [
+    const allQuickActions = [
         {
             icon: MapPin,
             title: 'Clock In/Out',
             description: t('dashboard.clock_in_gps'),
             gradient: 'from-green-500 to-emerald-600',
-            href: '/clock-in'
+            href: '/clock-in',
+            hideForLogistics: true
         },
         {
             icon: Clock,
             title: 'Pontaj Azi',
             description: t('dashboard.complete_daily'),
             gradient: 'from-blue-500 to-blue-600',
-            href: '/today'
+            href: '/today',
+            hideForLogistics: true
         },
         {
             icon: Calendar,
             title: 'Istoric',
             description: 'Vezi pontajele anterioare',
             gradient: 'from-emerald-500 to-emerald-600',
-            href: '/history'
+            href: '/history',
+            hideForLogistics: true
         },
         {
             icon: Users,
             title: 'Echipa',
             description: t('dashboard.manage_team'),
             gradient: 'from-violet-500 to-violet-600',
-            href: '/team'
+            href: '/team',
+            hideForLogistics: true
         },
         {
             icon: Settings,
             title: t('dashboard.settings'),
             description: 'Configurare cont',
             gradient: 'from-slate-500 to-slate-600',
-            href: '/settings'
+            href: '/settings',
+            hideForLogistics: true
+        },
+        {
+            icon: PackageSearch,
+            title: 'Magazie & Stocuri',
+            description: 'Gestionează magazia',
+            gradient: 'from-blue-500 to-indigo-600',
+            href: '/my-inventory',
+            logisticsOnly: true
+        },
+        {
+            icon: Truck,
+            title: 'Parc Auto (Utilaje)',
+            description: 'Gestionează utilajele',
+            gradient: 'from-sky-500 to-blue-600',
+            href: '/my-fleet',
+            logisticsOnly: true
         },
         {
             icon: PackageSearch,
@@ -83,16 +104,28 @@ export default function Dashboard() {
             title: 'Urgențe',
             description: 'Alerte rapide din șantier',
             gradient: 'from-rose-500 to-red-600',
-            href: '/emergencies'
+            href: '/emergencies',
+            hideForLogistics: true
         },
         {
             icon: MessageSquareWarning,
             title: 'Sesizări / Reclamații',
             description: 'Trimite o sesizare',
             gradient: 'from-sky-500 to-cyan-600',
-            href: '/sesizari'
+            href: '/sesizari',
+            hideForLogistics: true
         }
     ]
+
+    const isLogistics = user?.role?.name?.toLowerCase() === 'logistica' || user?.role?.code === 'LOGISTICA'
+    
+    const quickActions = allQuickActions.filter(action => {
+        if (isLogistics) {
+            return !action.hideForLogistics
+        } else {
+            return !action.logisticsOnly
+        }
+    })
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
@@ -141,29 +174,31 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 slide-up stagger-1">
-                    <StatCard
-                        icon={<TrendingUp className="w-6 h-6" />}
-                        label={t('dashboard.hours_this_month')}
-                        value="160h"
-                        change={t('dashboard.change_last_month')}
-                        positive
-                    />
-                    <StatCard
-                        icon={<Calendar className="w-6 h-6" />}
-                        label="Zile Lucrate"
-                        value="20"
-                        change={t('dashboard.change_this_week')}
-                        positive
-                    />
-                    <StatCard
-                        icon={<MapPin className="w-6 h-6" />}
-                        label="Șantiere Active"
-                        value="3"
-                        change={t('dashboard.all_in_progress')}
-                    />
-                </div>
+                {/* Quick Stats - ascunse pentru Logistică */}
+                {!isLogistics && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 slide-up stagger-1">
+                        <StatCard
+                            icon={<TrendingUp className="w-6 h-6" />}
+                            label={t('dashboard.hours_this_month')}
+                            value="160h"
+                            change={t('dashboard.change_last_month')}
+                            positive
+                        />
+                        <StatCard
+                            icon={<Calendar className="w-6 h-6" />}
+                            label="Zile Lucrate"
+                            value="20"
+                            change={t('dashboard.change_this_week')}
+                            positive
+                        />
+                        <StatCard
+                            icon={<MapPin className="w-6 h-6" />}
+                            label="Șantiere Active"
+                            value="3"
+                            change={t('dashboard.all_in_progress')}
+                        />
+                    </div>
+                )}
 
                 {/* Quick Actions */}
                 <div>

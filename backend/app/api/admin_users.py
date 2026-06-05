@@ -790,25 +790,31 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
     )
     db.add(new_user)
     
-    # Also create Admin record if role is an admin role
-    if role.name in ['Administrator', 'Super Administrator']:
+    # Also create Admin record if role is an admin role or logistics
+    if role.name in ['Administrator', 'Super Administrator', 'Logistica']:
         if not user_data.email:
-            raise HTTPException(status_code=400, detail="Email is required for Administrator accounts")
+            raise HTTPException(status_code=400, detail=f"Email is required for {role.name} accounts")
         if not user_data.password:
-            raise HTTPException(status_code=400, detail="Password is required for Administrator accounts")
+            raise HTTPException(status_code=400, detail=f"Password is required for {role.name} accounts")
         
         # Check if email is already used by an admin
         existing_admin = db.query(Admin).filter(Admin.email == user_data.email).first()
         if existing_admin:
             raise HTTPException(status_code=400, detail="Adresa de email este deja folosită de alt administrator")
             
+        admin_role_val = "ADMIN"
+        if role.name == "Super Administrator":
+            admin_role_val = "SUPER_ADMIN"
+        elif role.name == "Logistica":
+            admin_role_val = "LOGISTICS"
+
         new_admin = Admin(
             id=str(uuid.uuid4()),
             organization_id=role.organization_id,
             email=user_data.email,
             full_name=full_name,
             password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
-            role="SUPER_ADMIN" if role.name == "Super Administrator" else "ADMIN",
+            role=admin_role_val,
             is_active=user_data.is_active,
             is_super_admin=True if role.name == "Super Administrator" else False
         )
@@ -892,9 +898,9 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
         else:
             user.birth_date = None
 
-    # Handle Admin record update if user has an admin role
+    # Handle Admin record update if user has an admin role or logistics
     user_role = db.query(Role).filter(Role.id == user.role_id).first()
-    if user_role and user_role.name in {'Administrator', 'Super Administrator'}:
+    if user_role and user_role.name in {'Administrator', 'Super Administrator', 'Logistica'}:
         if user_data.email and user_data.email != user.email:
             # Check if new email is taken
             existing_admin = db.query(Admin).filter(Admin.email == user_data.email, Admin.email != user.email).first()
@@ -907,10 +913,16 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
         if email_to_search:
             admin_record = db.query(Admin).filter(Admin.email == email_to_search).first()
             
+        admin_role_val = "ADMIN"
+        if user_role.name == "Super Administrator":
+            admin_role_val = "SUPER_ADMIN"
+        elif user_role.name == "Logistica":
+            admin_role_val = "LOGISTICS"
+            
         if admin_record:
             admin_record.full_name = user.full_name
             admin_record.is_active = user.is_active
-            admin_record.role = "SUPER_ADMIN" if user_role.name == "Super Administrator" else "ADMIN"
+            admin_record.role = admin_role_val
             admin_record.is_super_admin = True if user_role.name == "Super Administrator" else False
             if user_data.email:
                 admin_record.email = user_data.email
@@ -927,7 +939,7 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
                         email=target_email,
                         full_name=user.full_name,
                         password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
-                        role="SUPER_ADMIN" if user_role.name == "Super Administrator" else "ADMIN",
+                        role=admin_role_val,
                         is_active=user.is_active,
                         is_super_admin=True if user_role.name == "Super Administrator" else False
                     )

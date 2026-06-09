@@ -136,6 +136,39 @@ export default function AdminOverview() {
     const [quickCreateSaving, setQuickCreateSaving] = useState(false)
     const [detectingLocation, setDetectingLocation] = useState(false)
 
+    const [quickRouteDist, setQuickRouteDist] = useState(null)
+    const [quickRouteLoading, setQuickRouteLoading] = useState(false)
+
+    const calculatedSand = useMemo(() => {
+        const s = parseFloat(quickCreateForm.surface) || 0
+        const t = parseFloat(quickCreateForm.thickness) || 0
+        return (s * t * 16) / 1000
+    }, [quickCreateForm.surface, quickCreateForm.thickness])
+
+    useEffect(() => {
+        if (quickCreateStep === 1 && quickCreateForm.latitude && quickCreateForm.longitude) {
+            setQuickRouteLoading(true)
+            const baseLat = 51.2372207
+            const baseLon = 4.4569835
+            const targetLat = parseFloat(quickCreateForm.latitude)
+            const targetLon = parseFloat(quickCreateForm.longitude)
+            
+            fetch(`https://router.project-osrm.org/route/v1/driving/${baseLon},${baseLat};${targetLon},${targetLat}?overview=false`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.routes && data.routes[0]) {
+                        setQuickRouteDist(data.routes[0].distance / 1000)
+                    } else {
+                        setQuickRouteDist(null)
+                    }
+                })
+                .catch(() => setQuickRouteDist(null))
+                .finally(() => setQuickRouteLoading(false))
+        } else {
+            setQuickRouteDist(null)
+        }
+    }, [quickCreateForm.latitude, quickCreateForm.longitude, quickCreateStep])
+
     const [clients, setClients] = useState([])
 
     // Live clock — use ref to avoid re-rendering charts every second
@@ -1838,6 +1871,28 @@ export default function AdminOverview() {
                                             />
                                             Include Duramint
                                         </label>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 rounded-xl p-3 space-y-2">
+                                        <h4 className="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 tracking-[0.1em]">Estimări Rapide</h4>
+                                        <div className="grid grid-cols-2 gap-2 text-sm font-semibold">
+                                            <div className="bg-white dark:bg-slate-900 rounded-lg p-2 border border-blue-100/50 dark:border-slate-700/50 shadow-sm">
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nisip estimat</div>
+                                                <div className="text-blue-600 dark:text-blue-400 font-black">{calculatedSand > 0 ? `${calculatedSand.toFixed(1)} Tone` : '-'}</div>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-900 rounded-lg p-2 border border-blue-100/50 dark:border-slate-700/50 shadow-sm">
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Distanță Bază</div>
+                                                <div className="text-amber-600 dark:text-amber-400 font-black flex items-center gap-1">
+                                                    {quickRouteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (
+                                                        quickRouteDist ? (
+                                                            <div className="flex flex-col leading-tight mt-0.5">
+                                                                <span className="text-[13px]">{quickRouteDist.toFixed(1)} km <span className="text-[10px] opacity-70">(Dus)</span></span>
+                                                                <span className="text-[10px] opacity-70">{(quickRouteDist * 2).toFixed(1)} km (Total)</span>
+                                                            </div>
+                                                        ) : '-'
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Echipă Alocată</label>

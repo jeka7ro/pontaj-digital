@@ -177,11 +177,18 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                                 </>
                             )}
                         </div>
-                        {user.phone && (
-                            <a href={`tel:${user.phone}`} className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors shrink-0 mt-0.5 w-max">
-                                <Phone className="w-3.5 h-3.5" /> {user.phone}
-                            </a>
-                        )}
+                        <div className="flex flex-wrap items-center gap-4 mt-0.5">
+                            {user.phone && (
+                                <a href={`tel:${user.phone}`} className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors shrink-0 w-max">
+                                    <Phone className="w-3.5 h-3.5" /> {user.phone}
+                                </a>
+                            )}
+                            {user.email && (
+                                <a href={`mailto:${user.email}`} className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors shrink-0 w-max">
+                                    <Mail className="w-3.5 h-3.5" /> {user.email}
+                                </a>
+                            )}
+                        </div>
                     </div>
 
                     {/* Right side: Export & Tabs */}

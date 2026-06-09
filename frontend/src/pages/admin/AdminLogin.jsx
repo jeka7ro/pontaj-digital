@@ -29,6 +29,7 @@ export default function AdminLogin() {
 
     const navigate = useNavigate()
     const setAuth = useAdminStore((state) => state.setAuth)
+    const logout = useAdminStore((state) => state.logout)
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -50,10 +51,11 @@ export default function AdminLogin() {
                 localStorage.removeItem('pontaj_admin_saved_login')
             }
 
-            setAuth(admin, access_token)
             if (admin.role === 'LOGISTICS') {
-                navigate('/admin/logistics')
+                logout()
+                setError('Acces respins. Folosește pagina de Autentificare Logistică (/logistica/login).')
             } else {
+                setAuth(admin, access_token)
                 navigate('/admin/dashboard')
             }
         } catch (err) {

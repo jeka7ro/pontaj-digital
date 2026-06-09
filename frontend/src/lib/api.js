@@ -13,8 +13,8 @@ api.interceptors.request.use(
         let token = null
         // Detect admin requests: starts with /admin OR contains /admin (e.g. /site-photos/admin)
         const isAdminRequest = config.url?.startsWith('/admin') || config.url?.includes('/admin')
-        // Also detect when on admin page
-        const isAdminPage = window.location.pathname.startsWith('/admin')
+        // Also detect when on admin or logistics page
+        const isAdminPage = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/logistica')
 
         if (isAdminRequest || isAdminPage) {
             // Admin requests: use admin token first
@@ -78,11 +78,11 @@ api.interceptors.response.use(
             // Only auto-logout for core admin API calls, not secondary ones like photos
             const isCoreAdminCall = requestUrl.startsWith('/admin/')
 
-            // If on admin route and it's a core admin call that failed
-            if (currentPath.startsWith('/admin') && isCoreAdminCall) {
+            // If on admin or logistics route and it's a core admin call that failed
+            if ((currentPath.startsWith('/admin') || currentPath.startsWith('/logistica')) && (isCoreAdminCall || requestUrl.startsWith('/warehouse'))) {
                 localStorage.removeItem('admin-storage')
-                window.location.href = '/admin/login'
-            } else if (!currentPath.startsWith('/admin')) {
+                window.location.href = currentPath.startsWith('/logistica') ? '/logistica/login' : '/admin/login'
+            } else if (!currentPath.startsWith('/admin') && !currentPath.startsWith('/logistica')) {
                 // Employee route
                 localStorage.removeItem('auth-storage')
                 window.location.href = '/login'

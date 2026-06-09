@@ -4,7 +4,7 @@ import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,
     Loader2, Coffee, MapPin, RefreshCw, Timer, Trophy, AlertTriangle, Zap,
     ArrowUpRight, ArrowDownRight, ChevronRight, Eye, ShieldAlert, WifiOff,
-    X, Phone, Mail, FileText, ArrowLeft, Package
+    X, Phone, Mail, FileText, ArrowLeft, Package, ClipboardList, ExternalLink, Truck, Plus
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -13,17 +13,55 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, PieChart, Pie, Cell, Legend, ComposedChart, Line
 } from 'recharts'
+import KPICard from '../../components/KPICard'
 import DataTable from '../../components/DataTable'
+import ShortWorksCalendar from '../../components/ShortWorksCalendar'
+import BuienradarWidget from '../../components/BuienradarWidget'
+import AddressAutocomplete from '../../components/AddressAutocomplete'
+import SearchableSelect from '../../components/SearchableSelect'
+import { useTenantStore } from '../../store/tenantStore'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
 
 export default function AdminOverview() {
     const navigate = useNavigate()
     const { t } = useTranslation()
+    const { tenant } = useTenantStore()
     const [stats, setStats] = useState({ total_users: 0, total_sites: 0, pending: 0, total_hours_week: 0 })
     const [chartData, setChartData] = useState({ daily: [], hourly: [], activities: [], sites: [] })
     const [statsLoading, setStatsLoading] = useState(true)
     const [chartLoading, setChartLoading] = useState(true)
+
+    const DEFAULT_LAYOUT = {
+        recent_work_orders: { visible: true, size: 'L' },
+        live_sites: { visible: true, size: 'M' },
+        hours_chart: { visible: true, size: 'M' },
+        hourly_activity: { visible: true, size: 'M' },
+        top_performers: { visible: true, size: 'S' },
+        alerts_production: { visible: true, size: 'S' },
+        worker_complaints: { visible: true, size: 'M' },
+        warehouse_requests: { visible: true, size: 'S' },
+        warehouse_status: { visible: true, size: 'S' },
+        live_workers: { visible: true, size: 'L' }
+    }
+    
+    const [dashboardLayout, setDashboardLayout] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pontaj_dashboard_layout')
+            return saved ? { ...DEFAULT_LAYOUT, ...JSON.parse(saved) } : DEFAULT_LAYOUT
+        } catch {
+            return DEFAULT_LAYOUT
+        }
+    })
+    
+    const getLayoutClass = (key, baseClass) => {
+        const size = dashboardLayout[key]?.size || 'M'
+        let span = 'lg:col-span-1'
+        if (size === 'M') span = 'lg:col-span-2'
+        if (size === 'L') span = 'lg:col-span-3'
+        // For some containers we might need full width
+        return `${span} ${baseClass}`
+    }
     const [activeWorkers, setActiveWorkers] = useState([])
     const [fleetAlerts, setFleetAlerts] = useState([])
     const [sesizari, setSesizari] = useState([])       // cereri de material pending
@@ -33,6 +71,53 @@ export default function AdminOverview() {
     const [workersLoading, setWorkersLoading] = useState(true)
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
+    const [workOrdersStats, setWorkOrdersStats] = useState({ total: 0, active: 0, draft: 0 })
+    const [allWorkOrders, setAllWorkOrders] = useState([])
+    const [recentWorkOrders, setRecentWorkOrders] = useState([])
+    const [teams, setTeams] = useState([])
+
+    // Feature flags
+    const tenantFeatures = tenant?.features || []
+    const isLongTerm = tenant?.has_long_term_sites !== false
+    const isShortTerm = tenant?.has_short_term_interventions === true
+    const hasWarehouse = tenant?.features?.includes('warehouse') || tenant?.has_warehouse === true
+
+    const [isScreeds, setIsScreeds] = useState(() => {
+        const saved = localStorage.getItem('pontaj_is_screeds_mode')
+        if (saved !== null) return saved === 'true'
+        return true // Make Screeds default as requested
+    })
+
+    const [weeklyOrdersCount, setWeeklyOrdersCount] = useState(0)
+    const [todayOrdersCount, setTodayOrdersCount] = useState(0)
+    
+    useEffect(() => {
+        if (!isScreeds || !allWorkOrders) return;
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)));
+        startOfWeek.setHours(0,0,0,0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23,59,59,999);
+        
+        let wCount = 0;
+        let tCount = 0;
+        
+        allWorkOrders.forEach(wo => {
+            const dateStr = wo.start_date || wo.deadline_date;
+            if (!dateStr) return;
+            const dStr = dateStr.split('T')[0];
+            const d = new Date(dStr);
+            
+            if (dStr === todayStr) tCount++;
+            if (d >= startOfWeek && d <= endOfWeek) wCount++;
+        });
+        
+        setWeeklyOrdersCount(wCount);
+        setTodayOrdersCount(tCount);
+    }, [allWorkOrders, isScreeds]);
 
     // Worker detail drawer
     const [selectedWorker, setSelectedWorker] = useState(null)
@@ -43,6 +128,15 @@ export default function AdminOverview() {
     // Global Site Filter
     const [globalSiteFilter, setGlobalSiteFilter] = useState(null)
     const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+    const [quickCreateData, setQuickCreateData] = useState(null) // { teamId, clientId, clientName, date, time }
+    const [quickCreateForm, setQuickCreateForm] = useState({ title: '', address: '', latitude: '', longitude: '', surface: '', thickness: '', clientId: '' })
+    const [quickCreateStep, setQuickCreateStep] = useState(1) // 1 = General, 2 = Resurse, 'new-client' = formular client nou
+    const [quickCreateClientForm, setQuickCreateClientForm] = useState({ name: '', phone: '', email: '', type: 'fizica', identifier: '' })
+    const [quickCreateSaving, setQuickCreateSaving] = useState(false)
+    const [detectingLocation, setDetectingLocation] = useState(false)
+
+    const [clients, setClients] = useState([])
 
     // Live clock — use ref to avoid re-rendering charts every second
     const nowRef = useRef(Date.now())
@@ -80,21 +174,24 @@ export default function AdminOverview() {
         fetchChartData()
         fetchActiveWorkers()
         fetchFleetAlerts()
-        fetchSesizariNecesar()
         fetchComplaints()
+        fetchTeams()
+        fetchClients()
+        if (isShortTerm) fetchWorkOrdersStats()
 
         if (refreshTimer.current) clearInterval(refreshTimer.current)
         refreshTimer.current = setInterval(() => {
             fetchStats(true)
             fetchActiveWorkers()
             fetchChartData()
-            fetchFleetAlerts()
-            fetchSesizariNecesar()
             fetchComplaints()
+            fetchTeams()
+            fetchClients()
+            if (isShortTerm) fetchWorkOrdersStats()
         }, 15000)
 
         return () => clearInterval(refreshTimer.current)
-    }, [globalSiteFilter])
+    }, [globalSiteFilter, isShortTerm])
 
     const fetchStats = async (isBackground = false) => {
         if (!isBackground) setStatsLoading(true)
@@ -110,6 +207,260 @@ export default function AdminOverview() {
             })
         } catch (e) { console.error(e) }
         finally { setStatsLoading(false) }
+    }
+
+    const getDateParams = () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 28);
+        return `?start_date=${start.toISOString().split('T')[0]}&end_date=${end.toISOString().split('T')[0]}`;
+    }
+
+    const fetchWorkOrdersStats = async () => {
+        try {
+            const res = await api.get(`/admin/work-orders${getDateParams()}`)
+            const all = res.data?.items || res.data || []
+            const total = res.data?.total || all.length
+            const active = Array.isArray(all) ? all.filter(w => w.status === 'in_progress' || w.status === 'sent' || w.status === 'confirmed').length : 0
+            const draft = Array.isArray(all) ? all.filter(w => w.status === 'draft').length : 0
+            setWorkOrdersStats({ total, active, draft })
+            if (Array.isArray(all)) {
+                setAllWorkOrders(all)
+            }
+            // Fetch the 50 most recent work orders independent of current month
+            const recentRes = await api.get('/admin/work-orders?limit=50')
+            setRecentWorkOrders(recentRes.data || [])
+        } catch {}
+    }
+
+    const fetchTeams = async () => {
+        try {
+            const res = await api.get('/admin/teams/')
+            setTeams(res.data?.teams || res.data || [])
+        } catch (e) { console.error(e) }
+    }
+
+    const fetchClients = async () => {
+        try {
+            const res = await api.get('/admin/clients')
+            setClients(Array.isArray(res.data) ? res.data : res.data?.items || [])
+        } catch (e) { console.error(e) }
+    }
+
+    const handleTeamDropOnOrder = async (workOrderId, teamId) => {
+        try {
+            const team = teams.find(t => String(t.id) === String(teamId))
+            
+            // Optimistic UI Update
+            setAllWorkOrders(prev => prev.map(wo => {
+                if (String(wo.id) === String(workOrderId)) {
+                    return {
+                        ...wo,
+                        assigned_team_id: teamId,
+                        assigned_team_name: team?.name || wo.assigned_team_name,
+                        assigned_team_color: team?.color || wo.assigned_team_color
+                    }
+                }
+                return wo
+            }))
+
+            await api.put(`/admin/work-orders/${workOrderId}`, {
+                assigned_team_id: teamId
+            })
+            // Silent refresh
+            fetchWorkOrdersStats()
+        } catch (error) {
+            console.error("Error assigning team:", error)
+            alert("Eroare la asignarea echipei.")
+            fetchWorkOrdersStats()
+        }
+    }
+
+    const handleClientDropOnOrder = async (workOrderId, clientId) => {
+        try {
+            const client = clients.find(c => String(c.id) === String(clientId))
+            
+            // Optimistic UI Update
+            setAllWorkOrders(prev => prev.map(wo => {
+                if (String(wo.id) === String(workOrderId)) {
+                    return {
+                        ...wo,
+                        client_id: clientId,
+                        client_name: client?.name || wo.client_name
+                    }
+                }
+                return wo
+            }))
+
+            await api.put(`/admin/work-orders/${workOrderId}`, {
+                client_id: clientId
+            })
+            // Silent refresh
+            fetchWorkOrdersStats()
+        } catch (error) {
+            console.error("Error assigning client:", error)
+            alert("Eroare la asignarea clientului.")
+            fetchWorkOrdersStats()
+        }
+    }
+
+    const handleTeamDropOnEmpty = (date, time, teamId) => {
+        setQuickCreateData({ date, time, teamId })
+        setQuickCreateForm({ title: '', address: '', latitude: '', longitude: '' })
+    }
+
+    const handleDetectGPS = () => {
+        setDetectingLocation(true)
+        if (!navigator.geolocation) {
+            alert('Geolocația nu este suportată de browser.');
+            setDetectingLocation(false);
+            return;
+        }
+
+        const gpsTimeout = setTimeout(() => {
+            setDetectingLocation(false);
+            alert('Timpul a expirat. Verifică setările de permisiuni GPS.');
+        }, 8000);
+
+        navigator.geolocation.getCurrentPosition(
+            async pos => {
+                clearTimeout(gpsTimeout);
+                const lat = pos.coords.latitude.toFixed(6)
+                const lon = pos.coords.longitude.toFixed(6)
+                
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&email=contact@davidechape.com`,
+                        { headers: { 'Accept-Language': 'ro,en,fr,de' } }
+                    )
+                    const data = await res.json()
+                    if (data?.display_name) {
+                        const a = data.address || {}
+                        const parts = [
+                            a.road && a.house_number ? `${a.road} ${a.house_number}` : a.road,
+                            a.city || a.town || a.village || a.municipality,
+                            a.county
+                        ].filter(Boolean)
+                        const addr = parts.length > 0 ? parts.join(', ') : data.display_name
+                        setQuickCreateForm(p => ({ ...p, address: addr, latitude: lat, longitude: lon }))
+                    }
+                } catch (e) {
+                    console.error('Eroare reverse geocoding:', e)
+                } finally {
+                    setDetectingLocation(false)
+                }
+            },
+            err => {
+                clearTimeout(gpsTimeout);
+                setDetectingLocation(false);
+                alert('Eroare la detectarea locației.');
+            },
+            { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
+        );
+    }
+
+    const handleQuickCreateClient = async () => {
+        setQuickCreateSaving(true)
+        try {
+            const res = await api.post('/admin/clients', {
+                name: quickCreateClientForm.name,
+                type: quickCreateClientForm.type,
+                identifier: quickCreateClientForm.identifier,
+                phone: quickCreateClientForm.phone,
+                email: quickCreateClientForm.email,
+                is_favorite: true
+            })
+            // Fetch updated clients or just add to list
+            const newClient = res.data
+            setClients(prev => [...prev, newClient])
+            
+            // Auto select it and go back to step 1
+            setQuickCreateForm(p => ({
+                ...p,
+                clientId: newClient.id,
+                title: !p.title ? newClient.name : p.title
+            }))
+            setQuickCreateClientForm({ name: '', phone: '', email: '', type: 'fizica', identifier: '' })
+            setQuickCreateStep(1)
+        } catch (error) {
+            console.error("Error creating client:", error)
+            alert("Eroare la crearea clientului.")
+        } finally {
+            setQuickCreateSaving(false)
+        }
+    }
+
+    const handleQuickCreateSubmit = async (e, openDetails = false) => {
+        if (e) e.preventDefault()
+        setQuickCreateSaving(true)
+        try {
+            let estimatedAmount = 0;
+            let isAutoCalculated = false;
+            
+            const surface = parseFloat(quickCreateForm.surface) || 0;
+            const thickness = parseFloat(quickCreateForm.thickness) || 0;
+            
+            if (surface > 0) {
+                const extraThickness = Math.max(0, thickness - 5);
+                const autoBase = 12.5 * surface;
+                const autoExtra = extraThickness * 1.25 * surface;
+                const autoFoil = quickCreateForm.has_foil ? 1.2 * surface : 0;
+                const autoMesh = quickCreateForm.has_mesh ? 2.5 * surface : 0;
+                // Duramint added as checkbox, price pending if required
+                estimatedAmount = autoBase + autoExtra + autoFoil + autoMesh;
+                isAutoCalculated = true;
+            }
+
+            const res = await api.post('/admin/work-orders', {
+                title: quickCreateForm.title,
+                site_address: quickCreateForm.address,
+                site_latitude: quickCreateForm.latitude,
+                site_longitude: quickCreateForm.longitude,
+                start_date: quickCreateData.date,
+                start_time: quickCreateData.time,
+                assigned_team_id: quickCreateData.teamId || null,
+                client_id: quickCreateData.clientId || null,
+                status: 'draft',
+                volumes: (quickCreateForm.surface || quickCreateForm.thickness) ? [{
+                    label: 'Șapă',
+                    quantity: parseFloat(quickCreateForm.surface) || 0,
+                    unit: 'm²',
+                    thickness: parseFloat(quickCreateForm.thickness) || 0,
+                    has_foil: !!quickCreateForm.has_foil,
+                    has_mesh: !!quickCreateForm.has_mesh,
+                    has_duramint: !!quickCreateForm.has_duramint
+                }] : [],
+                estimated_amount: estimatedAmount > 0 ? estimatedAmount : null,
+                is_auto_calculated: isAutoCalculated
+            })
+            setQuickCreateData(null)
+            fetchWorkOrdersStats()
+            if (openDetails && res.data && res.data.id) {
+                navigate(`/admin/work-orders/${res.data.id}/edit`)
+            }
+        } catch (error) {
+            console.error("Error quick creating work order:", error)
+            alert("A apărut o eroare la crearea rapidă a comenzii.")
+        } finally {
+            setQuickCreateSaving(false)
+        }
+    }
+
+    const handleOrderRescheduled = async (woId, newDate, newTime, revert = false) => {
+        if (woId && newDate && newTime) {
+            setAllWorkOrders(prev => prev.map(wo => wo.id === String(woId) ? { ...wo, start_date: newDate, start_time: newTime } : wo));
+        }
+        if (revert || !woId) {
+            fetchWorkOrdersStats();
+        } else {
+            // Background update
+            api.get(`/admin/work-orders${getDateParams()}`).then(res => {
+                const all = res.data?.items || res.data || [];
+                if (Array.isArray(all)) {
+                    setAllWorkOrders(all);
+                }
+            }).catch(e => {})
+        }
     }
 
     const fetchChartData = async () => {
@@ -224,6 +575,14 @@ export default function AdminOverview() {
         return checkin.getHours() > 8 || (checkin.getHours() === 8 && checkin.getMinutes() > 30)
     })
 
+    const tzOption = tenant?.timezone && tenant.timezone !== 'auto' ? { timeZone: tenant.timezone } : {}
+    const getTzName = () => {
+        if (!tenant?.timezone || tenant.timezone === 'auto') return 'Ora Locală'
+        if (tenant.timezone === 'Europe/Berlin') return 'Ora Germaniei'
+        if (tenant.timezone === 'Europe/Bucharest') return 'Ora României'
+        return tenant.timezone
+    }
+
 
     return (
         <div className="p-6 lg:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -237,66 +596,320 @@ export default function AdminOverview() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        {t('dashboard.title')}
+                        Planning
                     </h1>
-                    <p className="text-sm text-slate-500">
-                        {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        <span className="ml-2 text-slate-400">•</span>
-                        <span className="ml-2 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
-                            {new Date(nowRef.current).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin' })} <span className="text-slate-500 font-medium ml-1">(Ora Germaniei)</span>
-                        </span>
-                    </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    {lastRefresh && (
-                        <span className="text-xs text-slate-400">
-                            {t('admin.updated_at')}: {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </span>
-                    )}
-                    <button
-                        onClick={() => { fetchStats(true); fetchChartData(); fetchActiveWorkers() }}
-                        className="p-2 hover:bg-white rounded-full transition-colors border border-slate-200 bg-white shadow-sm"
-                    >
-                        <RefreshCw className="w-4 h-4 text-slate-600" />
-                    </button>
                 </div>
             </div>
 
             {/* KPI Row */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div className={`grid gap-3 mb-6 ${isScreeds ? 'grid-cols-3 md:grid-cols-3 lg:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'}`}>
                 {statsLoading ? (
                     Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="h-24 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
                     ))
+                ) : isScreeds ? (
+                    <>
+                        <KPICard label="Lucrări Azi" value={todayOrdersCount} icon={Timer} colorTheme="blue" onClick={() => navigate('/admin/work-orders')} />
+                        <KPICard label="Săptămâna Curentă" value={weeklyOrdersCount} icon={Calendar} colorTheme="violet" onClick={() => navigate('/admin/work-orders')} />
+                        <KPICard label="Necesar Nisip" value={necesar.length} icon={Package} colorTheme="amber" onClick={() => document.getElementById('necesar-materiale-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                    </>
                 ) : (
                     <>
-                        <KPICard label={t('dashboard.employees')} value={stats.total_users} icon={Users} gradient="from-[#0f172a] to-[#1e3a5f]" onClick={() => navigate('/admin/users')} />
-                        <KPICard label={t('dashboard.sites')} value={stats.total_sites} icon={Building2} gradient="from-[#1e3a5f] to-[#1e40af]" onClick={() => navigate('/admin/sites')} />
-                        <KPICard label={t('dashboard.working_now')} value={activeCount} icon={Timer} gradient="from-[#0f172a] to-[#164e63]" pulse={activeCount > 0} onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.on_break')} value={breakCount} icon={Coffee} gradient="from-[#1e3a5f] to-[#7c3aed]" onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.hours_today')} value={formatTime(totalHoursToday)} icon={Clock} gradient="from-[#0f172a] to-[#1e40af]" isText pulse onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
-                        <KPICard label={t('dashboard.hours_week')} value={formatTime(stats.total_hours_week)} icon={TrendingUp} gradient="from-[#1e3a5f] to-[#0f172a]" isText onClick={() => navigate('/admin/reports')} />
+                        <KPICard label={t('dashboard.employees')} value={stats.total_users} icon={Users} colorTheme="blue" onClick={() => navigate('/admin/users')} />
+                        {isLongTerm && (
+                            <KPICard label={t('dashboard.sites')} value={stats.total_sites} icon={Building2} colorTheme="indigo" onClick={() => navigate('/admin/sites')} />
+                        )}
+                        {isShortTerm && (
+                            <KPICard label="Comenzi" value={workOrdersStats.total} icon={ClipboardList} colorTheme="violet" onClick={() => navigate('/admin/work-orders')} />
+                        )}
+                        <KPICard label={t('dashboard.working_now')} value={activeCount} icon={Timer} colorTheme="green" pulse={activeCount > 0} onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.on_break')} value={breakCount} icon={Coffee} colorTheme="orange" onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.hours_today')} value={formatTime(totalHoursToday)} icon={Clock} colorTheme="purple" isText pulse onClick={() => document.getElementById('live-workers-table')?.scrollIntoView({ behavior: 'smooth' })} />
+                        <KPICard label={t('dashboard.hours_week')} value={formatTime(stats.total_hours_week)} icon={TrendingUp} colorTheme="slate" isText onClick={() => navigate('/admin/reports')} />
                     </>
                 )}
             </div>
 
-            {/* Live Site Map — full width below KPIs */}
-            <div className="mb-6">
-                <SiteMap selectedSiteId={globalSiteFilter} workers={activeWorkers} onSiteSelect={setGlobalSiteFilter} onWorkerSelect={openWorkerDetail} />
+            {/* Calendar Timesheet and Radar - Visible only for short term interventions */}
+            {isShortTerm && (
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+                    <div className="xl:col-span-3">
+                        <ShortWorksCalendar 
+                            workOrders={allWorkOrders} 
+                            onOrderRescheduled={handleOrderRescheduled} 
+                            onTeamDrop={handleTeamDropOnOrder}
+                            onClientDrop={handleClientDropOnOrder}
+                            onTeamDropOnEmpty={(date, time, teamId) => {
+                                setQuickCreateData({ date, time, teamId, clientId: null })
+                                setQuickCreateForm(p => ({ ...p, title: '', address: '', latitude: '', longitude: '', surface: '', thickness: '', clientId: '' }))
+                                setQuickCreateStep(1)
+                            }}
+                            onClientDropOnEmpty={(date, time, clientId, clientName) => {
+                                const c = clients.find(cl => String(cl.id) === String(clientId))
+                                setQuickCreateData({ date, time, teamId: null, clientId })
+                                setQuickCreateForm(p => ({ 
+                                    ...p, 
+                                    title: clientName || '', 
+                                    address: c?.address || '', 
+                                    latitude: c?.latitude || '', 
+                                    longitude: c?.longitude || '', 
+                                    surface: '', 
+                                    thickness: '',
+                                    clientId: clientId || ''
+                                }))
+                                setQuickCreateStep(1)
+                            }}
+                            onEmptyCellClick={(date, time) => {
+                                setQuickCreateData({ date, time, teamId: null, clientId: null })
+                                setQuickCreateForm(p => ({ ...p, title: '', address: '', latitude: '', longitude: '', surface: '', thickness: '', clientId: '' }))
+                                setQuickCreateStep(1)
+                            }}
+                        />
+                    </div>
+                    <div className="xl:col-span-1 flex flex-col gap-4 h-[800px]">
+                        {/* Drag and Drop Clients Module */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex-1 flex flex-col overflow-hidden min-h-0">
+                            <div className="px-4 py-3 shrink-0" style={{ backgroundColor: tenant?.primary_color || '#2563eb' }}>
+                                <h3 className="font-extrabold text-white flex items-center gap-2 mb-0.5 text-xs uppercase tracking-wide">
+                                    <Building2 className="w-3.5 h-3.5 text-white" />
+                                    Clienți Frecvenți
+                                </h3>
+                                <p className="text-[10px] text-amber-100">
+                                    Trage clientul pe calendar.
+                                </p>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar min-h-0">
+                                {clients.filter(c => c.is_favorite).map(client => (
+                                    <div 
+                                        key={`fav-${client.id}`}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData("type", "client")
+                                            e.dataTransfer.setData("id", String(client.id))
+                                            e.dataTransfer.setData("name", client.name)
+                                        }}
+                                        className="p-1.5 rounded-lg border transition-all cursor-grab active:cursor-grabbing hover:scale-[1.02] bg-orange-100 dark:bg-orange-900/30 border-orange-500 shadow-sm flex items-center justify-between"
+                                    >
+                                        <div className="font-bold text-orange-600 dark:text-orange-400 text-xs truncate">⭐️ {client.name}</div>
+                                    </div>
+                                ))}
+                                {clients.filter(c => !c.name.toLowerCase().includes('isoflex')).slice(0, 15).map(client => (
+                                    <div 
+                                        key={client.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData("type", "client")
+                                            e.dataTransfer.setData("id", String(client.id))
+                                            e.dataTransfer.setData("name", client.name)
+                                        }}
+                                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-grab active:cursor-grabbing hover:scale-[1.02] bg-white dark:bg-slate-800 flex items-center justify-between shadow-sm hover:border-amber-300"
+                                    >
+                                        <div className="font-medium text-slate-700 dark:text-slate-300 text-xs truncate">{client.name}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Drag and Drop Teams Module */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex-1 flex flex-col overflow-hidden min-h-0">
+                            <div className="px-4 py-3 shrink-0" style={{ backgroundColor: tenant?.primary_color || '#2563eb' }}>
+                                <h3 className="font-extrabold text-white flex items-center gap-2 mb-0.5 text-xs uppercase tracking-wide">
+                                    <Truck className="w-3.5 h-3.5 text-white" />
+                                    Camioane (Echipe)
+                                </h3>
+                                <p className="text-[10px] text-blue-100">
+                                    Trage un camion peste lucrare.
+                                </p>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar min-h-0">
+                                {teams.map(team => (
+                                    <div 
+                                        key={team.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData("type", "team")
+                                            e.dataTransfer.setData("id", String(team.id))
+                                            e.currentTarget.classList.add('opacity-50', 'border-dashed', 'scale-95')
+                                        }}
+                                        onDragEnd={(e) => {
+                                            e.currentTarget.classList.remove('opacity-50', 'border-dashed', 'scale-95')
+                                        }}
+                                        className="p-1.5 rounded-lg border-2 transition-all cursor-grab active:cursor-grabbing hover:scale-[1.02] bg-white dark:bg-slate-800 flex items-center justify-between border-transparent shadow-sm hover:shadow-md"
+                                        style={{ borderLeftColor: team.color || '#3b82f6', borderLeftWidth: '3px' }}
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${team.color || '#3b82f6'}20` }}>
+                                                <Truck className="w-3 h-3" style={{ color: team.color || '#3b82f6' }} />
+                                            </div>
+                                            <div className="min-w-0 flex flex-col justify-center">
+                                                <div className="font-bold text-xs text-slate-800 dark:text-white truncate max-w-[120px] leading-tight">{team.name}</div>
+                                                {team.members?.length > 0 && (
+                                                    <div className="text-[8px] font-bold text-slate-500 uppercase tracking-wider leading-none mt-0.5">{team.members.length} membri</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex -space-x-2 shrink-0">
+                                            {team.members?.slice(0, 3).map((m, i) => (
+                                                <AvatarImg key={i} name={m.user_full_name || m.name || m.first_name || 'E'} size="w-5 h-5 border border-white dark:border-slate-800" textSize="text-[7px]" />
+                                            ))}
+                                            {(team.members?.length || 0) > 3 && (
+                                                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 border border-white dark:border-slate-800 flex items-center justify-center text-[7px] font-bold text-slate-600 dark:text-slate-300 z-10 relative">
+                                                    +{team.members.length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6 items-start">
+{/* Recent Work Orders */}
+            {dashboardLayout.recent_work_orders?.visible && (
+                <div className={`${isShortTerm ? 'xl:col-span-3' : 'xl:col-span-4'} bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col overflow-hidden group`}>
+                    <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                        <h3 className="text-[15px] font-black tracking-wide text-white flex items-center gap-2.5 relative z-10 drop-shadow-md">
+                            <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-md border border-white/20">
+                                <ClipboardList className="w-4 h-4 text-white" />
+                            </div>
+                            COMENZI RECENTE
+                        </h3>
+                        <button onClick={() => navigate('/admin/work-orders')} className="text-xs font-bold text-white hover:text-blue-100 transition-all bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 backdrop-blur-md relative z-10 flex items-center gap-1 shadow-sm">
+                            Vezi toate <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                    {recentWorkOrders.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 px-4 bg-slate-50/50 dark:bg-slate-800/20">
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                                <ClipboardList className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Nicio comandă recentă înregistrată.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Lucrare / Titlu</th>
+                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Client</th>
+                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Data Execuție</th>
+                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Creată La</th>
+                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Status</th>
+                                        <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Acțiuni</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                                    {recentWorkOrders.map(wo => {
+                                        const cfg = {
+                                            draft:       { label: 'Draft',       colors: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', icon: <div className="w-1.5 h-1.5 rounded-full bg-slate-400" /> },
+                                            sent:        { label: 'Trimisă',     colors: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> },
+                                            confirmed:   { label: 'Confirmată',  colors: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> },
+                                            in_progress: { label: 'În Execuție', colors: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" /> },
+                                            completed:   { label: 'Finalizată',  colors: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-violet-500" /> },
+                                            cancelled:   { label: 'Anulată',     colors: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> }
+                                        }[wo.status] || { label: 'Draft', colors: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', icon: <div className="w-1.5 h-1.5 rounded-full bg-slate-400" /> };
+                                        
+                                        return (
+                                            <tr key={wo.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/40 transition-all duration-200 cursor-default group/row">
+                                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-sm shadow-sm group-hover/row:scale-105 transition-transform">
+                                                            {wo.title.substring(0, 1).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-900 dark:text-white text-sm tracking-tight">{wo.title}</div>
+                                                            {wo.site_name && (
+                                                                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                                                                    <MapPin className="w-3 h-3 text-blue-500" /> {wo.site_name}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                                                            {wo.client_name ? wo.client_name.substring(0, 2).toUpperCase() : '--'}
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{wo.client_name || 'Nespecificat'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                                        {wo.start_date ? new Date(wo.start_date).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Neplanificată'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Clock className="w-3 h-3 opacity-60" />
+                                                        {wo.created_at ? new Date(wo.created_at).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border shadow-sm ${cfg.colors}`}>
+                                                        {cfg.icon}
+                                                        {cfg.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                                                    <button 
+                                                        onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} 
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-700 dark:hover:text-white dark:hover:border-slate-600 transition-all duration-200 hover:-translate-y-0.5"
+                                                        title="Editează Comanda"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            {/* Weather Module next to Recent Orders */}
+            {isShortTerm && (
+                <div className="xl:col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg flex flex-col overflow-hidden h-[400px]">
+                    <BuienradarWidget />
+                </div>
+            )}
             </div>
 
-            {/* Row 2: Weekly Comparison + Site Live Map */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-start">
+
+
+            {/* Live Site Map — afiseaza doar daca tenant are santiere clasice */}
+            {isLongTerm && (
+                <div className="mb-6">
+                    <SiteMap selectedSiteId={globalSiteFilter} workers={activeWorkers} onSiteSelect={setGlobalSiteFilter} onWorkerSelect={openWorkerDetail} />
+                </div>
+            )}
+
+            {/* Row 2: Weekly Comparison + Site Live Map */}
+            
                 {/* Weekly Hours Chart — takes 2 cols */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-blue-500" />
+                {isLongTerm && dashboardLayout.hours_chart?.visible && (
+<div className={getLayoutClass("hours_chart", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg flex flex-col overflow-hidden")}>
+                    <div className="flex items-center justify-between px-5 py-4 bg-blue-600 dark:bg-slate-800">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-white" />
                             {t('dashboard.weekly_chart')}
                         </h3>
                         <div className="flex items-center gap-2">
-                            <span className={`text-xs font-semibold flex items-center gap-1 ${weekChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                {weekChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            <span className={`text-xs font-semibold flex items-center gap-1 text-white bg-white/20 px-2 py-1 rounded shadow-sm`}>
+                                {weekChange >= 0 ? <ArrowUpRight className="w-3 h-3 text-green-300" /> : <ArrowDownRight className="w-3 h-3 text-red-300" />}
                                 {Math.abs(weekChange).toFixed(0)}% {t('dashboard.vs_last_week')}
                             </span>
                         </div>
@@ -333,13 +946,17 @@ export default function AdminOverview() {
                         </div>
                     </div>
                 </div>
+)}
 
-                {/* Live Site Map — same height as chart card */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col" style={{height: '360px'}}>
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
-                        <MapPin className="w-4 h-4 text-emerald-500" />
-                        {t('dashboard.live_sites')}
-                    </h3>
+                {/* Live Site Map */}
+                {isLongTerm && dashboardLayout.live_sites?.visible && (
+<div className={getLayoutClass("live_sites", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg flex flex-col overflow-hidden min-h-[400px]")}>
+                    <div className="px-5 py-4 bg-blue-600 dark:bg-slate-800 shrink-0">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-white" />
+                            {t('dashboard.live_sites')}
+                        </h3>
+                    </div>
                     {siteList.length === 0 ? (
                         <div className="flex items-center justify-center flex-1 text-slate-400 text-sm">
                             <div className="text-center">
@@ -384,17 +1001,18 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Row 3: Hourly Chart + Top Performers + Late Arrivals/Production */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
                 {/* Hourly Activity */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col">
+                {isLongTerm && dashboardLayout.hourly_activity?.visible && (
+<div className={getLayoutClass("hourly_activity", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col")}>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
                         <Activity className="w-4 h-4 text-green-500" />
                         {t('dashboard.hourly_activity')}
                     </h3>
-                    <div className="flex-1 min-h-[180px]">
+                    <div style={{ width: '100%', height: 180 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData.hourly || []}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#f1f5f9'} />
@@ -415,9 +1033,11 @@ export default function AdminOverview() {
                         </ResponsiveContainer>
                     </div>
                 </div>
+)}
 
                 {/* Top Performers & Late Arrivals */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col max-h-[500px] overflow-y-auto custom-scrollbar">
+                {isLongTerm && dashboardLayout.top_performers?.visible && (
+<div className={getLayoutClass("top_performers", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col max-h-[500px] overflow-y-auto custom-scrollbar")}>
                     <div className="flex-1">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
                             <Trophy className="w-4 h-4 text-amber-500" />
@@ -469,7 +1089,7 @@ export default function AdminOverview() {
                                         <AvatarImg path={w.avatar_path} name={w.worker_name} size="w-6 h-6" textSize="text-[10px]" />
                                         <span className="font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{w.worker_name}</span>
                                         <span className="text-[11px] font-bold text-amber-700 bg-white dark:bg-amber-950 px-2 py-0.5 rounded-full shadow-sm">
-                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { ...tzOption, hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                 ))}
@@ -477,9 +1097,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Alerts + Production — single card, two sections */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col gap-5 max-h-[500px] overflow-y-auto custom-scrollbar">
+                {isLongTerm && dashboardLayout.alerts_production?.visible && (
+<div className={getLayoutClass("alerts_production", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col gap-5 max-h-[500px] overflow-y-auto custom-scrollbar")}>
                     
                     {/* Fleet Expiry Alerts */}
                     {fleetAlerts.length > 0 && (
@@ -535,10 +1157,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Site Distribution Pie + Workers per Day */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {isLongTerm && (
+            <>
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-orange-500" />
@@ -603,13 +1226,15 @@ export default function AdminOverview() {
                         </ResponsiveContainer>
                     </div>
                 </div>
-            </div>
+            </>
+            )}
 
             {/* ── Sesizări + Necesar ──────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
                 
                 {/* Reclamații / Sesizări Reale */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+                {isLongTerm && dashboardLayout.worker_complaints?.visible && (
+<div className={getLayoutClass("worker_complaints", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden")}>
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-red-500" />
@@ -647,9 +1272,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+)}
 
                 {/* Cereri Magazie — cereri noi neaprobate */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+                {isLongTerm && dashboardLayout.warehouse_requests?.visible && hasWarehouse && (
+                <div className={getLayoutClass("warehouse_requests", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden")}>
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                             <Package className="w-4 h-4 text-amber-500" />
@@ -688,9 +1315,11 @@ export default function AdminOverview() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Necesar + Livrat — aprobat nelivrat + istoric */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden flex flex-col">
+                {isLongTerm && dashboardLayout.warehouse_status?.visible && hasWarehouse && (
+                <div className={getLayoutClass("warehouse_status", "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden flex flex-col")}>
                     {/* Secțiunea: De Livrat */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
@@ -777,10 +1406,13 @@ export default function AdminOverview() {
                         )}
                     </div>
                 </div>
-            </div>
+                )}
 
-            {/* Live Workers Table */}
-            {(() => {
+            
+</div>
+
+{/* Live Workers Table */}
+            {isLongTerm && dashboardLayout.live_workers?.visible && (() => {
                 const liveWorkers = activeWorkers.filter(w => w.status !== 'terminat')
                 const doneWorkers = activeWorkers.filter(w => w.status === 'terminat')
                 const columns = [
@@ -923,12 +1555,14 @@ export default function AdminOverview() {
             })()}
 
             {/* Quick Actions */}
+            {isLongTerm && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <QuickAction icon={Clock} title={t('nav.timesheets')} desc={t('dashboard.view_timesheets')} color="bg-blue-500" onClick={() => navigate('/admin/timesheets')} />
                 <QuickAction icon={BarChart3} title={t('nav.reports')} desc={t('dashboard.generate_report')} color="bg-indigo-500" onClick={() => navigate('/admin/reports')} />
                 <QuickAction icon={Activity} title={t('nav.activities')} desc={t('dashboard.manage_catalog')} color="bg-violet-500" onClick={() => navigate('/admin/activities')} />
                 <QuickAction icon={Users} title={t('nav.users')} desc={`${stats.total_users} ${t('users.total_label')}`} color="bg-slate-600" onClick={() => navigate('/admin/users')} />
             </div>
+            )}
 
             {/* Worker Detail Drawer */}
             {selectedWorker && (
@@ -1101,8 +1735,217 @@ export default function AdminOverview() {
                 </>
             )}
 
+            {/* Quick Create Modal */}
+            {quickCreateData && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700" style={{ animation: 'slideInUp 0.3s ease-out' }}>
+                        <div className="px-5 py-4 bg-blue-600 dark:bg-slate-800 flex items-center justify-between rounded-t-2xl">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Package className="w-4 h-4" />
+                                Creare Rapidă
+                            </h3>
+                            <button onClick={() => setQuickCreateData(null)} className="text-blue-100 hover:text-white p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleQuickCreateSubmit} className="p-5 space-y-4">
+                            {quickCreateStep === 1 && (
+                                <>
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Client (Opțional)</label>
+                                            <button type="button" onClick={() => setQuickCreateStep('new-client')} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-full transition-colors">
+                                                <Plus className="w-3 h-3" /> Client Nou
+                                            </button>
+                                        </div>
+                                        <SearchableSelect
+                                            value={quickCreateForm.clientId || ""}
+                                            onChange={val => {
+                                                const c = clients.find(cl => String(cl.id) === String(val))
+                                                setQuickCreateForm(p => ({
+                                                    ...p,
+                                                    clientId: val,
+                                                    title: c && !p.title ? c.name : p.title,
+                                                    address: c && !p.address ? c.address : p.address,
+                                                    latitude: c && !p.latitude ? c.latitude : p.latitude,
+                                                    longitude: c && !p.longitude ? c.longitude : p.longitude
+                                                }))
+                                            }}
+                                            options={clients.map(c => ({ value: String(c.id), label: c.name }))}
+                                            placeholder="-- Alege client --"
+                                            buttonClassName="rounded-xl h-11 text-sm font-semibold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Titlu Lucrare *</label>
+                                        <input 
+                                            type="text"
+                                            autoFocus
+                                            required
+                                            value={quickCreateForm.title}
+                                            onChange={e => setQuickCreateForm({ ...quickCreateForm, title: e.target.value })}
+                                            className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Ex: Șapă Rezi Ilfov..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Adresă / Localitate (Opțional)</label>
+                                            <button
+                                                type="button"
+                                                onClick={handleDetectGPS}
+                                                disabled={detectingLocation}
+                                                className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold transition-colors border border-blue-200 dark:border-blue-800 disabled:opacity-60"
+                                            >
+                                                {detectingLocation ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3 h-3" />}
+                                                GPS Automat
+                                            </button>
+                                        </div>
+                                        <AddressAutocomplete 
+                                            value={quickCreateForm.address}
+                                            onChange={(addr, lat, lon) => {
+                                                setQuickCreateForm(p => ({ 
+                                                    ...p, 
+                                                    address: addr,
+                                                    ...(lat && lon ? { latitude: lat, longitude: lon } : {})
+                                                }))
+                                            }}
+                                            className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Ex: București, Sector 1"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Suprafață (m²)</label>
+                                            <input 
+                                                type="number"
+                                                min="0"
+                                                step="any"
+                                                value={quickCreateForm.surface}
+                                                onChange={e => setQuickCreateForm({ ...quickCreateForm, surface: e.target.value })}
+                                                className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Ex: 150"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Grosime (cm)</label>
+                                            <input 
+                                                type="number"
+                                                min="0"
+                                                step="any"
+                                                value={quickCreateForm.thickness}
+                                                onChange={e => setQuickCreateForm({ ...quickCreateForm, thickness: e.target.value })}
+                                                className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Ex: 6.5"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={!!quickCreateForm.has_foil}
+                                                onChange={e => setQuickCreateForm({ ...quickCreateForm, has_foil: e.target.checked })}
+                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                            />
+                                            Include Folie plastic (1,2 EUR/m²)
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={!!quickCreateForm.has_mesh}
+                                                onChange={e => setQuickCreateForm({ ...quickCreateForm, has_mesh: e.target.checked })}
+                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                            />
+                                            Include Plasă metalică (2,50 EUR/m²)
+                                        </label>
+                                        <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={!!quickCreateForm.has_duramint}
+                                                onChange={e => setQuickCreateForm({ ...quickCreateForm, has_duramint: e.target.checked })}
+                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                            />
+                                            Include Duramint
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Echipă Alocată</label>
+                                        <SearchableSelect
+                                            value={quickCreateData.teamId || ''}
+                                            onChange={val => setQuickCreateData(p => ({...p, teamId: val}))}
+                                            options={[
+                                                { value: '', label: '-- Fără echipă (Draft) --' },
+                                                ...teams.map(t => ({ value: String(t.id), label: t.name }))
+                                            ]}
+                                            placeholder="-- Fără echipă (Draft) --"
+                                            buttonClassName="rounded-xl h-11 text-sm font-semibold"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 pt-3">
+                                        <button type="button" onClick={() => setQuickCreateData(null)} className="h-11 px-4 font-bold text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                                            Anulează
+                                        </button>
+                                        <button type="button" onClick={(e) => handleQuickCreateSubmit(e, false)} disabled={quickCreateSaving || !quickCreateForm.title} className="flex-1 h-11 font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-full shadow-sm transition-all flex items-center justify-center gap-2">
+                                            {quickCreateSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmă Comanda'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {quickCreateStep === 'new-client' && (
+                                <>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <button type="button" onClick={() => setQuickCreateStep(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500"><ArrowLeft className="w-4 h-4"/></button>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Adaugă Client Nou</span>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tip Client</label>
+                                        <div className="flex gap-2">
+                                            <label className={`flex-1 flex items-center justify-center gap-2 p-2 border rounded-full cursor-pointer transition-colors ${quickCreateClientForm.type === 'fizica' ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                                <input type="radio" className="hidden" checked={quickCreateClientForm.type === 'fizica'} onChange={() => setQuickCreateClientForm(p => ({...p, type: 'fizica'}))} /> Fizică
+                                            </label>
+                                            <label className={`flex-1 flex items-center justify-center gap-2 p-2 border rounded-full cursor-pointer transition-colors ${quickCreateClientForm.type === 'juridica' ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                                <input type="radio" className="hidden" checked={quickCreateClientForm.type === 'juridica'} onChange={() => setQuickCreateClientForm(p => ({...p, type: 'juridica'}))} /> Juridică
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nume Client *</label>
+                                        <input type="text" autoFocus required value={quickCreateClientForm.name} onChange={e => setQuickCreateClientForm(p => ({...p, name: e.target.value}))} className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Popescu Ion / Firma SRL" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{quickCreateClientForm.type === 'fizica' ? 'CNP (Opțional)' : 'CUI *'}</label>
+                                        <input type="text" required={quickCreateClientForm.type === 'juridica'} value={quickCreateClientForm.identifier} onChange={e => setQuickCreateClientForm(p => ({...p, identifier: e.target.value}))} className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon</label>
+                                            <input type="text" value={quickCreateClientForm.phone} onChange={e => setQuickCreateClientForm(p => ({...p, phone: e.target.value}))} className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                                            <input type="email" value={quickCreateClientForm.email} onChange={e => setQuickCreateClientForm(p => ({...p, email: e.target.value}))} className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 pt-3">
+                                        <button type="button" onClick={() => setQuickCreateStep(1)} className="flex-1 h-11 px-4 font-bold text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                                            Înapoi
+                                        </button>
+                                        <button type="button" onClick={handleQuickCreateClient} disabled={quickCreateSaving || !quickCreateClientForm.name} className="flex-1 h-11 font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-full shadow-sm transition-all flex items-center justify-center gap-2">
+                                            {quickCreateSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează Client'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+                @keyframes slideInUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
             `}</style>
         </div>
     )
@@ -1150,24 +1993,6 @@ function StatusBadge({ status, is_on_break, is_outside_geofence, gps_lost }) {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {t('dashboard.working')}</span>
 }
 
-function KPICard({ label, value, icon: Icon, gradient, onClick, pulse, isText }) {
-    return (
-        <div
-            onClick={onClick}
-            className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-4 shadow-xl relative overflow-hidden ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
-        >
-            <div className="relative z-10">
-                <div className="flex items-center justify-between mb-1">
-                    <Icon className="w-4 h-4 opacity-80" />
-                    {pulse && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
-                </div>
-                <div className={`${isText ? 'text-xl' : 'text-2xl'} font-bold`}>{value}</div>
-                <div className="text-[11px] opacity-80 mt-0.5">{label}</div>
-            </div>
-            <div className="absolute -right-2 -bottom-2 opacity-10"><Icon className="w-16 h-16" /></div>
-        </div>
-    )
-}
 
 function QuickAction({ icon: Icon, title, desc, color, onClick }) {
     return (

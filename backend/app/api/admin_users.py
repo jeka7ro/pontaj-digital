@@ -37,7 +37,7 @@ class UserCreate(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100)
     first_name: str = Field(..., min_length=1, max_length=100)
     role_id: str
-    pin: Optional[str] = Field(None, min_length=4, max_length=6)
+    pin: str = Field(..., min_length=4, max_length=6)
     is_active: bool = True
     password: Optional[str] = None
     cnp: Optional[str] = Field(None, max_length=13)
@@ -782,7 +782,7 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
         organization_id=role.organization_id,
         employee_code=user_data.employee_code,
         full_name=full_name, role_id=user_data.role_id,
-        pin_hash=hash_pin(user_data.pin) if user_data.pin else hash_pin("0000"), is_active=user_data.is_active,
+        pin_hash=hash_pin(user_data.pin), is_active=user_data.is_active,
         birth_date=birth_date_val, cnp=user_data.cnp,
         birth_place=user_data.birth_place, id_card_series=user_data.id_card_series,
         phone=user_data.phone, email=user_data.email, address=user_data.address,

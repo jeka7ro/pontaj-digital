@@ -1872,23 +1872,23 @@ export default function AdminOverview() {
                                             Include Duramint
                                         </label>
                                     </div>
-                                    <div className="bg-blue-50 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 rounded-xl p-3 space-y-2">
-                                        <h4 className="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 tracking-[0.1em]">Estimări Rapide</h4>
-                                        <div className="grid grid-cols-2 gap-2 text-sm font-semibold">
-                                            <div className="bg-white dark:bg-slate-900 rounded-lg p-2 border border-blue-100/50 dark:border-slate-700/50 shadow-sm">
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nisip estimat</div>
-                                                <div className="text-blue-600 dark:text-blue-400 font-black">{calculatedSand > 0 ? `${calculatedSand.toFixed(1)} Tone` : '-'}</div>
+                                    <div className="flex flex-col bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <h4 className="text-[10px] font-bold uppercase text-slate-700 dark:text-slate-300 tracking-[0.1em] mb-2">Estimări Rapide</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Nisip estimat</span>
+                                                <span className="text-blue-600 dark:text-blue-400 font-black text-sm">{calculatedSand > 0 ? `${calculatedSand.toFixed(1)} Tone` : '-'}</span>
                                             </div>
-                                            <div className="bg-white dark:bg-slate-900 rounded-lg p-2 border border-blue-100/50 dark:border-slate-700/50 shadow-sm">
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Distanță Bază</div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Distanță Bază</span>
                                                 <div className="text-amber-600 dark:text-amber-400 font-black flex items-center gap-1">
                                                     {quickRouteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (
                                                         quickRouteDist ? (
-                                                            <div className="flex flex-col leading-tight mt-0.5">
-                                                                <span className="text-[13px]">{quickRouteDist.toFixed(1)} km <span className="text-[10px] opacity-70">(Dus)</span></span>
-                                                                <span className="text-[10px] opacity-70">{(quickRouteDist * 2).toFixed(1)} km (Total)</span>
+                                                            <div className="flex flex-col leading-none gap-0.5">
+                                                                <span className="text-[13px]">{quickRouteDist.toFixed(1)} km <span className="text-[10px] font-semibold opacity-70">(Dus)</span></span>
+                                                                <span className="text-[10px] font-semibold opacity-70">{(quickRouteDist * 2).toFixed(1)} km (Total)</span>
                                                             </div>
-                                                        ) : '-'
+                                                        ) : <span className="text-sm">-</span>
                                                     )}
                                                 </div>
                                             </div>

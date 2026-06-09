@@ -21,6 +21,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const TodayTimesheet = lazy(() => import('./pages/TodayTimesheet'))
 const History = lazy(() => import('./pages/History'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const LogisticsLogin = lazy(() => import('./pages/admin/LogisticsLogin'))
+const LogisticsDashboard = lazy(() => import('./pages/admin/LogisticsDashboard'))
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'))
 const ClientsManagement = lazy(() => import('./pages/admin/ClientsManagement'))
 const PhotoTestPage = lazy(() => import('./pages/admin/PhotoTestPage'))
@@ -154,6 +156,19 @@ function App() {
                         <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
 
+                    {/* Logistics Routes */}
+                    <Route path="/logistica/login" element={<LogisticsLogin />} />
+                    <Route path="/logistica" element={<LogisticsProtectedRoute><LogisticsDashboard /></LogisticsProtectedRoute>}>
+                        <Route index element={<Navigate to="/logistica/warehouse" replace />} />
+                        <Route path="warehouse" element={<WarehouseManagement />} />
+                        <Route path="fleet" element={<FleetManagement />} />
+                        <Route path="material-requests" element={<AdminMaterialRequests />} />
+                        <Route path="sites" element={<SitesManagement />} />
+                        <Route path="complaints" element={<ComplaintsManagement />} />
+                        <Route path="employees/:id" element={<EmployeesManagement />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                    </Route>
+
                     {/* Employee Routes */}
                     <Route path="/login" element={<Login />} />
 
@@ -195,6 +210,11 @@ function SmartRedirect() {
     if (location.startsWith('/admin')) {
         return <Navigate to="/admin/login" replace />
     }
+    
+    // If trying to access logistica routes, redirect to logistica login
+    if (location.startsWith('/logistica')) {
+        return <Navigate to="/logistica/login" replace />
+    }
 
     // Otherwise redirect to employee login
     return <Navigate to="/login" replace />
@@ -224,6 +244,39 @@ function AdminProtectedRoute({ children }) {
 
     if (!admin) {
         return <Navigate to="/admin/login" replace />
+    }
+    if (admin.role === 'LOGISTICS') {
+        return <Navigate to="/logistica/warehouse" replace />
+    }
+
+    return children
+}
+
+// Protected route for logistics users
+function LogisticsProtectedRoute({ children }) {
+    const admin = useAdminStore((state) => state.admin)
+    const [hydrated, setHydrated] = useState(false)
+
+    useEffect(() => {
+        const unsub = useAdminStore.persist.onFinishHydration(() => {
+            setHydrated(true)
+        })
+        if (useAdminStore.persist.hasHydrated()) {
+            setHydrated(true)
+        }
+        return () => unsub?.()
+    }, [])
+
+    if (!hydrated) {
+        return null
+    }
+
+    if (!admin) {
+        return <Navigate to="/logistica/login" replace />
+    }
+
+    if (admin.role !== 'LOGISTICS' && admin.role !== 'SUPER_ADMIN') {
+        return <Navigate to="/admin/dashboard" replace />
     }
 
     return children

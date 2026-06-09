@@ -39,6 +39,7 @@ export default function EmployeesManagement() {
     const { id } = useParams()
     const { t } = useTranslation()
     const { showDialog, showToast, openDialog } = useUIStore()
+    const basePath = window.location.pathname.startsWith('/logistica') ? '/logistica' : '/admin'
     const [users, setUsers] = useState([])
     const [totalUsers, setTotalUsers] = useState(0)
     const [loading, setLoading] = useState(true)
@@ -448,7 +449,7 @@ export default function EmployeesManagement() {
     }
 
     const handleViewUser = (user) => {
-        navigate(`/admin/employees/${user.id}`)
+        navigate(`${basePath}/employees/${user.id}`)
     }
 
     const handleIdCardSelect = (e) => {
@@ -661,7 +662,9 @@ export default function EmployeesManagement() {
 
                 <div className="bg-slate-50/30 dark:bg-slate-900/50 flex-1 relative">
                     {detailUser ? (
-                        <EmployeeDetailView user={detailUser} onBack={() => navigate('/admin/employees')} onExport={handleExportExcel} />
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <EmployeeDetailView user={detailUser} onBack={() => navigate(basePath === '/logistica' ? '/logistica/fleet' : '/admin/employees')} onExport={handleExportExcel} />
+                        </div>
                     ) : loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />

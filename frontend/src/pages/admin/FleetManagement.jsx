@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../lib/api'
 import DataTable from '../../components/DataTable'
@@ -14,6 +15,10 @@ const STATUS_COLORS = {
 }
 
 export default function FleetManagement() {
+    const navigate = useNavigate()
+    const location = useLocation()
+    const basePath = location.pathname.startsWith('/logistica') ? '/logistica' : '/admin'
+
     const { t } = useTranslation()
     const [vehicles, setVehicles] = useState([])
     const [sites, setSites] = useState([])
@@ -341,10 +346,10 @@ export default function FleetManagement() {
             render: (v) => {
                 const vehicleSites = (v.site_ids || []).map(id => sites.find(s => s.id === id)).filter(Boolean)
                 if (vehicleSites.length === 0) return <span className="text-slate-300 dark:text-slate-600">—</span>
-                if (vehicleSites.length === 1) return <button onClick={() => navigate('/admin/sites', { state: { openSiteId: vehicleSites[0].id } })} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium text-left">{vehicleSites[0].name}</button>
+                if (vehicleSites.length === 1) return <button onClick={() => navigate(`${basePath}/sites`, { state: { openSiteId: vehicleSites[0].id } })} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium text-left">{vehicleSites[0].name}</button>
                 return (
                     <div className="flex flex-col gap-0.5">
-                        <button onClick={() => navigate('/admin/sites', { state: { openSiteId: vehicleSites[0].id } })} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium text-left">{vehicleSites[0].name}</button>
+                        <button onClick={() => navigate(`${basePath}/sites`, { state: { openSiteId: vehicleSites[0].id } })} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium text-left">{vehicleSites[0].name}</button>
                         <span className="text-xs text-slate-400">+{vehicleSites.length - 1} alte șantiere</span>
                     </div>
                 )
@@ -364,7 +369,7 @@ export default function FleetManagement() {
                     return (
                         <div 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1 -ml-1 rounded transition-colors"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/admin/employees/${u.id}`); }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`${basePath}/employees/${u.id}`); }}
                         >
                             {u.avatar_path ? (
                                 <img src={u.avatar_path.startsWith('http') ? u.avatar_path : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${u.avatar_path}`} alt="" className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" onError={e => { e.target.style.display = 'none' }} />

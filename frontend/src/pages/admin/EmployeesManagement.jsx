@@ -249,9 +249,22 @@ export default function EmployeesManagement() {
             showToast(t('users.errors.code_required'), 'error')
             return
         }
-        if (!editingUser && !formData.pin) {
+
+        const selectedRoleName = roles.find(r => r.id === formData.role_id)?.name;
+        if (!editingUser && !formData.pin && selectedRoleName !== 'Logistica') {
             showToast(t('users.errors.pin_required'), 'error')
             return
+        }
+
+        if (selectedRoleName === 'Logistica') {
+            if (!formData.email) {
+                showToast('Email-ul este obligatoriu pentru rolul Logistica.', 'error')
+                return
+            }
+            if (!editingUser && !formData.password) {
+                showToast('Parola este obligatorie pentru rolul Logistica.', 'error')
+                return
+            }
         }
 
         if (formData.password && formData.password !== formData.confirm_password) {
@@ -817,7 +830,7 @@ export default function EmployeesManagement() {
                                     />
                                 </div>
 
-                                {!editingUser && (
+                                {!editingUser && roles.find(r => r.id === formData.role_id)?.name !== 'Logistica' && (
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">PIN *</label>
                                         <input

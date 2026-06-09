@@ -141,6 +141,8 @@ export default function SitesManagement() {
     const setPageSize = useViewPreferencesStore((state) => state.setPageSize)
     const setCurrentPage = useViewPreferencesStore((state) => state.setCurrentPage)
 
+    const isLogistics = admin?.role === 'LOGISTICS'
+
     const location = useLocation()
     
     useEffect(() => {
@@ -494,7 +496,7 @@ export default function SitesManagement() {
                         />
 
                         {/* Actions */}
-                        {selectedSiteIds.length > 0 && (
+                        {!isLogistics && selectedSiteIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
                                 className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
@@ -503,13 +505,15 @@ export default function SitesManagement() {
                                 <span className="hidden sm:inline">Șterge ({selectedSiteIds.length})</span>
                             </button>
                         )}
-                        <button
-                            onClick={handleAddSite}
-                            className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Adaugă Șantier
-                        </button>
+                        {!isLogistics && (
+                            <button
+                                onClick={handleAddSite}
+                                className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Adaugă Șantier
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -523,9 +527,11 @@ export default function SitesManagement() {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-y border-slate-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider">
                                     <tr>
-                                        <th className="px-6 py-4 text-center w-16">
-                                            <input type="checkbox" checked={sites.length > 0 && selectedSiteIds.length === sites.length} onChange={handleToggleSelectAll} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                                        </th>
+                                        {!isLogistics && (
+                                            <th className="px-6 py-4 text-center w-16">
+                                                <input type="checkbox" checked={sites.length > 0 && selectedSiteIds.length === sites.length} onChange={handleToggleSelectAll} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                                            </th>
+                                        )}
                                         <th className="px-6 py-4">Șantier</th>
                                         <th className="px-6 py-4">Client</th>
                                         <th className="px-6 py-4">Sistem</th>
@@ -538,9 +544,11 @@ export default function SitesManagement() {
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                                     {sites.map((site) => (
                                         <tr key={site.id} className={`group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors ${selectedSiteIds.includes(site.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                                            <td className="px-6 py-4 text-center">
-                                                <input type="checkbox" checked={selectedSiteIds.includes(site.id)} onChange={() => handleToggleSelect(site.id)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                                            </td>
+                                            {!isLogistics && (
+                                                <td className="px-6 py-4 text-center">
+                                                    <input type="checkbox" checked={selectedSiteIds.includes(site.id)} onChange={() => handleToggleSelect(site.id)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 align-middle">
                                                 <div>
                                                     <button onClick={() => setDetailSite(site)} className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors text-left">{site.name}</button>
@@ -585,20 +593,24 @@ export default function SitesManagement() {
                                             >
                                                 <Camera className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={() => handleEditSite(site)}
-                                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
-                                                title="Editează"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteSite(site.id)}
-                                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors text-slate-400 hover:text-red-600 dark:hover:text-red-400"
-                                                title="Șterge"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            {!isLogistics && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditSite(site)}
+                                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                                        title="Editează"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteSite(site.id)}
+                                                        className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors text-slate-400 hover:text-red-600 dark:hover:text-red-400"
+                                                        title="Șterge"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -610,9 +622,11 @@ export default function SitesManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {sites.map((site) => (
                         <div key={site.id} className={`bg-white rounded-xl border ${selectedSiteIds.includes(site.id) ? 'border-blue-400 ring-1 ring-blue-400' : 'border-slate-200'} p-6 hover:shadow-lg transition-shadow relative`}>
-                            <div className="absolute top-4 right-4 z-10" onClick={e => e.stopPropagation()}>
-                                <input type="checkbox" checked={selectedSiteIds.includes(site.id)} onChange={() => handleToggleSelect(site.id)} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer drop-shadow-sm" />
-                            </div>
+                            {!isLogistics && (
+                                <div className="absolute top-4 right-4 z-10" onClick={e => e.stopPropagation()}>
+                                    <input type="checkbox" checked={selectedSiteIds.includes(site.id)} onChange={() => handleToggleSelect(site.id)} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer drop-shadow-sm" />
+                                </div>
+                            )}
                             <div className="flex items-start justify-between mb-4 pr-8">
                                 <h3 className="font-bold text-lg text-slate-900 hover:text-blue-600 cursor-pointer" onClick={() => setDetailSite(site)}>{site.name}</h3>
                                 {getStatusBadge(site.status)}
@@ -656,20 +670,24 @@ export default function SitesManagement() {
                                     <Camera className="w-4 h-4" />
                                     Fotografii
                                 </button>
-                                <button
-                                    onClick={() => handleEditSite(site)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-medium transition-colors flex items-center gap-2"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                    Editează
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteSite(site.id)}
-                                    className="p-2 hover:bg-red-50 rounded-full transition-colors"
-                                    title="Șterge"
-                                >
-                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
+                                {!isLogistics && (
+                                    <>
+                                        <button
+                                            onClick={() => handleEditSite(site)}
+                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                            Editează
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteSite(site.id)}
+                                            className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                                            title="Șterge"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-600" />
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ))}

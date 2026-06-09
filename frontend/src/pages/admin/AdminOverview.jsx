@@ -592,16 +592,7 @@ export default function AdminOverview() {
                     <div className="h-full bg-blue-500 animate-[shimmer_1.5s_ease-in-out_infinite]" style={{ width: '40%', animation: 'moveRight 1.5s linear infinite', background: 'linear-gradient(90deg, #3b82f6, #6366f1)' }} />
                 </div>
             )}
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        Planning
-                    </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                </div>
-            </div>
+            {/* Header removed as it duplicates the top navbar title */}
 
             {/* KPI Row */}
             <div className={`grid gap-3 mb-6 ${isScreeds ? 'grid-cols-3 md:grid-cols-3 lg:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'}`}>

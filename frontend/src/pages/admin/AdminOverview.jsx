@@ -773,99 +773,63 @@ export default function AdminOverview() {
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6 items-start">
 {/* Recent Work Orders */}
             {dashboardLayout.recent_work_orders?.visible && (
-                <div className={`${isShortTerm ? 'xl:col-span-3' : 'xl:col-span-4'} bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col overflow-hidden group`}>
-                    <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-                        <h3 className="text-[15px] font-black tracking-wide text-white flex items-center gap-2.5 relative z-10 drop-shadow-md">
-                            <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-md border border-white/20">
-                                <ClipboardList className="w-4 h-4 text-white" />
-                            </div>
-                            COMENZI RECENTE
+                <div className={`${isShortTerm ? 'xl:col-span-3' : 'xl:col-span-4'} bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg flex flex-col overflow-hidden`}>
+                    <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: tenant?.primary_color || '#2563eb' }}>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4 text-white" />
+                            Comenzi Recente
                         </h3>
-                        <button onClick={() => navigate('/admin/work-orders')} className="text-xs font-bold text-white hover:text-blue-100 transition-all bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 backdrop-blur-md relative z-10 flex items-center gap-1 shadow-sm">
-                            Vezi toate <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <button onClick={() => navigate('/admin/work-orders')} className="text-xs font-bold text-blue-100 hover:text-white transition-colors bg-white/10 px-2 py-1 rounded">Vezi toate →</button>
                     </div>
                     {recentWorkOrders.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 px-4 bg-slate-50/50 dark:bg-slate-800/20">
-                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-inner">
-                                <ClipboardList className="w-8 h-8 text-slate-300 dark:text-slate-600" />
-                            </div>
-                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Nicio comandă recentă înregistrată.</p>
+                        <div className="text-center py-6 text-slate-400 text-sm">
+                            Nicio comandă recentă.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-                            <table className="w-full text-left border-collapse">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[700px]">
                                 <thead>
-                                    <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Lucrare / Titlu</th>
-                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Client</th>
-                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Data Execuție</th>
-                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Creată La</th>
-                                        <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Status</th>
-                                        <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 whitespace-nowrap">Acțiuni</th>
+                                    <tr className="border-b border-slate-100 dark:border-slate-700">
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Titlu</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Client</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Data Execuție</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Dată Creare</th>
+                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Status</th>
+                                        <th className="px-4 py-2 text-right text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Acțiuni</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                                     {recentWorkOrders.map(wo => {
                                         const cfg = {
-                                            draft:       { label: 'Draft',       colors: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', icon: <div className="w-1.5 h-1.5 rounded-full bg-slate-400" /> },
-                                            sent:        { label: 'Trimisă',     colors: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> },
-                                            confirmed:   { label: 'Confirmată',  colors: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> },
-                                            in_progress: { label: 'În Execuție', colors: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" /> },
-                                            completed:   { label: 'Finalizată',  colors: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-violet-500" /> },
-                                            cancelled:   { label: 'Anulată',     colors: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50', icon: <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> }
-                                        }[wo.status] || { label: 'Draft', colors: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', icon: <div className="w-1.5 h-1.5 rounded-full bg-slate-400" /> };
+                                            draft:       { label: 'Draft',       color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' },
+                                            sent:        { label: 'Trimisă',     color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+                                            confirmed:   { label: 'Confirmată',  color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
+                                            in_progress: { label: 'În Execuție', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' },
+                                            completed:   { label: 'Finalizată',  color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400', dot: 'bg-violet-500' },
+                                            cancelled:   { label: 'Anulată',     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' }
+                                        }[wo.status] || { label: 'Draft', color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' }
                                         
                                         return (
-                                            <tr key={wo.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/40 transition-all duration-200 cursor-default group/row">
-                                                <td className="px-5 py-3.5 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-slate-600 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-sm shadow-sm group-hover/row:scale-105 transition-transform">
-                                                            {wo.title.substring(0, 1).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-slate-900 dark:text-white text-sm tracking-tight">{wo.title}</div>
-                                                            {wo.site_name && (
-                                                                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
-                                                                    <MapPin className="w-3 h-3 text-blue-500" /> {wo.site_name}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                            <tr key={wo.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-bold text-slate-900 dark:text-white text-sm">{wo.title}</div>
+                                                    {wo.site_name && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {wo.site_name}</div>}
                                                 </td>
-                                                <td className="px-5 py-3.5 whitespace-nowrap">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-300">
-                                                            {wo.client_name ? wo.client_name.substring(0, 2).toUpperCase() : '--'}
-                                                        </div>
-                                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{wo.client_name || 'Nespecificat'}</span>
-                                                    </div>
+                                                <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{wo.client_name || '—'}</td>
+                                                <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                                                    {wo.start_date ? new Date(wo.start_date).toLocaleDateString('ro-RO') : '—'}
                                                 </td>
-                                                <td className="px-5 py-3.5 whitespace-nowrap">
-                                                    <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                                        {wo.start_date ? new Date(wo.start_date).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Neplanificată'}
-                                                    </div>
+                                                <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                                                    {wo.created_at ? new Date(wo.created_at).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                                                 </td>
-                                                <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Clock className="w-3 h-3 opacity-60" />
-                                                        {wo.created_at ? new Date(wo.created_at).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-5 py-3.5 whitespace-nowrap">
-                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border shadow-sm ${cfg.colors}`}>
-                                                        {cfg.icon}
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                                                         {cfg.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-5 py-3.5 whitespace-nowrap text-right">
-                                                    <button 
-                                                        onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} 
-                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-700 dark:hover:text-white dark:hover:border-slate-600 transition-all duration-200 hover:-translate-y-0.5"
-                                                        title="Editează Comanda"
-                                                    >
+                                                <td className="px-4 py-3 text-right">
+                                                    <button onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors inline-block">
                                                         <ExternalLink className="w-4 h-4" />
                                                     </button>
                                                 </td>

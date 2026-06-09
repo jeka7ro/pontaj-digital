@@ -51,7 +51,11 @@ export default function AdminLogin() {
             }
 
             setAuth(admin, access_token)
-            navigate('/admin/dashboard')
+            if (admin.role === 'LOGISTICS') {
+                navigate('/admin/logistics')
+            } else {
+                navigate('/admin/dashboard')
+            }
         } catch (err) {
             setError(err.response?.data?.detail || 'Eroare la autentificare')
         } finally {

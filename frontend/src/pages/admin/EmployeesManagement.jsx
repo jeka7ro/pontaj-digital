@@ -299,7 +299,7 @@ export default function EmployeesManagement() {
             } else {
                 // Clean empty strings to null for optional fields
                 const cleanData = { ...formData }
-                const optionalFields = ['birth_date', 'cnp', 'birth_place', 'id_card_series', 'phone', 'email', 'address', 'avatar_path']
+                const optionalFields = ['pin', 'password', 'birth_date', 'cnp', 'birth_place', 'id_card_series', 'phone', 'email', 'address', 'avatar_path']
                 optionalFields.forEach(f => { if (cleanData[f] === '') cleanData[f] = null })
                 const resp = await api.post('/admin/users/', cleanData)
                 savedUser = resp.data

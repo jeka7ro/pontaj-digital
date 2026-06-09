@@ -769,6 +769,9 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
 
     full_name = f"{user_data.last_name} {user_data.first_name}".strip()
     
+    if user_data.email:
+        user_data.email = user_data.email.strip().lower()
+    
     # Convert birth_date string to date object for SQLite
     birth_date_val = None
     if user_data.birth_date:
@@ -794,11 +797,13 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
     if role.name in ['Administrator', 'Super Administrator', 'Logistica']:
         if not user_data.email:
             raise HTTPException(status_code=400, detail=f"Email is required for {role.name} accounts")
+        
+        clean_email = user_data.email.strip().lower()
         if not user_data.password:
             raise HTTPException(status_code=400, detail=f"Password is required for {role.name} accounts")
         
         # Check if email is already used by an admin
-        existing_admin = db.query(Admin).filter(Admin.email == user_data.email).first()
+        existing_admin = db.query(Admin).filter(Admin.email == clean_email).first()
         if existing_admin:
             raise HTTPException(status_code=400, detail="Adresa de email este deja folosită de alt administrator")
             
@@ -811,7 +816,7 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
         new_admin = Admin(
             id=str(uuid.uuid4()),
             organization_id=role.organization_id,
-            email=user_data.email,
+            email=clean_email,
             full_name=full_name,
             password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
             role=admin_role_val,

@@ -57,7 +57,7 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash"""
-    return True # Bypass for local testing
+    return hash_password(plain_password) == hashed_password
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -103,7 +103,8 @@ def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends
 @router.post("/login", response_model=Token)
 def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
     """Admin login with email and password"""
-    admin = db.query(Admin).filter(Admin.email == credentials.email).first()
+    clean_email = credentials.email.strip().lower()
+    admin = db.query(Admin).filter(Admin.email == clean_email).first()
     
     if not admin or not verify_password(credentials.password, admin.password_hash):
         raise HTTPException(

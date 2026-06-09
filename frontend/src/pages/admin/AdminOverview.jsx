@@ -850,8 +850,8 @@ export default function AdminOverview() {
                                     }
                                 ]}
                                 data={recentWorkOrders}
-                                defaultPageSize={10}
-                                pageSizeOptions={[10, 25, 150, 99999]}
+                                defaultPageSize={5}
+                                pageSizeOptions={[5, 10, 25, 150, 99999]}
                             />
                         </div>
                     )}

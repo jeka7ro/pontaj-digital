@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import api from '../../lib/api'
 import {
     Users, Building2, Clock, CheckCircle, TrendingUp, Calendar, BarChart3, Activity,

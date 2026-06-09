@@ -786,58 +786,73 @@ export default function AdminOverview() {
                             Nicio comandă recentă.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[700px]">
-                                <thead>
-                                    <tr className="border-b border-slate-100 dark:border-slate-700">
-                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Titlu</th>
-                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Client</th>
-                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Data Execuție</th>
-                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Dată Creare</th>
-                                        <th className="px-4 py-2 text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Status</th>
-                                        <th className="px-4 py-2 text-right text-[11px] font-extrabold uppercase tracking-widest text-slate-500">Acțiuni</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                    {recentWorkOrders.map(wo => {
-                                        const cfg = {
-                                            draft:       { label: 'Draft',       color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' },
-                                            sent:        { label: 'Trimisă',     color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
-                                            confirmed:   { label: 'Confirmată',  color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
-                                            in_progress: { label: 'În Execuție', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' },
-                                            completed:   { label: 'Finalizată',  color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400', dot: 'bg-violet-500' },
-                                            cancelled:   { label: 'Anulată',     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' }
-                                        }[wo.status] || { label: 'Draft', color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' }
-                                        
-                                        return (
-                                            <tr key={wo.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <div className="font-bold text-slate-900 dark:text-white text-sm">{wo.title}</div>
-                                                    {wo.site_name && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {wo.site_name}</div>}
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{wo.client_name || '—'}</td>
-                                                <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
-                                                    {wo.start_date ? new Date(wo.start_date).toLocaleDateString('ro-RO') : '—'}
-                                                </td>
-                                                <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                                                    {wo.created_at ? new Date(wo.created_at).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                                                        {cfg.label}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <button onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors inline-block">
-                                                        <ExternalLink className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
+                        <div className="border-t border-slate-200 dark:border-slate-700">
+                            <DataTable 
+                                columns={[
+                                    {
+                                        key: 'title',
+                                        label: 'Titlu',
+                                        sortable: true,
+                                        render: (wo) => (
+                                            <div>
+                                                <div className="font-bold text-slate-900 dark:text-white text-sm">{wo.title}</div>
+                                                {wo.site_name && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {wo.site_name}</div>}
+                                            </div>
                                         )
-                                    })}
-                                </tbody>
-                            </table>
+                                    },
+                                    {
+                                        key: 'client_name',
+                                        label: 'Client',
+                                        sortable: true,
+                                        render: (wo) => <div className="text-sm text-slate-700 dark:text-slate-300">{wo.client_name || '—'}</div>
+                                    },
+                                    {
+                                        key: 'start_date',
+                                        label: 'Data Execuție',
+                                        sortable: true,
+                                        render: (wo) => <div className="text-sm text-slate-700 dark:text-slate-300">{wo.start_date ? new Date(wo.start_date).toLocaleDateString('ro-RO') : '—'}</div>
+                                    },
+                                    {
+                                        key: 'created_at',
+                                        label: 'Dată Creare',
+                                        sortable: true,
+                                        render: (wo) => <div className="text-xs text-slate-500 dark:text-slate-400">{wo.created_at ? new Date(wo.created_at).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</div>
+                                    },
+                                    {
+                                        key: 'status',
+                                        label: 'Status',
+                                        sortable: true,
+                                        render: (wo) => {
+                                            const cfg = {
+                                                draft:       { label: 'Draft',       color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' },
+                                                sent:        { label: 'Trimisă',     color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+                                                confirmed:   { label: 'Confirmată',  color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
+                                                in_progress: { label: 'În Execuție', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' },
+                                                completed:   { label: 'Finalizată',  color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400', dot: 'bg-violet-500' },
+                                                cancelled:   { label: 'Anulată',     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' }
+                                            }[wo.status] || { label: 'Draft', color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dot: 'bg-slate-400' }
+                                            return (
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                                                    {cfg.label}
+                                                </span>
+                                            )
+                                        }
+                                    },
+                                    {
+                                        key: 'actions',
+                                        label: 'Acțiuni',
+                                        render: (wo) => (
+                                            <button onClick={() => navigate(`/admin/work-orders/${wo.id}/edit`)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors inline-block">
+                                                <ExternalLink className="w-4 h-4" />
+                                            </button>
+                                        )
+                                    }
+                                ]}
+                                data={recentWorkOrders}
+                                defaultPageSize={10}
+                                pageSizeOptions={[10, 25, 150, 99999]}
+                            />
                         </div>
                     )}
                 </div>

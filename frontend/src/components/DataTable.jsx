@@ -21,13 +21,20 @@ export default function DataTable({
     defaultPageSize = 25,
     emptyText,
     searchable = false,
-    searchPlaceholder = 'Caută...'
+    searchPlaceholder = 'Caută...',
+    defaultSortKey = null,
+    defaultSortDir = 'asc',
+    rowStyle,
+    rowClassName,
+    onRowClick,
+    mobileCard,
+    pageSizeOptions
 }) {
     const { t } = useTranslation()
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(defaultPageSize)
-    const [sortKey, setSortKey] = useState(null)
-    const [sortDir, setSortDir] = useState('asc') // 'asc' | 'desc'
+    const [sortKey, setSortKey] = useState(defaultSortKey)
+    const [sortDir, setSortDir] = useState(defaultSortDir) // 'asc' | 'desc'
     const [searchTerm, setSearchTerm] = useState('')
 
     // 1. Filter
@@ -113,20 +120,40 @@ export default function DataTable({
                 </div>
             )}
 
+            {/* Mobile Card View */}
+            {mobileCard && (
+                <div className="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+                    {loading ? (
+                        <div className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</div>
+                    ) : slice.length === 0 ? (
+                        <div className="py-10 text-center text-sm text-slate-400">{emptyText || t('common.no_data')}</div>
+                    ) : (
+                        slice.map((row, idx) => (
+                            <div key={row.id ?? idx} className={onRowClick ? 'cursor-pointer active:bg-slate-50 dark:active:bg-slate-800' : ''} onClick={onRowClick ? (e) => {
+                                if (e.target.closest('button,a,input,select,textarea')) return;
+                                onRowClick(row);
+                            } : undefined}>
+                                {mobileCard(row, from + idx)}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${mobileCard ? 'hidden md:block' : ''}`}>
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-y border-slate-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider">
+                    <thead className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider">
                         <tr>
                             {/* Row number column */}
-                            <th className="px-6 py-4 text-center w-16 select-none">
+                            <th className="px-4 py-4 text-center w-16 select-none">
                                 {t('common.row_number')}
                             </th>
                             {columns.map(col => (
                                 <th
                                     key={col.key}
                                     className={[
-                                        'px-6 py-4 text-left whitespace-nowrap select-none',
+                                        'px-4 py-4 text-left whitespace-nowrap select-none',
                                         col.sortable ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''
                                     ].join(' ')}
                                     onClick={col.sortable ? () => handleSort(col.key) : undefined}
@@ -142,13 +169,13 @@ export default function DataTable({
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                         {loading ? (
                             <tr>
-                                <td colSpan={columns.length + 1} className="px-6 py-10 text-center text-sm text-slate-400">
+                                <td colSpan={columns.length + 1} className="px-4 py-10 text-center text-sm text-slate-400">
                                     {t('common.loading')}
                                 </td>
                             </tr>
                         ) : slice.length === 0 ? (
                             <tr>
-                                <td colSpan={columns.length + 1} className="px-6 py-10 text-center text-sm text-slate-400">
+                                <td colSpan={columns.length + 1} className="px-4 py-10 text-center text-sm text-slate-400">
                                     {emptyText || t('common.no_data')}
                                 </td>
                             </tr>
@@ -156,13 +183,19 @@ export default function DataTable({
                             slice.map((row, idx) => (
                                 <tr
                                     key={row.id ?? idx}
-                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
+                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ? rowClassName(row) : ''}`}
+                                    style={rowStyle ? rowStyle(row) : undefined}
+                                    onClick={onRowClick ? (e) => {
+                                        // Nu naviga daca s-a dat click pe un buton/link/input din rand
+                                        if (e.target.closest('button,a,input,select,textarea')) return
+                                        onRowClick(row)
+                                    } : undefined}
                                 >
-                                    <td className="px-6 py-4 text-center text-slate-500 font-medium tabular-nums">
+                                    <td className="px-4 py-4 text-center text-slate-500 font-medium tabular-nums">
                                         {from + idx + 1}
                                     </td>
                                     {columns.map(col => (
-                                        <td key={col.key} className="px-6 py-4 align-middle text-slate-900 dark:text-white font-medium">
+                                        <td key={col.key} className="px-4 py-4 align-middle text-slate-900 dark:text-white font-medium">
                                             {col.render ? col.render(row, from + idx) : (row[col.key] ?? '—')}
                                         </td>
                                     ))}
@@ -182,12 +215,14 @@ export default function DataTable({
                         onChange={handlePageSize}
                         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
                     >
-                        {PAGE_SIZE_OPTIONS.map(s => (
-                            <option key={s} value={s}>{s}</option>
+                        {(pageSizeOptions || [10, 25, 50, 100]).map(s => (
+                            <option key={s} value={s}>{s === 99999 ? 'Toate' : s}</option>
                         ))}
                     </select>
                 </div>
                 <div className="flex items-center gap-4">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">Total: {data.length}</span>
+                    <span className="w-px h-4 bg-slate-300 dark:bg-slate-600"></span>
                     <span>Pagina {safePage} din {totalPages || 1}</span>
                     <div className="flex gap-1">
                         <button

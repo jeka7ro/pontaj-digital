@@ -12,6 +12,7 @@ export default function LeavesManagement() {
     
     const [leaves, setLeaves] = useState([])
     const [users, setUsers] = useState([])
+    const [admins, setAdmins] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [showModal, setShowModal] = useState(false)
@@ -36,7 +37,8 @@ export default function LeavesManagement() {
         start_date: getToday(),
         end_date: getTomorrow(),
         notes: '',
-        status: 'approved'
+        status: 'approved',
+        approved_by_id: ''
     })
     const [editingId, setEditingId] = useState(null)
     const [deleteModalId, setDeleteModalId] = useState(null)
@@ -49,11 +51,13 @@ export default function LeavesManagement() {
         try {
             setLoading(true)
             setError(null)
-            const [leavesRes, usersRes] = await Promise.all([
+            const [leavesRes, usersRes, adminsRes] = await Promise.all([
                 api.get('/admin/leaves/'),
-                api.get('/admin/users/', { params: { page_size: 1000 } })
+                api.get('/admin/users/', { params: { page_size: 1000 } }),
+                api.get('/admin/leaves/admins')
             ])
             setLeaves(Array.isArray(leavesRes.data) ? leavesRes.data : [])
+            setAdmins(Array.isArray(adminsRes.data) ? adminsRes.data : [])
             
             if (usersRes.data.items) {
                 setUsers(usersRes.data.items)
@@ -89,13 +93,19 @@ export default function LeavesManagement() {
             return;
         }
         try {
+            const selectedAdmin = admins.find(a => a.id === formData.approved_by_id)
+            const payload = {
+                ...formData,
+                approved_by_name: selectedAdmin ? selectedAdmin.full_name : null
+            }
+
             if (editingId) {
-                await api.put(`/admin/leaves/${editingId}`, formData)
+                await api.put(`/admin/leaves/${editingId}`, payload)
             } else {
-                await api.post('/admin/leaves/', formData)
+                await api.post('/admin/leaves/', payload)
             }
             setShowModal(false)
-            setFormData({ user_id: '', leave_type: 'odihna', start_date: getToday(), end_date: getTomorrow(), notes: '', status: 'approved' })
+            setFormData({ user_id: '', leave_type: 'odihna', start_date: getToday(), end_date: getTomorrow(), notes: '', status: 'approved', approved_by_id: '' })
             setEditingId(null)
             fetchData()
         } catch (error) {
@@ -120,7 +130,8 @@ export default function LeavesManagement() {
             start_date: leave.start_date,
             end_date: leave.end_date,
             notes: leave.notes || '',
-            status: leave.status || 'approved'
+            status: leave.status || 'approved',
+            approved_by_id: leave.approved_by_id || ''
         })
         setEditingId(leave.id)
         setShowModal(true)
@@ -222,7 +233,7 @@ export default function LeavesManagement() {
                         <button 
                             onClick={() => {
                                 setEditingId(null);
-                                setFormData({ user_id: '', leave_type: 'odihna', start_date: getToday(), end_date: getTomorrow(), notes: '', status: 'approved' });
+                                setFormData({ user_id: '', leave_type: 'odihna', start_date: getToday(), end_date: getTomorrow(), notes: '', status: 'approved', approved_by_id: '' });
                                 setShowModal(true);
                             }}
                             className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
@@ -328,9 +339,16 @@ export default function LeavesManagement() {
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border ${getStatusInfo(leave.status).color}`}>
-                                                    {getStatusInfo(leave.status).label}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border w-fit ${getStatusInfo(leave.status).color}`}>
+                                                        {getStatusInfo(leave.status).label}
+                                                    </span>
+                                                    {leave.approved_by_name && (
+                                                        <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                                                            de {leave.approved_by_name}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-1">
@@ -410,17 +428,31 @@ export default function LeavesManagement() {
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Status *</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status *</label>
                                     <select 
                                         required
                                         value={formData.status}
                                         onChange={e => setFormData({...formData, status: e.target.value})}
-                                        className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                        className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all dark:text-white"
                                     >
                                         <option value="approved">Aprobat</option>
                                         <option value="pending">În așteptare</option>
                                         <option value="rejected">Respins</option>
+                                    </select>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Aprobat de (Opțional)</label>
+                                    <select 
+                                        value={formData.approved_by_id}
+                                        onChange={e => setFormData({...formData, approved_by_id: e.target.value})}
+                                        className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all dark:text-white"
+                                    >
+                                        <option value="">-- Selectează Admin --</option>
+                                        {admins.map(admin => (
+                                            <option key={admin.id} value={admin.id}>{admin.full_name}</option>
+                                        ))}
                                     </select>
                                 </div>
 

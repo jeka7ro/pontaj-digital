@@ -764,6 +764,8 @@ class LeaveRequest(Base):
     end_date = Column(Date, nullable=False)
     status = Column(String(20), default="approved", nullable=False) # pending, approved, rejected
     notes = Column(Text, nullable=True)
+    approved_by_id = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    approved_by_name = Column(String(255), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

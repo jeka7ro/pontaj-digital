@@ -21,6 +21,8 @@ class LeaveCreate(BaseModel):
     end_date: date
     notes: Optional[str] = None
     status: str = "approved"
+    approved_by_id: Optional[str] = None
+    approved_by_name: Optional[str] = None
 
 class LeaveUpdate(BaseModel):
     leave_type: Optional[str] = None
@@ -28,6 +30,8 @@ class LeaveUpdate(BaseModel):
     end_date: Optional[date] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    approved_by_id: Optional[str] = None
+    approved_by_name: Optional[str] = None
 
 class LeaveResponse(BaseModel):
     id: str
@@ -39,6 +43,8 @@ class LeaveResponse(BaseModel):
     end_date: date
     status: str
     notes: Optional[str]
+    approved_by_id: Optional[str] = None
+    approved_by_name: Optional[str] = None
     avatar_path: Optional[str]
     role_name: Optional[str] = None
     team_name: Optional[str] = None
@@ -48,6 +54,20 @@ class LeaveResponse(BaseModel):
         from_attributes = True
 
 # =================== ENDPOINTS ===================
+
+@router.get("/admins")
+def get_leave_admins(
+    current_admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Obține lista de admini pentru aprobare concedii (exclusiv super admini)"""
+    admins = db.query(Admin).filter(
+        Admin.organization_id == current_admin.organization_id,
+        Admin.is_super_admin == False,
+        Admin.is_active == True
+    ).all()
+    
+    return [{"id": a.id, "full_name": a.full_name} for a in admins]
 
 @router.get("", response_model=List[LeaveResponse])
 def get_all_leaves(
@@ -89,7 +109,9 @@ def get_all_leaves(
                 "end_date": leave.end_date,
                 "status": leave.status,
                 "notes": leave.notes,
-                "avatar_path": user.avatar_path if hasattr(user, 'avatar_path') else None,
+                "approved_by_id": leave.approved_by_id,
+                "approved_by_name": leave.approved_by_name,
+                "avatar_path": getattr(user, 'avatar_path', None),
                 "role_name": role_name,
                 "team_name": team_name,
                 "created_at": leave.created_at
@@ -135,7 +157,9 @@ def create_leave(
         start_date=payload.start_date,
         end_date=payload.end_date,
         status=payload.status,
-        notes=payload.notes
+        notes=payload.notes,
+        approved_by_id=payload.approved_by_id,
+        approved_by_name=payload.approved_by_name
     )
     
     db.add(leave)
@@ -162,6 +186,8 @@ def create_leave(
         "end_date": leave.end_date,
         "status": leave.status,
         "notes": leave.notes,
+        "approved_by_id": leave.approved_by_id,
+        "approved_by_name": leave.approved_by_name,
         "avatar_path": user.avatar_path if hasattr(user, 'avatar_path') else None,
         "role_name": role_name,
         "team_name": team_name,
@@ -194,6 +220,10 @@ def update_leave(
         leave.status = payload.status
     if payload.notes is not None:
         leave.notes = payload.notes
+    if payload.approved_by_id is not None:
+        leave.approved_by_id = payload.approved_by_id
+    if payload.approved_by_name is not None:
+        leave.approved_by_name = payload.approved_by_name
         
     if leave.end_date < leave.start_date:
         raise HTTPException(status_code=400, detail="Data de final trebuie să fie după data de început")

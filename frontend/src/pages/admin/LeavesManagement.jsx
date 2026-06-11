@@ -51,7 +51,7 @@ export default function LeavesManagement() {
                 api.get('/admin/leaves/'),
                 api.get('/admin/users/', { params: { page_size: 1000 } })
             ])
-            setLeaves(leavesRes.data)
+            setLeaves(Array.isArray(leavesRes.data) ? leavesRes.data : [])
             
             if (usersRes.data.items) {
                 setUsers(usersRes.data.items)

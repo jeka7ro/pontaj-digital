@@ -61,7 +61,8 @@ export default function EmployeeInventory() {
 
     useEffect(() => {
         fetchData()
-        const interval = setInterval(fetchSilent, 3000)
+        fetchSilent()
+        const interval = setInterval(fetchSilent, 300000)
         return () => clearInterval(interval)
     }, [])
 

@@ -33,7 +33,7 @@ export default function EmployeeMaterialRequests() {
             Notification.requestPermission();
         }
         fetchData() 
-        const interval = setInterval(fetchSilent, 3000)
+        const interval = setInterval(fetchSilent, 300000)
         return () => clearInterval(interval)
     }, [])
 

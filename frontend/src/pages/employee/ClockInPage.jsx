@@ -130,7 +130,7 @@ export default function ClockInPage() {
 
     useEffect(() => {
         fetchAlerts()
-        const interval = setInterval(fetchAlerts, 15000)
+        const interval = setInterval(fetchAlerts, 5 * 60 * 1000) // 5 minutes
         return () => clearInterval(interval)
     }, [])
 
@@ -307,7 +307,7 @@ export default function ClockInPage() {
                 .catch(() => {})
         }
         fetchBadges()
-        const t = setInterval(fetchBadges, 10000)
+        const t = setInterval(fetchBadges, 5 * 60 * 1000) // 5 minutes
         return () => clearInterval(t)
     }, [])
 
@@ -318,33 +318,8 @@ export default function ClockInPage() {
         requestLocation()
     }, [])
 
-    // Watch position continuously
-    useEffect(() => {
-        if (!navigator.geolocation) return
-        const watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                const coords = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                }
-                setLocation(coords)
-                locationRef.current = coords // Actualizeaza ref — fara re-render
-                setLocationError(null)
-                // Trimite coordonatele actualizate catre Service Worker
-                if (swRef.current?.active) {
-                    swRef.current.active.postMessage({
-                        type: 'LOCATION_UPDATE',
-                        lat: coords.latitude,
-                        lon: coords.longitude
-                    })
-                }
-            },
-            () => { },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-        )
-        return () => navigator.geolocation.clearWatch(watchId)
-    }, [])
+    // To save battery, we no longer watchPosition continuously.
+    // Location will be fetched periodically by the keepalivePing.
 
     useEffect(() => {
         if (activeShift) {
@@ -397,8 +372,7 @@ export default function ClockInPage() {
         return () => clearInterval(interval)
     }, [activeShift?.is_on_break, activeShift?.break_start_time])
 
-    // Geofence location ping — every 30s while shift is active
-    // Folosim locationRef (nu state location) pentru a evita restart la fiecare update GPS
+    // Geofence location ping & keepalive — unified to run every 15 mins to save battery
     useEffect(() => {
         if (!activeShift?.segment_id) return
 
@@ -407,32 +381,69 @@ export default function ClockInPage() {
             setGeofencePauseTime(activeShift.geofence_pause_hours * 3600)
         }
 
-        const sendPing = async () => {
-            const coords = locationRef.current
-            if (!coords) return // Nu avem GPS inca
-            try {
-                const res = await api.post('/timesheets/location-ping', {
-                    latitude: coords.latitude,
-                    longitude: coords.longitude
-                })
-                const data = res.data
-                if (data.geofence_applicable) {
-                    setGeofencePing(data)
-                    if (data.total_geofence_pause_seconds !== undefined) {
-                        setGeofencePauseTime(data.total_geofence_pause_seconds)
+        const fetchAndSendLocation = () => {
+            if (!navigator.geolocation) return
+            
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const coords = {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
                     }
-                    if (data.status_changed) {
-                        fetchActiveShift()
+                    setLocation(coords)
+                    locationRef.current = coords
+                    setLocationError(null)
+                    
+                    if (swRef.current?.active) {
+                        swRef.current.active.postMessage({
+                            type: 'LOCATION_UPDATE',
+                            lat: coords.latitude,
+                            lon: coords.longitude
+                        })
                     }
-                }
-            } catch (e) { /* silently fail */ }
+
+                    try {
+                        const res = await api.post('/timesheets/location-ping', {
+                            latitude: coords.latitude,
+                            longitude: coords.longitude
+                        })
+                        const data = res.data
+                        if (data.geofence_applicable) {
+                            setGeofencePing(data)
+                            if (data.total_geofence_pause_seconds !== undefined) {
+                                setGeofencePauseTime(data.total_geofence_pause_seconds)
+                            }
+                            if (data.status_changed) {
+                                fetchActiveShift()
+                            }
+                        }
+                    } catch (e) { /* silently fail */ }
+                },
+                () => {},
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            )
         }
 
-        // Trimite primul ping dupa 5s (sa aiba timp GPS sa se fixeze), apoi din 30 in 30s
-        const firstPing = setTimeout(sendPing, 5000)
-        const interval = setInterval(sendPing, 30000)
-        return () => { clearTimeout(firstPing); clearInterval(interval) }
-    }, [activeShift?.segment_id]) // ← doar segment_id, nu lat/lon — evita battery drain
+        // Fetch first time after 5s
+        const firstPing = setTimeout(fetchAndSendLocation, 5000)
+        // Then every 15 mins
+        const interval = setInterval(fetchAndSendLocation, 15 * 60 * 1000)
+        
+        // Also ping when visibility changes to visible
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') {
+                fetchAndSendLocation()
+            }
+        }
+        document.addEventListener('visibilitychange', onVisible)
+
+        return () => { 
+            clearTimeout(firstPing)
+            clearInterval(interval)
+            document.removeEventListener('visibilitychange', onVisible)
+        }
+    }, [activeShift?.segment_id])
 
     // ─── Notifica Service Worker cand tura se schimba ────────────────────────
     useEffect(() => {
@@ -472,42 +483,7 @@ export default function ClockInPage() {
         return () => document.removeEventListener('visibilitychange', onVisibility)
     }, [activeShift?.segment_id])
 
-    // GPS keepalive — forteaza GPS proaspat din 10 in 10 min, chiar daca ecranul e stins
-    // Chrome pe Android throttleaza setInterval la ~1min in background — suficient pentru last_ping_at
-    useEffect(() => {
-        if (!activeShift?.segment_id) return
 
-        const keepalivePing = () => {
-            if (!navigator.geolocation) return
-            // Cere GPS proaspat de la sistem (trezeste GPS-ul daca era adormit)
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    api.post('/timesheets/location-ping', {
-                        latitude: pos.coords.latitude,
-                        longitude: pos.coords.longitude
-                    }).catch(() => {})
-                },
-                () => {} // GPS indisponibil — ignoram
-                , { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-            )
-        }
-
-        // La fiecare 10 minute — GPS keepalive
-        const interval = setInterval(keepalivePing, 10 * 60 * 1000)
-
-        // Ping instant cand muncitorul redeschide app-ul (Page Visibility API)
-        const onVisible = () => {
-            if (document.visibilityState === 'visible') {
-                keepalivePing()
-            }
-        }
-        document.addEventListener('visibilitychange', onVisible)
-
-        return () => {
-            clearInterval(interval)
-            document.removeEventListener('visibilitychange', onVisible)
-        }
-    }, [activeShift?.segment_id])
 
     const fetchActiveShift = async () => {
         try {

@@ -444,16 +444,14 @@ export default function LeavesManagement() {
                                 
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Aprobat de (Opțional)</label>
-                                    <select 
+                                    <SearchableSelect 
+                                        options={admins}
                                         value={formData.approved_by_id}
-                                        onChange={e => setFormData({...formData, approved_by_id: e.target.value})}
-                                        className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all dark:text-white"
-                                    >
-                                        <option value="">-- Selectează Admin --</option>
-                                        {admins.map(admin => (
-                                            <option key={admin.id} value={admin.id}>{admin.full_name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={val => setFormData({...formData, approved_by_id: val})}
+                                        placeholder="-- Selectează Admin --"
+                                        labelKey="full_name"
+                                        valueKey="id"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

@@ -60,11 +60,12 @@ def get_leave_admins(
     current_admin: Admin = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Obține lista de admini pentru aprobare concedii (exclusiv super admini)"""
+    """Obține lista de admini pentru aprobare concedii (exclusiv super admini și logistica)"""
     admins = db.query(Admin).filter(
         Admin.organization_id == current_admin.organization_id,
         Admin.is_super_admin == False,
-        Admin.is_active == True
+        Admin.is_active == True,
+        Admin.role != 'LOGISTICS'
     ).all()
     
     return [{"id": a.id, "full_name": a.full_name} for a in admins]

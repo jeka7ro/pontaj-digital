@@ -13,6 +13,7 @@ export default function LeavesManagement() {
     const [leaves, setLeaves] = useState([])
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
     const [showModal, setShowModal] = useState(false)
     const [search, setSearch] = useState('')
     
@@ -47,6 +48,7 @@ export default function LeavesManagement() {
     const fetchData = async () => {
         try {
             setLoading(true)
+            setError(null)
             const [leavesRes, usersRes] = await Promise.all([
                 api.get('/admin/leaves/'),
                 api.get('/admin/users/', { params: { page_size: 1000 } })
@@ -60,15 +62,20 @@ export default function LeavesManagement() {
             } else if (Array.isArray(usersRes.data)) {
                 setUsers(usersRes.data)
             }
-        } catch (error) {
-            console.error('Error fetching leaves:', error)
+        } catch (e) {
+            console.error('Error fetching leaves:', e)
             try {
                 const altUsersRes = await api.get('/teams/available-workers')
                 if (altUsersRes.data.workers) {
                     setUsers(altUsersRes.data.workers)
                 }
-            } catch (e) {
-                console.error("Could not fetch users", e)
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    // handled by interceptor or app
+                } else {
+                    console.error("Could not fetch data", err)
+                    setError(err.response?.data?.detail || err.message || 'Eroare la încărcarea datelor')
+                }
             }
         } finally {
             setLoading(false)
@@ -240,7 +247,16 @@ export default function LeavesManagement() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {loading ? (
+                                {error ? (
+                                    <tr>
+                                        <td colSpan="7" className="p-12 text-center">
+                                            <div className="text-red-500 bg-red-50 p-4 rounded-lg inline-block border border-red-200">
+                                                <p className="font-bold mb-1">Eroare API</p>
+                                                <p className="text-sm">{error}</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : loading ? (
                                     <tr>
                                         <td colSpan="7" className="p-12 text-center">
                                             <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />

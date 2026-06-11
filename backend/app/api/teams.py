@@ -575,7 +575,7 @@ def get_team_status(
     db: Session = Depends(get_db)
 ):
     """Get live status for all team members (who's working, on break, etc.)"""
-    from app.models import Timesheet, TimesheetSegment, TimesheetLine, Role
+    from app.models import Timesheet, TimesheetSegment, TimesheetLine, Role, LeaveRequest
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -600,13 +600,22 @@ def get_team_status(
             Timesheet.date == today
         ).first()
 
+        # Check if user is on leave
+        active_leave = db.query(LeaveRequest).filter(
+            LeaveRequest.user_id == user.id,
+            LeaveRequest.start_date <= today,
+            LeaveRequest.end_date >= today,
+            LeaveRequest.status == "approved"
+        ).first()
+
         status_info = {
             "user_id": str(user.id),
             "full_name": user.full_name,
             "employee_code": user.employee_code,
             "role_name": role.name if role else "Muncitor",
             "avatar_path": user.avatar_path,
-            "status": "absent",  # default
+            "status": "concediu" if active_leave else "absent",
+            "leave_type": active_leave.leave_type if active_leave else None,
             "check_in_time": None,
             "check_out_time": None,
             "worked_hours": 0,

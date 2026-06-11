@@ -746,3 +746,28 @@ class AlertAcknowledgement(Base):
     
     alert = relationship("Alert")
     user = relationship("User", foreign_keys=[user_id])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONCEDII (LEAVES)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class LeaveRequest(Base):
+    """Cereri de concediu / Înregistrări concedii"""
+    __tablename__ = "leave_requests"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    leave_type = Column(String(50), nullable=False) # medical, odihna, fara_plata, altul
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    status = Column(String(20), default="approved", nullable=False) # pending, approved, rejected
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    user = relationship("User", foreign_keys=[user_id])
+

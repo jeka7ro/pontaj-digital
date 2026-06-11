@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import LanguageSelector from '../../components/LanguageSelector'
 import {
     LayoutDashboard, Users, Building2, FileText, Settings, LogOut,
-    ChevronLeft, Clock, Activity, Bell, ChevronRight, Camera, Sun, Moon, Truck, Package, Briefcase, Shield, HardHat, MessageSquareWarning, BedDouble, Wallet, PackageSearch, AlertTriangle, Megaphone
+    ChevronLeft, Clock, Activity, Bell, ChevronRight, Camera, Sun, Moon, Truck, Package, Briefcase, Shield, HardHat, MessageSquareWarning, BedDouble, Wallet, PackageSearch, AlertTriangle, Megaphone, Calendar
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -133,6 +133,7 @@ export default function AdminDashboard() {
             items: [
                 { path: '/admin/employees', icon: HardHat, label: 'Angajați' },
                 { path: '/admin/teams', icon: Users, label: t('nav.teams') },
+                { path: '/admin/leaves', icon: Calendar, label: 'Concedii' },
                 { path: '/admin/accommodations', icon: BedDouble, label: 'Cazări' },
             ]
         },

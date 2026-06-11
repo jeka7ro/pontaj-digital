@@ -445,12 +445,13 @@ export default function LeavesManagement() {
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Aprobat de (Opțional)</label>
                                     <SearchableSelect 
-                                        options={admins}
+                                        options={admins.map(a => ({
+                                            value: a.id,
+                                            label: a.full_name
+                                        }))}
                                         value={formData.approved_by_id}
                                         onChange={val => setFormData({...formData, approved_by_id: val})}
                                         placeholder="-- Selectează Admin --"
-                                        labelKey="full_name"
-                                        valueKey="id"
                                     />
                                 </div>
 

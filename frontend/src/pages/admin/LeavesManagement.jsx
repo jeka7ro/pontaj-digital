@@ -51,20 +51,27 @@ export default function LeavesManagement() {
         try {
             setLoading(true)
             setError(null)
-            const [leavesRes, usersRes, adminsRes] = await Promise.all([
+            const [leavesRes, usersRes, adminsRes] = await Promise.allSettled([
                 api.get('/admin/leaves/'),
                 api.get('/admin/users/', { params: { page_size: 1000 } }),
                 api.get('/admin/leaves/admins')
             ])
-            setLeaves(Array.isArray(leavesRes.data) ? leavesRes.data : [])
-            setAdmins(Array.isArray(adminsRes.data) ? adminsRes.data : [])
             
-            if (usersRes.data.items) {
-                setUsers(usersRes.data.items)
-            } else if (usersRes.data.users) {
-                setUsers(usersRes.data.users)
-            } else if (Array.isArray(usersRes.data)) {
-                setUsers(usersRes.data)
+            if (leavesRes.status === 'fulfilled') {
+                setLeaves(Array.isArray(leavesRes.value.data) ? leavesRes.value.data : [])
+            } else {
+                throw leavesRes.reason; // Trigger error state if main endpoint fails
+            }
+
+            if (adminsRes.status === 'fulfilled') {
+                setAdmins(Array.isArray(adminsRes.value.data) ? adminsRes.value.data : [])
+            }
+
+            if (usersRes.status === 'fulfilled') {
+                const data = usersRes.value.data;
+                if (data.items) setUsers(data.items)
+                else if (data.users) setUsers(data.users)
+                else if (Array.isArray(data)) setUsers(data)
             }
         } catch (e) {
             console.error('Error fetching leaves:', e)

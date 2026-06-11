@@ -70,7 +70,7 @@ def get_leave_admins(
     
     return [{"id": a.id, "full_name": a.full_name} for a in admins]
 
-@router.get("", response_model=List[LeaveResponse])
+@router.get("/", response_model=List[LeaveResponse])
 def get_all_leaves(
     user_id: Optional[str] = None,
     current_admin: Admin = Depends(get_current_admin),
@@ -120,7 +120,7 @@ def get_all_leaves(
             
     return result
 
-@router.post("", response_model=LeaveResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=LeaveResponse, status_code=status.HTTP_201_CREATED)
 def create_leave(
     payload: LeaveCreate,
     current_admin: Admin = Depends(get_current_admin),

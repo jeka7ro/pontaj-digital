@@ -48,7 +48,7 @@ export default function LeavesManagement() {
         try {
             setLoading(true)
             const [leavesRes, usersRes] = await Promise.all([
-                api.get('/admin/leaves'),
+                api.get('/admin/leaves/'),
                 api.get('/admin/users/', { params: { page_size: 1000 } })
             ])
             setLeaves(leavesRes.data)
@@ -85,7 +85,7 @@ export default function LeavesManagement() {
             if (editingId) {
                 await api.put(`/admin/leaves/${editingId}`, formData)
             } else {
-                await api.post('/admin/leaves', formData)
+                await api.post('/admin/leaves/', formData)
             }
             setShowModal(false)
             setFormData({ user_id: '', leave_type: 'odihna', start_date: getToday(), end_date: getTomorrow(), notes: '', status: 'approved' })

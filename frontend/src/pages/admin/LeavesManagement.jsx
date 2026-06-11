@@ -59,8 +59,6 @@ export default function LeavesManagement() {
             
             if (leavesRes.status === 'fulfilled') {
                 setLeaves(Array.isArray(leavesRes.value.data) ? leavesRes.value.data : [])
-            } else {
-                throw leavesRes.reason; // Trigger error state if main endpoint fails
             }
 
             if (adminsRes.status === 'fulfilled') {
@@ -72,6 +70,10 @@ export default function LeavesManagement() {
                 if (data.items) setUsers(data.items)
                 else if (data.users) setUsers(data.users)
                 else if (Array.isArray(data)) setUsers(data)
+            }
+
+            if (leavesRes.status === 'rejected') {
+                throw leavesRes.reason; // Trigger error state if main endpoint fails
             }
         } catch (e) {
             console.error('Error fetching leaves:', e)

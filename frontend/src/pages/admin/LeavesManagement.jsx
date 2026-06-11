@@ -67,9 +67,20 @@ export default function LeavesManagement() {
 
             if (usersRes.status === 'fulfilled') {
                 const data = usersRes.value.data;
-                if (data.items) setUsers(data.items)
-                else if (data.users) setUsers(data.users)
-                else if (Array.isArray(data)) setUsers(data)
+                let loadedUsers = [];
+                if (data.items) loadedUsers = data.items
+                else if (data.users) loadedUsers = data.users
+                else if (Array.isArray(data)) loadedUsers = data
+                
+                setUsers(loadedUsers)
+
+                // Fallback: If backend is outdated and /admins failed, extract admins from users
+                if (adminsRes.status !== 'fulfilled') {
+                    const fallbackAdmins = loadedUsers
+                        .filter(u => u.role_name === 'Administrator' || u.role_name === 'Super Administrator')
+                        .map(u => ({ id: u.id, full_name: u.full_name }))
+                    setAdmins(fallbackAdmins)
+                }
             }
 
             if (leavesRes.status === 'rejected') {

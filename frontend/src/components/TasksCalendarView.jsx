@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, CheckCircle2, Plus, Trash2, AlertTriangle, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, CheckCircle2, Plus, Trash2, AlertTriangle, X, Clock } from 'lucide-react';
 import api from '../lib/api';
 
 const DEFAULT_HOURS = Array.from({ length: 12 }, (_, i) => i + 7); // 07:00 to 18:00
@@ -429,9 +429,9 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                         <div className="flex justify-between items-start gap-1.5 h-full">
                                             {/* Left: Title, Site, Desc */}
                                             <div className="flex flex-col min-w-0 flex-1">
-                                                <div className="flex items-start gap-1 font-bold text-[11px] leading-tight text-slate-800 dark:text-slate-200">
-                                                    {isDone && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />}
-                                                    <span className={`${height > 50 ? 'line-clamp-2' : 'line-clamp-1'} break-words pr-1`} title={task.title}>{task.title}</span>
+                                                <div className="flex items-start gap-1 font-bold text-[10px] leading-[1.1] text-slate-800 dark:text-slate-200">
+                                                    {isDone && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                                                    <span className={`${height > 50 ? 'line-clamp-2' : 'line-clamp-1'} break-words pr-1`}>{task.title}</span>
                                                 </div>
                                                 
                                                 {task.site_id && sites && (
@@ -469,13 +469,43 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                         
                                         {/* Delete Button */}
                                         <div 
-                                            className="absolute -top-3 -right-3 opacity-0 group-hover/task:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-800 rounded-full shadow-md border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-900/50 z-10"
+                                            className="absolute -top-3 -right-3 opacity-0 group-hover/task:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-800 rounded-full shadow-md border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-900/50 z-20"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDeleteClick(task, start);
                                             }}
                                         >
                                             <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                        </div>
+                                        
+                                        {/* Custom Tooltip */}
+                                        <div className={`absolute top-full mt-2 w-48 bg-slate-900 dark:bg-slate-800 text-white p-2.5 rounded-xl shadow-2xl opacity-0 invisible group-hover/task:opacity-100 group-hover/task:visible transition-all duration-200 z-[100] pointer-events-none border border-slate-700/50 ${dayIndex > 4 ? 'right-0' : 'left-0'}`}>
+                                            <div className="font-bold text-[11px] mb-1.5 leading-tight text-white">{task.title}</div>
+                                            {task.site_id && sites && (
+                                                <div className="flex items-start gap-1.5 text-slate-300 mb-1.5 text-[9.5px] font-medium">
+                                                    <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                                                    <span className="leading-tight">{sites.find(s => s.id === task.site_id)?.name || 'Șantier'}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-1.5 text-slate-300 mb-1.5 text-[9.5px] font-medium">
+                                                <Clock className="w-3 h-3 shrink-0 text-slate-400" />
+                                                <span>{start.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'})} - {end.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'})}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-slate-300 mb-1.5 text-[9.5px] font-medium">
+                                                <div className="w-3.5 h-3.5 rounded-full bg-slate-700 flex items-center justify-center shrink-0 overflow-hidden">
+                                                    {taskUser?.avatar_path ? (
+                                                        <img src={taskUser.avatar_path.startsWith('http') ? taskUser.avatar_path : `${import.meta.env.VITE_API_URL || ''}${taskUser.avatar_path}`} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-[6px] font-bold text-white">{assigneeName.substring(0,1)}</span>
+                                                    )}
+                                                </div>
+                                                <span>{assigneeName}</span>
+                                            </div>
+                                            {task.description && (
+                                                <div className="mt-2.5 text-slate-400 border-t border-slate-700/50 pt-2 text-[9.5px] leading-tight">
+                                                    {task.description}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

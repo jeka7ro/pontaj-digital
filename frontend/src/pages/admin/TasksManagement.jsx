@@ -7,7 +7,7 @@ import SearchableSelect from '../../components/SearchableSelect';
 import { useAdminStore } from '../../store/adminStore';
 import { 
     Plus, Search, Edit2, Trash2, Calendar as CalendarIcon, 
-    Clock, AlertTriangle, AlertCircle, CheckCircle2, ChevronRight, X, Calendar
+    Clock, AlertTriangle, AlertCircle, CheckCircle2, ChevronRight, X, Calendar, ArrowDown, ArrowUp
 } from 'lucide-react';
 
 export default function TasksManagement() {
@@ -202,6 +202,62 @@ export default function TasksManagement() {
         }
     };
 
+    const handleToggleTaskStatus = async (task) => {
+        let nextStatus;
+        if (task.status === 'Finalizat') {
+            nextStatus = 'De făcut'; // Uncheck -> înapoi la To Do
+        } else {
+            nextStatus = 'Finalizat'; // Check -> direct la Done (din To Do sau Doing)
+        }
+
+        try {
+            const dataToSubmit = {
+                title: task.title,
+                description: task.description,
+                status: nextStatus,
+                priority: task.priority,
+                frequency: task.frequency,
+                assignee_id: task.assignee_id || null,
+                due_date: task.due_date || null
+            };
+            if (!dataToSubmit.assignee_id) delete dataToSubmit.assignee_id;
+            
+            await api.put(`/admin/tasks/${task.id}`, dataToSubmit);
+            fetchData();
+        } catch (err) {
+            alert('Eroare la schimbarea statusului: ' + (err.response?.data?.detail || err.message));
+        }
+    };
+
+    const handleMoveTask = async (task, direction) => {
+        const states = ['De făcut', 'În curs', 'Finalizat'];
+        const currentIndex = states.indexOf(task.status);
+        if (currentIndex === -1) return;
+        
+        let nextIndex = currentIndex + (direction === 'forward' ? 1 : -1);
+        if (nextIndex < 0 || nextIndex >= states.length) return;
+        
+        let nextStatus = states[nextIndex];
+
+        try {
+            const dataToSubmit = {
+                title: task.title,
+                description: task.description,
+                status: nextStatus,
+                priority: task.priority,
+                frequency: task.frequency,
+                assignee_id: task.assignee_id || null,
+                due_date: task.due_date || null
+            };
+            if (!dataToSubmit.assignee_id) delete dataToSubmit.assignee_id;
+            
+            await api.put(`/admin/tasks/${task.id}`, dataToSubmit);
+            fetchData();
+        } catch (err) {
+            alert('Eroare la mutarea task-ului: ' + (err.response?.data?.detail || err.message));
+        }
+    };
+
     const getInitials = (name) => {
         if (!name) return '?';
         return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -299,7 +355,8 @@ export default function TasksManagement() {
                                             {/* Nume & Checkbox */}
                                             <div className="col-span-4 pl-2 flex items-center gap-3">
                                                 <button 
-                                                    className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${task.status === 'Finalizat' ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 dark:border-slate-600 hover:border-slate-400'}`}
+                                                    onClick={() => handleToggleTaskStatus(task)}
+                                                    className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${task.status === 'Finalizat' ? 'border-emerald-500 bg-emerald-500 hover:bg-emerald-600 hover:border-emerald-600' : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer'}`}
                                                 >
                                                     {task.status === 'Finalizat' && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                                                 </button>
@@ -388,11 +445,21 @@ export default function TasksManagement() {
                                             </div>
 
                                             {/* Actions */}
-                                            <div className="col-span-1 flex justify-center gap-2">
-                                                <button onClick={() => openModal(task)} className="p-2 text-slate-400 hover:text-blue-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50">
+                                            <div className="col-span-1 flex justify-center gap-1.5">
+                                                {task.status !== 'De făcut' && (
+                                                    <button onClick={() => handleMoveTask(task, 'backward')} className="p-1.5 text-red-500 hover:text-red-700 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-red-50" title="Mută înapoi (Sus)">
+                                                        <ArrowUp className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {task.status !== 'Finalizat' && (
+                                                    <button onClick={() => handleMoveTask(task, 'forward')} className="p-1.5 text-emerald-500 hover:text-emerald-700 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-emerald-50" title="Mută înainte (Jos)">
+                                                        <ArrowDown className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button onClick={() => openModal(task)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Editează">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteClick(task)} className="p-2 text-slate-400 hover:text-red-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50">
+                                                <button onClick={() => handleDeleteClick(task)} className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Șterge">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>

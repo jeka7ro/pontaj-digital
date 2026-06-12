@@ -50,6 +50,32 @@ def get_items(category: Optional[str] = None, site_id: Optional[str] = None, ass
     from app.api.warehouse_get_items import get_items_logic
     return get_items_logic(category, site_id, assigned_to_user_id, db, current_admin)
 
+# GET single item
+@router.get("/warehouse/items/{item_id}")
+def get_single_item(item_id: str, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    is_admin_or_logistic(current_admin)
+    db_item = db.query(WarehouseItem).filter(
+        WarehouseItem.id == item_id, 
+        WarehouseItem.organization_id == current_admin.organization_id
+    ).first()
+    
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Articolul nu a fost găsit")
+        
+    return {
+        "id": db_item.id,
+        "name": db_item.name,
+        "category": db_item.category,
+        "unit": db_item.unit,
+        "model": db_item.model,
+        "inventory_code": db_item.inventory_code,
+        "total_quantity": db_item.total_quantity,
+        "current_holder_id": db_item.current_holder_id,
+        "current_site_id": db_item.current_site_id,
+        "is_defective": db_item.is_defective,
+        "is_lost": db_item.is_lost
+    }
+
 
 # CREATE item
 @router.post("/warehouse/items")

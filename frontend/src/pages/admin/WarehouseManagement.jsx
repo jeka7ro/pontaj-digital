@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Package, Truck, Search, Loader2, ArrowUpRight, ArrowDownRight, Edit2, Trash2, FileText, Download, ChevronLeft, ChevronRight, Paperclip, History, X, FileSpreadsheet, Save, ChevronDown, MapPin } from 'lucide-react'
+import { Plus, Package, Truck, Search, Loader2, ArrowUpRight, ArrowDownRight, Edit2, Trash2, FileText, Download, ChevronLeft, ChevronRight, Paperclip, History, X, FileSpreadsheet, Save, ChevronDown, MapPin, QrCode, ScanLine } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from 'react-i18next'
 import { useUIStore } from '../../store/uiStore'
 import * as XLSX from 'xlsx'
 import Pagination from '../../components/Pagination'
+import QRPrintModal from '../../components/QRPrintModal'
+import QRScannerModal from '../../components/QRScannerModal'
 
 const MultiSelectDropdown = ({ options, selectedIds, onChange, placeholder, searchPlaceholder, displayFn }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -185,6 +187,10 @@ export default function WarehouseManagement() {
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null })
     const [selectedItem, setSelectedItem] = useState(null)
     const [txType, setTxType] = useState('IN') // 'IN' or 'OUT'
+
+    // QR Modals
+    const [qrPrintModalItem, setQrPrintModalItem] = useState(null)
+    const [isScannerOpen, setIsScannerOpen] = useState(false)
 
     // Form states
     const [itemForm, setItemForm] = useState({ name: '', unit: '', model: '', inventory_code: '', site_id: '' })
@@ -560,6 +566,24 @@ export default function WarehouseManagement() {
         }
         setShowTxModal(true)
     }
+
+    const handleScanSuccess = async (itemId) => {
+        setIsScannerOpen(false);
+        try {
+            const res = await api.get(`/warehouse/items/${itemId}`);
+            if (res.data) {
+                if (res.data.inventory_code && !res.data.current_holder_id && !res.data.current_site_id) {
+                    setToolModal({ isOpen: true, item: res.data, siteId: '', userId: '', date: new Date().toISOString().split('T')[0] });
+                } else if (res.data.inventory_code && (res.data.current_holder_id || res.data.current_site_id)) {
+                    handleCheckIn(res.data);
+                } else {
+                    openTxModal(res.data, 'OUT');
+                }
+            }
+        } catch (error) {
+            showToast("Articolul scanat nu a fost găsit.", 'error');
+        }
+    };
 
     const handleExportExcel = () => {
         const dataToExport = filteredItems.map(item => ({
@@ -987,35 +1011,60 @@ export default function WarehouseManagement() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-                <div className="p-4 sm:p-5 flex flex-col xl:flex-row flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
-                    <div className="relative group flex items-center w-full sm:w-auto">
-                        <div className="absolute left-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                            <Search className="w-4 h-4" />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Caută articol..."
-                            value={searchQuery}
-                            onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            className="w-full sm:w-64 md:w-80 h-10 pl-10 pr-[72px] bg-slate-50 dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-full focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-                        />
-                        {searchQuery && (
-                            <div className="absolute right-1.5 flex items-center gap-1 bg-blue-600 px-2 py-1 rounded-full shadow-sm">
-                                <span className="text-[10px] font-bold text-white">
-                                    {filteredItems.length}/{items.length}
-                                </span>
-                                <button
-                                    onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
-                                    className="p-0.5 hover:bg-blue-700 rounded-full transition-colors ml-0.5"
-                                >
-                                    <X className="w-3 h-3 text-white/80 hover:text-white" />
-                                </button>
+                <div className="p-4 sm:p-5 flex flex-col gap-4 border-b border-slate-200 dark:border-slate-700/50">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="relative group flex items-center w-full sm:w-auto flex-1 max-w-md">
+                            <div className="absolute left-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                <Search className="w-4 h-4" />
                             </div>
-                        )}
+                            <input
+                                type="text"
+                                placeholder="Caută articol..."
+                                value={searchQuery}
+                                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                className="w-full h-10 pl-10 pr-[72px] bg-slate-50 dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-full focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                            />
+                            {searchQuery && (
+                                <div className="absolute right-1.5 flex items-center gap-1 bg-blue-600 px-2 py-1 rounded-full shadow-sm">
+                                    <span className="text-[10px] font-bold text-white">
+                                        {filteredItems.length}/{items.length}
+                                    </span>
+                                    <button
+                                        onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                                        className="p-0.5 hover:bg-blue-700 rounded-full transition-colors ml-0.5"
+                                    >
+                                        <X className="w-3 h-3 text-white/80 hover:text-white" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end overflow-x-auto custom-scrollbar pb-1 sm:pb-0 shrink-0">
+                            <button
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                <span className="hidden sm:inline">Export</span>
+                            </button>
+                            <button
+                                onClick={() => setIsScannerOpen(true)}
+                                className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
+                            >
+                                <ScanLine className="w-4 h-4" /> Scanează QR
+                            </button>
+                            <button
+                                onClick={() => { setItemForm({ name: '', unit: activeTab === 'COMBUSTIBIL' ? 'L' : (activeTab === 'SCULE' ? 'buc' : ''), model: '', inventory_code: '', site_id: selectedSite || '' }); setSelectedItem(null); setShowItemModal(true); }}
+                                className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Articol
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
-                        <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-full shadow-inner mr-2 shrink-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                        <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-full shadow-inner shrink-0">
                             {getCategories(t).map(cat => (
                                 <button
                                     key={cat.id}
@@ -1035,29 +1084,13 @@ export default function WarehouseManagement() {
                         <select 
                             value={selectedSite}
                             onChange={(e) => setSelectedSite(e.target.value)}
-                            className="h-10 px-4 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="h-10 px-4 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
                         >
                             <option value="">Toate Șantierele</option>
                             {allSites.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
-
-                        <button
-                            onClick={handleExportExcel}
-                            className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
-                        >
-                            <FileSpreadsheet className="w-4 h-4" />
-                            <span className="hidden sm:inline">Export</span>
-                        </button>
-
-                        <button
-                            onClick={() => { setItemForm({ name: '', unit: activeTab === 'COMBUSTIBIL' ? 'L' : (activeTab === 'SCULE' ? 'buc' : ''), model: '', inventory_code: '', site_id: selectedSite || '' }); setSelectedItem(null); setShowItemModal(true); }}
-                            className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Articol
-                        </button>
                     </div>
                 </div>
                 <div>
@@ -1193,6 +1226,13 @@ export default function WarehouseManagement() {
                                             <div className="flex justify-end items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                                                 {item.inventory_code ? (
                                                     <>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setQrPrintModalItem(item); }} 
+                                                            className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" 
+                                                            title="Printează QR"
+                                                        >
+                                                            <QrCode className="w-4 h-4" />
+                                                        </button>
                                                         <button 
                                                             onClick={(e) => handleToggleDefective(item, e)} 
                                                             className={`flex items-center justify-center px-2 h-8 rounded-full border text-xs font-bold transition-colors ${item.is_defective ? 'border-red-500 bg-red-500 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -1568,6 +1608,18 @@ export default function WarehouseManagement() {
                     </div>
                 </div>
             )}
+
+            <QRPrintModal 
+                isOpen={!!qrPrintModalItem} 
+                onClose={() => setQrPrintModalItem(null)} 
+                item={qrPrintModalItem} 
+            />
+            
+            <QRScannerModal 
+                isOpen={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScanSuccess={handleScanSuccess} 
+            />
         </>
     )
 }

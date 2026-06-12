@@ -178,7 +178,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
     const monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
     
     return (
-        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-160px)] min-h-[600px] w-full">
+        <div className="flex flex-col lg:flex-row gap-4 w-full">
             {/* Main Calendar Area */}
             <div className="flex-1 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
                 {/* Calendar Header */}
@@ -219,7 +219,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                 </div>
 
                 {/* Calendar Grid Body */}
-                <div className="flex-1 overflow-y-auto relative">
+                <div className="relative">
                     <div className="grid grid-cols-[50px_repeat(7,1fr)] min-h-full">
                         {dynamicHours.map((hour) => (
                             <React.Fragment key={hour}>
@@ -476,7 +476,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
             </div>
 
             {/* Right Sidebar: Assignees */}
-            <div className="w-full lg:w-56 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden h-[400px] lg:h-auto shrink-0">
+            <div className="w-full lg:w-56 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden shrink-0">
                 <div className="px-4 h-[72px] bg-blue-600 border-b border-blue-700 flex flex-col justify-center shrink-0 gap-0.5">
                     <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base text-white">Responsabili</h3>

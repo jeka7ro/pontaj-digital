@@ -324,7 +324,7 @@ export default function TasksManagement() {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+        <div className={`p-4 sm:p-6 lg:p-8 flex flex-col ${viewMode === 'list' ? 'h-full' : 'min-h-full'}`}>
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white">

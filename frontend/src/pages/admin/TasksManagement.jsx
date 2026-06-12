@@ -104,11 +104,20 @@ export default function TasksManagement() {
             else if (usersRes.data.users) loadedAllUsers = usersRes.data.users;
             else if (Array.isArray(usersRes.data)) loadedAllUsers = usersRes.data;
 
-            const workerUsers = loadedAllUsers.filter(u => u.role_name?.toLowerCase().includes('muncitor') || u.role_id === 3);
+            // Only keep active users
+            loadedAllUsers = loadedAllUsers.filter(u => u.is_active !== false);
+
+            const workerUsers = loadedAllUsers.filter(u => {
+                const r = (u.role_name || '').toLowerCase();
+                if (r.includes('șef') || r.includes('sef') || r.includes('responsabil')) return false;
+                return r.includes('muncitor') || u.role_id === 3;
+            });
             setWorkers(workerUsers);
 
             const staffUsers = loadedAllUsers.filter(u => {
-                if (u.role_name?.toLowerCase().includes('muncitor') || u.role_id === 3) return false;
+                const r = (u.role_name || '').toLowerCase();
+                if (r.includes('șef') || r.includes('sef') || r.includes('responsabil')) return true;
+                if (r.includes('muncitor') || u.role_id === 3) return false;
                 if (u.role_name === 'Super Administrator' || u.role_id === 1) {
                     return user?.role_name === 'Super Administrator' || user?.role_id === 1;
                 }

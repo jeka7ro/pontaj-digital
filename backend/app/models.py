@@ -787,8 +787,14 @@ class Task(Base):
     status = Column(String(50), default="De făcut", nullable=False)
     
     assignee_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    site_id = Column(String(36), ForeignKey("construction_sites.id", ondelete="SET NULL"), nullable=True)
     due_date = Column(Date, nullable=True)
+    start_time = Column(DateTime, nullable=True)
+    end_time = Column(DateTime, nullable=True)
     reminder = Column(DateTime, nullable=True)
+    
+    recurrence_end_date = Column(Date, nullable=True)
+    deleted_dates = Column(JSON, nullable=True, default=list)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

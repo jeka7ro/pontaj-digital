@@ -4,16 +4,20 @@ import { useTranslation } from 'react-i18next';
 import api from '../../lib/api';
 import { DialogOverlay } from '../../components/ui/DialogOverlay';
 import SearchableSelect from '../../components/SearchableSelect';
+import TasksCalendarView from '../../components/TasksCalendarView';
 import { useAdminStore } from '../../store/adminStore';
 import { 
     Plus, Search, Edit2, Trash2, Calendar as CalendarIcon, 
-    Clock, AlertTriangle, AlertCircle, CheckCircle2, ChevronRight, X, Calendar, ArrowDown, ArrowUp
+    Clock, AlertTriangle, AlertCircle, CheckCircle2, ChevronRight, X, Calendar, ArrowDown, ArrowUp, MapPin
 } from 'lucide-react';
 
 export default function TasksManagement() {
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const { admin } = useAdminStore();
+    
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+    
     const [tasks, setTasks] = useState([]);
     const [workers, setWorkers] = useState([]);
     const [users, setUsers] = useState([]);
@@ -44,8 +48,11 @@ export default function TasksManagement() {
         status: 'De făcut',
         assignee_id: '',
         due_date: getTodayDateStr(),
-        reminder: getTodayDateTimeStr()
+        reminder: getTodayDateTimeStr(),
+        site_id: ''
     });
+
+    const [sites, setSites] = useState([]);
 
     const columns = [
         { id: 'De făcut', title: 'To do', bgColor: 'bg-slate-50 dark:bg-gray-800/50', dotColor: 'bg-slate-400' },
@@ -76,15 +83,17 @@ export default function TasksManagement() {
         fetchData();
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = async (showLoading = true) => {
         try {
-            setLoading(true);
-            const [tasksRes, usersRes] = await Promise.all([
+            if (showLoading) setLoading(true);
+            const [tasksRes, usersRes, sitesRes] = await Promise.all([
                 api.get('/admin/tasks/'),
-                api.get('/admin/users/', { params: { page_size: 1000 } })
+                api.get('/admin/users/', { params: { page_size: 1000 } }),
+                api.get('/admin/sites/', { params: { page_size: 1000, status: 'active' } })
             ]);
             
             setTasks(tasksRes.data.items || tasksRes.data.tasks || (Array.isArray(tasksRes.data) ? tasksRes.data : []));
+            setSites(sitesRes.data.items || sitesRes.data.sites || (Array.isArray(sitesRes.data) ? sitesRes.data : []));
             
             let loadedAllUsers = [];
             if (usersRes.data.items) loadedAllUsers = usersRes.data.items;
@@ -111,7 +120,17 @@ export default function TasksManagement() {
         }
     };
 
-    const openModal = (task = null) => {
+    const openModal = (task = null, options = {}) => {
+        const formatLocal = (isoStr) => {
+            if (!isoStr) return '';
+            // If it's already local format without Z (from options), return it
+            if (isoStr.length === 16 && !isoStr.includes('Z')) return isoStr;
+            const d = new Date(isoStr);
+            if (isNaN(d)) return isoStr.slice(0, 16);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+
         if (task) {
             setEditingTask(task);
             setFormData({
@@ -121,8 +140,11 @@ export default function TasksManagement() {
                 priority: task.priority || 'Medie',
                 status: task.status || 'De făcut',
                 assignee_id: task.assignee_id || '',
-                due_date: task.due_date || getTodayDateStr(),
-                reminder: task.reminder ? task.reminder.slice(0, 16) : getTodayDateTimeStr()
+                start_time: formatLocal(task.start_time),
+                end_time: formatLocal(task.end_time),
+                due_date: task.due_date ? task.due_date.split('T')[0] : getTodayDateStr(),
+                reminder: formatLocal(task.reminder),
+                site_id: task.site_id || ''
             });
         } else {
             setEditingTask(null);
@@ -132,9 +154,12 @@ export default function TasksManagement() {
                 frequency: 'Punctual',
                 priority: 'Medie',
                 status: 'De făcut',
-                assignee_id: '',
-                due_date: getTodayDateStr(),
-                reminder: getTodayDateTimeStr()
+                assignee_id: options.assigneeId || '',
+                start_time: options.startTime || '',
+                end_time: options.endTime || '',
+                due_date: options.startTime ? options.startTime.split('T')[0] : getTodayDateStr(),
+                reminder: '',
+                site_id: ''
             });
         }
         setIsModalOpen(true);
@@ -147,7 +172,11 @@ export default function TasksManagement() {
             const dataToSubmit = { ...formData };
             if (!dataToSubmit.due_date) delete dataToSubmit.due_date;
             if (!dataToSubmit.reminder) delete dataToSubmit.reminder;
-            if (!dataToSubmit.assignee_id) delete dataToSubmit.assignee_id;
+            if (!dataToSubmit.start_time) delete dataToSubmit.start_time;
+            if (!dataToSubmit.end_time) delete dataToSubmit.end_time;
+            
+            if (!dataToSubmit.assignee_id) dataToSubmit.assignee_id = null;
+            if (!dataToSubmit.site_id) dataToSubmit.site_id = null;
 
             if (editingTask) {
                 await api.put(`/admin/tasks/${editingTask.id}`, dataToSubmit);
@@ -296,11 +325,26 @@ export default function TasksManagement() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 h-full flex flex-col">
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
                         Management Sarcini
                     </h1>
+                </div>
+                {/* View Toggles */}
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full sm:w-auto">
+                    <button 
+                        onClick={() => setViewMode('list')}
+                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Listă
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('calendar')}
+                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Calendar (Orare)
+                    </button>
                 </div>
             </div>
 
@@ -311,14 +355,25 @@ export default function TasksManagement() {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden rounded-3xl flex-1 flex flex-col min-h-0 mb-4">
-                {/* Table Header */}
+            {viewMode === 'calendar' ? (
+                <TasksCalendarView 
+                    tasks={tasks} 
+                    users={users} 
+                    workers={workers} 
+                    sites={sites}
+                    fetchData={fetchData} 
+                    openModal={openModal} 
+                />
+            ) : (
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden rounded-3xl flex-1 flex flex-col min-h-0 mb-4">
+                    {/* Table Header */}
                 <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                    <div className="col-span-4 pl-8">Nume</div>
+                    <div className="col-span-3 pl-8">Nume</div>
+                    <div className="col-span-2 text-center">Șantier</div>
                     <div className="col-span-2 text-center">Responsabil</div>
                     <div className="col-span-2 text-center">Dată limită</div>
                     <div className="col-span-1 text-center">Prioritate</div>
-                    <div className="col-span-2 text-center">Status</div>
+                    <div className="col-span-1 text-center">Status</div>
                     <div className="col-span-1 text-center">Acțiuni</div>
                 </div>
 
@@ -353,7 +408,7 @@ export default function TasksManagement() {
                                             className="grid grid-cols-12 gap-2 items-center py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg group transition-colors px-3 border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
                                         >
                                             {/* Nume & Checkbox */}
-                                            <div className="col-span-4 pl-2 flex items-center gap-3">
+                                            <div className="col-span-3 pl-2 flex items-center gap-3">
                                                 <button 
                                                     onClick={() => handleToggleTaskStatus(task)}
                                                     className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${task.status === 'Finalizat' ? 'border-emerald-500 bg-emerald-500 hover:bg-emerald-600 hover:border-emerald-600' : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer'}`}
@@ -365,6 +420,20 @@ export default function TasksManagement() {
                                                         {task.title}
                                                     </span>
                                                 </div>
+                                            </div>
+
+                                            {/* Șantier */}
+                                            <div className="col-span-2 flex items-center justify-center">
+                                                {task.site_id ? (
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg max-w-full">
+                                                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">
+                                                            {sites.find(s => s.id === task.site_id)?.name || 'Șantier sters'}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[11px] text-slate-400">-</span>
+                                                )}
                                             </div>
 
                                             {/* Responsabil */}
@@ -438,13 +507,17 @@ export default function TasksManagement() {
                                             </div>
 
                                             {/* Status */}
-                                            <div className="col-span-2 flex items-center justify-center">
-                                                <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${task.status === 'De făcut' ? 'bg-cyan-100 text-cyan-700' : (task.status === 'În curs' ? 'bg-amber-100 text-amber-700' : 'bg-rose-200 text-rose-700')}`}>
-                                                    {column.title}
-                                                </span>
+                                            <div className="col-span-1 flex items-center justify-center">
+                                                <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                                    task.status === 'Finalizat' ? 'bg-emerald-100 text-emerald-700' :
+                                                    task.status === 'În curs' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                    {task.status}
+                                                </div>
                                             </div>
 
-                                            {/* Actions */}
+                                            {/* Acțiuni */}
                                             <div className="col-span-1 flex justify-center gap-1.5">
                                                 {task.status !== 'De făcut' && (
                                                     <button onClick={() => handleMoveTask(task, 'backward')} className="p-1.5 text-red-500 hover:text-red-700 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-red-50" title="Mută înapoi (Sus)">
@@ -456,10 +529,10 @@ export default function TasksManagement() {
                                                         <ArrowDown className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <button onClick={() => openModal(task)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Editează">
+                                                <button onClick={(e) => { e.stopPropagation(); openModal(task); }} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Editează">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteClick(task)} className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Șterge">
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(task); }} className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition-colors border border-slate-200 shadow-sm bg-white hover:bg-slate-50" title="Șterge">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -467,31 +540,32 @@ export default function TasksManagement() {
                                     ))}
 
                                     {/* Quick Add Row */}
-                                    <div className="grid grid-cols-12 gap-4 items-center py-2 mt-2">
-                                        <div className="col-span-10 flex flex-col pl-3">
-                                            <div className="flex items-center gap-3">
+                                    <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700/50">
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 px-2">
                                                 <Plus className="w-4 h-4 text-slate-400 shrink-0" />
                                                 <input
                                                     type="text"
                                                     maxLength={255}
-                                                    placeholder="Adaugă task..."
+                                                    placeholder="Adaugă task rapid..."
                                                     value={quickAddText[column.id] || ''}
                                                     onChange={(e) => setQuickAddText(prev => ({ ...prev, [column.id]: e.target.value }))}
                                                     onKeyDown={(e) => handleQuickAddKeyDown(e, column.id)}
-                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 placeholder:text-slate-400 transition-all"
+                                                    className="w-full bg-transparent border-none text-sm text-slate-700 dark:text-slate-200 outline-none placeholder:text-slate-400"
                                                 />
                                             </div>
-                                            <span className="text-[10px] text-slate-400 mt-1 ml-7">
-                                                Max: {255 - (quickAddText[column.id] || '').length}
-                                            </span>
-                                        </div>
-                                        <div className="col-span-2 flex justify-end pr-3">
-                                            <button 
-                                                onClick={() => handleQuickAdd(column.id)}
-                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm"
-                                            >
-                                                Adaugă
-                                            </button>
+                                            <div className="flex items-center justify-between px-2">
+                                                <span className="text-[10px] text-slate-400">
+                                                    Max: {255 - (quickAddText[column.id] || '').length} char
+                                                </span>
+                                                <button 
+                                                    onClick={() => handleQuickAdd(column.id)}
+                                                    disabled={!quickAddText[column.id]?.trim()}
+                                                    className="px-3 py-1 bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white text-[10px] font-bold rounded-full transition-colors shadow-sm disabled:cursor-not-allowed"
+                                                >
+                                                    Adaugă
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -500,6 +574,7 @@ export default function TasksManagement() {
                     })}
                 </div>
             </div>
+            )}
 
             {/* Fereastra Adaugare/Editare Task */}
             {isModalOpen && (
@@ -611,16 +686,32 @@ export default function TasksManagement() {
                                     
                                     <div className="col-span-12 sm:col-span-6">
                                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Dată limită
+                                            Ora Început (Calendar)
                                         </label>
                                         <div className="relative flex items-center">
                                             <div className="absolute left-2 w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center pointer-events-none z-10">
-                                                <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
+                                                <Clock className="w-3.5 h-3.5 text-slate-500" />
                                             </div>
                                             <input
-                                                type="date"
-                                                value={formData.due_date}
-                                                onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                                                type="datetime-local"
+                                                value={formData.start_time || ''}
+                                                onChange={e => setFormData({ ...formData, start_time: e.target.value })}
+                                                className="w-full pl-10 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-span-12 sm:col-span-6">
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Ora Sfârșit (Calendar)
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            <div className="absolute left-2 w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center pointer-events-none z-10">
+                                                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                            </div>
+                                            <input
+                                                type="datetime-local"
+                                                value={formData.end_time || ''}
+                                                onChange={e => setFormData({ ...formData, end_time: e.target.value })}
                                                 className="w-full pl-10 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                             />
                                         </div>
@@ -640,6 +731,17 @@ export default function TasksManagement() {
                                                 className="w-full pl-10 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                             />
                                         </div>
+                                    </div>
+                                    <div className="col-span-12 sm:col-span-6">
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Șantier (Opțional)
+                                        </label>
+                                        <SearchableSelect
+                                            options={[{ value: '', label: 'Fără șantier' }, ...sites.map(s => ({ value: s.id, label: s.name }))]}
+                                            value={formData.site_id}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, site_id: val }))}
+                                            placeholder="Selectează șantier..."
+                                        />
                                     </div>
                                 </div>
 

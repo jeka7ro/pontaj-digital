@@ -24,7 +24,10 @@ def create_task(task_in: TaskCreate, db: Session = Depends(get_db), current_admi
         priority=task_in.priority,
         status=task_in.status,
         assignee_id=task_in.assignee_id,
+        site_id=task_in.site_id,
         due_date=task_in.due_date,
+        start_time=task_in.start_time,
+        end_time=task_in.end_time,
         reminder=task_in.reminder
     )
     db.add(new_task)
@@ -66,3 +69,42 @@ def delete_task(task_id: str, db: Session = Depends(get_db), current_admin: Admi
     db.delete(task)
     db.commit()
     return {"message": "Task deleted successfully"}
+
+@router.delete("/{task_id}/instance")
+def delete_task_instance(
+    task_id: str, 
+    action: str, 
+    date: str, 
+    db: Session = Depends(get_db), 
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """
+    Delete a specific instance of a recurring task.
+    action: 'this' (only this date), 'following' (this date and all future), 'all' (entire series)
+    date: YYYY-MM-DD
+    """
+    task = db.query(Task).filter(Task.id == task_id, Task.organization_id == current_admin.organization_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if action == "all":
+        db.delete(task)
+    elif action == "this":
+        if task.deleted_dates is None:
+            task.deleted_dates = []
+        
+        # Ensure we are working with a list, copy it to trigger SQLAlchemy JSON update
+        current_dates = list(task.deleted_dates)
+        if date not in current_dates:
+            current_dates.append(date)
+            task.deleted_dates = current_dates
+    elif action == "following":
+        # Stop recurrence one day before the target date
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        from datetime import timedelta
+        task.recurrence_end_date = target_date - timedelta(days=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    db.commit()
+    return {"message": "Task instance deleted successfully"}

@@ -10,8 +10,13 @@ class TaskBase(BaseModel):
     priority: str = "Medie"
     status: str = "De făcut"
     assignee_id: Optional[str] = None
+    site_id: Optional[str] = None
     due_date: Optional[date] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     reminder: Optional[datetime] = None
+    recurrence_end_date: Optional[date] = None
+    deleted_dates: Optional[List[str]] = None
 
 class TaskCreate(TaskBase):
     pass
@@ -23,7 +28,10 @@ class TaskUpdate(BaseModel):
     priority: Optional[str] = None
     status: Optional[str] = None
     assignee_id: Optional[str] = None
+    site_id: Optional[str] = None
     due_date: Optional[date] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     reminder: Optional[datetime] = None
 
 class TaskStatusUpdate(BaseModel):

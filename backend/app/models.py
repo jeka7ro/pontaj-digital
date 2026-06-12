@@ -773,3 +773,25 @@ class LeaveRequest(Base):
     organization = relationship("Organization")
     user = relationship("User", foreign_keys=[user_id])
 
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    frequency = Column(String(50), nullable=True)
+    priority = Column(String(50), default="Medie", nullable=False)
+    status = Column(String(50), default="De făcut", nullable=False)
+    
+    assignee_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    due_date = Column(Date, nullable=True)
+    reminder = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    assignee = relationship("User", foreign_keys=[assignee_id])

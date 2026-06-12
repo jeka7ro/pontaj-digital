@@ -13,6 +13,7 @@ import TimesheetApprovalPage from './pages/admin/TimesheetApprovalPage'
 import ReportsPage from './pages/admin/ReportsPage'
 import EmployeesManagement from './pages/admin/EmployeesManagement'
 import LeavesManagement from './pages/admin/LeavesManagement'
+import TasksManagement from './pages/admin/TasksManagement'
 
 import SitesManagement from './pages/admin/SitesManagement'
 import ActivitiesManagement from './pages/admin/ActivitiesManagement'
@@ -133,6 +134,7 @@ function App() {
                         <Route path="users" element={<UsersManagement />} />
                         <Route path="employees" element={<EmployeesManagement />} />
                         <Route path="leaves" element={<LeavesManagement />} />
+                        <Route path="tasks" element={<TasksManagement />} />
                         <Route path="employees/:id" element={<EmployeesManagement />} />
 
                         <Route path="clients" element={<ClientsManagement />} />

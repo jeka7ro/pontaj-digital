@@ -415,7 +415,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                         }
                                     }}
                                     onClick={(e) => { e.stopPropagation(); openModal(task); }}
-                                    className={`absolute rounded p-1 px-1.5 cursor-pointer transition-shadow hover:shadow-md ${bgClass} ${borderClass} overflow-hidden group/task flex flex-col justify-between`}
+                                    className={`absolute rounded p-1.5 cursor-pointer transition-shadow hover:shadow-md ${bgClass} ${borderClass} group/task`}
                                     style={{
                                         left: `calc(50px + (${dayIndex} * ((100% - 50px) / 7)) + 2px)`,
                                         width: `calc(((100% - 50px) / 7) - 4px)`,
@@ -425,19 +425,51 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                         borderStyle: borderStyle,
                                     }}
                                 >
-                                    <div className={`h-full w-full flex flex-col ${borderClass.replace('border-', 'text-')}`}>
-                                        <div className="flex items-start gap-1 font-bold text-[11px] leading-tight text-slate-800 dark:text-slate-200">
-                                            {isDone && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />}
-                                            <span className={`${height > 50 ? 'line-clamp-2' : 'line-clamp-1'} break-words pr-4`} title={task.title}>{task.title}</span>
-                                        </div>
-                                        {height > 60 && (
-                                            <div className="hidden sm:flex items-center gap-0.5 mt-0.5 text-[9px] text-slate-500 leading-tight">
-                                                <span className="line-clamp-1">{task.description || '-'}</span>
+                                    <div className={`h-full w-full relative ${borderClass.replace('border-', 'text-')}`}>
+                                        <div className="flex justify-between items-start gap-1.5 h-full">
+                                            {/* Left: Title, Site, Desc */}
+                                            <div className="flex flex-col min-w-0 flex-1">
+                                                <div className="flex items-start gap-1 font-bold text-[11px] leading-tight text-slate-800 dark:text-slate-200">
+                                                    {isDone && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />}
+                                                    <span className={`${height > 50 ? 'line-clamp-2' : 'line-clamp-1'} break-words pr-1`} title={task.title}>{task.title}</span>
+                                                </div>
+                                                
+                                                {task.site_id && sites && (
+                                                    <div className="mt-1.5 flex items-center gap-0.5 font-bold text-[8.5px] leading-tight truncate opacity-80" style={{ color: 'inherit' }}>
+                                                        <MapPin className="w-2.5 h-2.5 shrink-0" />
+                                                        <span className="truncate">{sites.find(s => s.id === task.site_id)?.name || 'Șantier'}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {height > 60 && task.description && (
+                                                    <div className="hidden sm:flex items-center gap-0.5 mt-1 text-[9px] opacity-70 leading-tight" style={{ color: 'inherit' }}>
+                                                        <span className="line-clamp-1">{task.description}</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                            
+                                            {/* Right: Avatar & Name */}
+                                            <div className="flex flex-col items-center shrink-0 w-10 mt-0.5" style={{ color: 'inherit' }}>
+                                                {taskUser ? (
+                                                    <div className="w-6 h-6 mb-0.5 shrink-0 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-sm border border-current opacity-90">
+                                                        {taskUser.avatar_path ? (
+                                                            <img src={taskUser.avatar_path.startsWith('http') ? taskUser.avatar_path : `${import.meta.env.VITE_API_URL || ''}${taskUser.avatar_path}`} alt={assigneeName} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-[9px] font-bold" style={{ color: 'inherit' }}>
+                                                                {assigneeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : null}
+                                                <span className="text-[8px] font-semibold text-center leading-[1.1] truncate w-full opacity-90">
+                                                    {assigneeName.split(' ')[0]}
+                                                </span>
+                                            </div>
+                                        </div>
                                         
+                                        {/* Delete Button */}
                                         <div 
-                                            className="absolute top-1 right-1 opacity-0 group-hover/task:opacity-100 transition-opacity p-0.5 bg-white/80 dark:bg-slate-800/80 rounded hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50"
+                                            className="absolute -top-3 -right-3 opacity-0 group-hover/task:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-800 rounded-full shadow-md border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-900/50 z-10"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDeleteClick(task, start);
@@ -445,27 +477,6 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                         >
                                             <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                         </div>
-
-                                        <div className="mt-auto flex items-center gap-1 font-semibold text-[9px] leading-tight pt-0.5 truncate" style={{ color: 'inherit' }}>
-                                            {taskUser ? (
-                                                <div className="w-4 h-4 shrink-0 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center overflow-hidden">
-                                                    {taskUser.avatar_path ? (
-                                                        <img src={taskUser.avatar_path.startsWith('http') ? taskUser.avatar_path : `${import.meta.env.VITE_API_URL || ''}${taskUser.avatar_path}`} alt={assigneeName} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-[7px] font-bold" style={{ color: 'inherit' }}>
-                                                            {assigneeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ) : null}
-                                            <span className="truncate">{assigneeName.split(' ')[0]} {assigneeName.split(' ')[1]?.[0] ? `${assigneeName.split(' ')[1][0]}.` : ''}</span>
-                                        </div>
-                                        {task.site_id && sites && (
-                                            <div className="mt-0.5 flex items-center gap-0.5 font-medium text-[8px] leading-tight truncate opacity-80" style={{ color: 'inherit' }}>
-                                                <MapPin className="w-2.5 h-2.5 shrink-0" />
-                                                <span className="truncate">{sites.find(s => s.id === task.site_id)?.name || 'Șantier'}</span>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             );

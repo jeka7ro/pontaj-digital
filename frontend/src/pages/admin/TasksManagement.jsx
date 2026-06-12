@@ -16,7 +16,11 @@ export default function TasksManagement() {
     const { user } = useAuthStore();
     const { admin } = useAdminStore();
     
-    const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+    const [viewMode, setViewMode] = useState(() => localStorage.getItem('tasksViewMode') || 'list'); // 'list' or 'calendar'
+    
+    useEffect(() => {
+        localStorage.setItem('tasksViewMode', viewMode);
+    }, [viewMode]);
     
     const [tasks, setTasks] = useState([]);
     const [workers, setWorkers] = useState([]);

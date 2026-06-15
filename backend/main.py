@@ -152,12 +152,25 @@ def _run_migrations(engine):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup — auto-create tables (needed for fresh PostgreSQL)
+    # Startup — auto-create tables cu retry (Supabase poate inchide SSL la startup)
     from app.database import engine, Base, warmup_pool
     from app import models  # noqa: ensure all models are imported
-    Base.metadata.create_all(bind=engine)
-    _run_migrations(engine)
-    warmup_pool()
+    import time as _startup_time
+
+    for attempt in range(5):
+        try:
+            Base.metadata.create_all(bind=engine)
+            _run_migrations(engine)
+            warmup_pool()
+            break
+        except Exception as e:
+            if attempt == 4:
+                print(f"❌ DB startup failed dupa 5 incercari: {e}")
+                break
+            wait = 2 ** attempt  # 1s, 2s, 4s, 8s
+            print(f"⚠️  DB startup attempt {attempt + 1} failed, retry in {wait}s: {e}")
+            _startup_time.sleep(wait)
+
     print("🚀 Starting Pontaj Digital API...")
 
     # Start daily scheduler

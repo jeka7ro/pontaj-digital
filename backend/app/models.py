@@ -533,6 +533,9 @@ class WarehouseItem(Base):
     is_defective = Column(Boolean, default=False, nullable=False)
     is_lost = Column(Boolean, default=False, nullable=False)
 
+    # Tool Bundling / Kits
+    parent_id = Column(String(36), ForeignKey("warehouse_items.id", ondelete="SET NULL"), nullable=True)
+
     # Two-step return: worker requests return, admin confirms
     pending_return = Column(Boolean, default=False, nullable=False)
     pending_return_at = Column(DateTime, nullable=True)  # when worker pressed "Returnez"
@@ -542,6 +545,7 @@ class WarehouseItem(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     organization = relationship("Organization")
+    accessories = relationship("WarehouseItem", backref="parent_item", remote_side=[id])
 
 class WarehouseTransaction(Base):
     """Stock in/out history for warehouse items"""

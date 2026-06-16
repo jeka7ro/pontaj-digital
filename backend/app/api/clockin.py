@@ -32,8 +32,8 @@ class ClockOutRequest(BaseModel):
 
 
 class BreakRequest(BaseModel):
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class LocationPingRequest(BaseModel):

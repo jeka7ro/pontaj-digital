@@ -524,6 +524,76 @@ def get_linked_request(item_id: str, db: Session = Depends(get_db), current_admi
     }
 
 
+# ─── Kit / Accessories ────────────────────────────────────────────────────────
+
+class SetParentRequest(BaseModel):
+    parent_id: Optional[str] = None
+
+@router.get("/warehouse/items/{item_id}/accessories")
+def get_item_accessories(item_id: str, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    """Return all WarehouseItems that have this item as parent (its accessories/kit components)."""
+    is_admin_or_logistic(current_admin)
+    db_item = db.query(WarehouseItem).filter(
+        WarehouseItem.id == item_id,
+        WarehouseItem.organization_id == current_admin.organization_id
+    ).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Articolul nu a fost găsit")
+
+    children = db.query(WarehouseItem).filter(
+        WarehouseItem.parent_id == item_id,
+        WarehouseItem.organization_id == current_admin.organization_id
+    ).all()
+
+    all_users = {u.id: u.full_name for u in db.query(User).all()}
+    from app.models import ConstructionSite
+    all_sites = {s.id: s.name for s in db.query(ConstructionSite).all()}
+
+    result = []
+    for child in children:
+        result.append({
+            "id": child.id,
+            "name": child.name,
+            "inventory_code": child.inventory_code,
+            "model": child.model,
+            "category": child.category,
+            "is_defective": child.is_defective,
+            "is_lost": child.is_lost,
+            "current_holder_id": child.current_holder_id,
+            "current_holder_name": all_users.get(child.current_holder_id) if child.current_holder_id else None,
+            "current_site_id": child.current_site_id,
+            "current_site_name": all_sites.get(child.current_site_id) if child.current_site_id else None,
+        })
+    return result
+
+
+@router.patch("/warehouse/items/{item_id}/set-parent")
+def set_item_parent(item_id: str, data: SetParentRequest, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    """Link or unlink an accessory from a parent item (kit management)."""
+    is_admin_or_logistic(current_admin)
+    db_item = db.query(WarehouseItem).filter(
+        WarehouseItem.id == item_id,
+        WarehouseItem.organization_id == current_admin.organization_id
+    ).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Articolul nu a fost găsit")
+
+    # Validate parent exists if provided
+    if data.parent_id:
+        parent = db.query(WarehouseItem).filter(
+            WarehouseItem.id == data.parent_id,
+            WarehouseItem.organization_id == current_admin.organization_id
+        ).first()
+        if not parent:
+            raise HTTPException(status_code=404, detail="Articolul părinte nu a fost găsit")
+        if data.parent_id == item_id:
+            raise HTTPException(status_code=400, detail="Un articol nu se poate lega de el însuși")
+
+    db_item.parent_id = data.parent_id
+    db.commit()
+    return {"success": True, "parent_id": data.parent_id}
+
+
 # ─── Returnări în așteptare (two-step return flow) ────────────────────────────
 
 @router.get("/warehouse/pending-returns")

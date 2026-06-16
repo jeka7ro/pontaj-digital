@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Package, Truck, Search, Loader2, ArrowUpRight, ArrowDownRight, Edit2, Trash2, FileText, Download, ChevronLeft, ChevronRight, Paperclip, History, X, FileSpreadsheet, Save, ChevronDown, MapPin, QrCode, ScanLine } from 'lucide-react'
+import { Plus, Package, Truck, Search, Loader2, ArrowUpRight, ArrowDownRight, Edit2, Trash2, FileText, Download, ChevronLeft, ChevronRight, Paperclip, History, X, FileSpreadsheet, Save, ChevronDown, MapPin, QrCode, ScanLine, Link2, Unlink, Wrench } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from 'react-i18next'
 import { useUIStore } from '../../store/uiStore'
@@ -207,6 +207,12 @@ export default function WarehouseManagement() {
     // Tool Check-Out Modal
     const [toolModal, setToolModal] = useState({ isOpen: false, item: null, siteId: '', userId: '', date: new Date().toISOString().split('T')[0] })
     const [isSubmittingTool, setIsSubmittingTool] = useState(false)
+
+    // Kit / Accessories
+    const [accessories, setAccessories] = useState([]) // child items of current historyItem
+    const [showAccessoryModal, setShowAccessoryModal] = useState(false)
+    const [accessorySearch, setAccessorySearch] = useState('')
+    const [isSavingAccessory, setIsSavingAccessory] = useState(false)
 
     useEffect(() => {
         setCurrentPage(1)
@@ -734,6 +740,56 @@ export default function WarehouseManagement() {
                         </div>
                     )}
 
+                    {/* KIT / ACCESORII — doar pentru scule cu inventory_code */}
+                    {historyItem.inventory_code && (
+                        <div className="mx-6 mb-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+                            <div className="bg-slate-500 px-4 py-2.5 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Wrench className="w-3.5 h-3.5 text-white" />
+                                    <span className="text-[11px] font-black text-white uppercase tracking-widest">Kit Accesorii</span>
+                                    {accessories.length > 0 && (
+                                        <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{accessories.length}</span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => { setShowAccessoryModal(true); setAccessorySearch('') }}
+                                    className="flex items-center gap-1.5 text-[11px] font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" /> Atașează Accesoriu
+                                </button>
+                            </div>
+                            {accessories.length === 0 ? (
+                                <div className="px-4 py-5 text-center text-sm text-slate-400 bg-white dark:bg-slate-900">
+                                    Niciun accesoriu atașat.
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                                    {accessories.map(acc => (
+                                        <div key={acc.id} className="flex items-center justify-between px-4 py-3">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-800 dark:text-white">{acc.name}</p>
+                                                <p className="text-xs text-slate-500">{acc.inventory_code || acc.model || '—'} · <span className={acc.current_holder_id || acc.current_site_id ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold'}>{acc.current_holder_name ? `La ${acc.current_holder_name}` : acc.current_site_name ? `La ${acc.current_site_name}` : 'La magazie'}</span></p>
+                                            </div>
+                                            <button
+                                                title="Dezleagă accesoriul"
+                                                onClick={async () => {
+                                                    try {
+                                                        await api.patch(`/warehouse/items/${acc.id}/set-parent`, { parent_id: null })
+                                                        setAccessories(prev => prev.filter(a => a.id !== acc.id))
+                                                        showToast('Accesoriu dezlegat', 'success')
+                                                    } catch { showToast('Eroare la dezlegare', 'error') }
+                                                }}
+                                                className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 hover:border-red-300 transition-colors shrink-0"
+                                            >
+                                                <Unlink className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* LOCATIE CURENTA — doar pentru scule unice */}
                     {historyItem.inventory_code && (() => {
                         const holderName = historyItem.current_holder_name || (linkedRequest?.status === 'completed' ? linkedRequest?.current_holder || linkedRequest?.confirmed_by : null)
@@ -1128,10 +1184,17 @@ export default function WarehouseManagement() {
                                             setHistoryItem(item)
                                             setHistorySearch('')
                                             setLinkedRequest(null)
+                                            setAccessories([])
                                             fetchTransactions(item.id)
                                             api.get(`/warehouse/items/${item.id}/linked-request`)
                                               .then(r => setLinkedRequest(r.data))
                                               .catch(() => {})
+                                            // Fetch accesorii kit
+                                            if (item.inventory_code) {
+                                                api.get(`/warehouse/items/${item.id}/accessories`)
+                                                  .then(r => setAccessories(r.data || []))
+                                                  .catch(() => {})
+                                            }
                                         }}
                                         className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
                                     >
@@ -1620,6 +1683,77 @@ export default function WarehouseManagement() {
                 onClose={() => setIsScannerOpen(false)} 
                 onScanSuccess={handleScanSuccess} 
             />
+
+            {/* MODAL: Atașare Accesoriu Kit */}
+            {showAccessoryModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                                <Link2 className="w-5 h-5 text-blue-600" />
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white">Atașează Accesoriu</h3>
+                            </div>
+                            <button onClick={() => setShowAccessoryModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <X className="w-4 h-4 text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text" autoFocus
+                                    placeholder="Caută după nume sau serie..."
+                                    value={accessorySearch}
+                                    onChange={e => setAccessorySearch(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 text-sm rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2">Selectează sculele/accesoriile de legat de <strong className="text-slate-600 dark:text-slate-300">{historyItem?.name}</strong></p>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2">
+                            {items
+                                .filter(i =>
+                                    i.id !== historyItem?.id &&
+                                    i.inventory_code &&
+                                    !accessories.find(a => a.id === i.id) &&
+                                    (i.name.toLowerCase().includes(accessorySearch.toLowerCase()) ||
+                                     (i.inventory_code || '').toLowerCase().includes(accessorySearch.toLowerCase()) ||
+                                     (i.model || '').toLowerCase().includes(accessorySearch.toLowerCase()))
+                                )
+                                .map(i => (
+                                    <button
+                                        key={i.id}
+                                        disabled={isSavingAccessory}
+                                        onClick={async () => {
+                                            setIsSavingAccessory(true)
+                                            try {
+                                                await api.patch(`/warehouse/items/${i.id}/set-parent`, { parent_id: historyItem.id })
+                                                setAccessories(prev => [...prev, i])
+                                                showToast(`${i.name} legat de ${historyItem.name}`, 'success')
+                                                setShowAccessoryModal(false)
+                                            } catch { showToast('Eroare la atașare', 'error') }
+                                            finally { setIsSavingAccessory(false) }
+                                        }}
+                                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 text-left transition-colors group"
+                                    >
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-blue-700">{i.name}</p>
+                                            <p className="text-xs text-slate-400">{i.inventory_code || i.model || '—'} · <span className={i.current_holder_id || i.current_site_id ? 'text-amber-500' : 'text-emerald-500'}>{i.current_holder_name ? `La ${i.current_holder_name}` : i.current_site_name ? `La ${i.current_site_name}` : 'La magazie'}</span></p>
+                                        </div>
+                                        <Link2 className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0 ml-2" />
+                                    </button>
+                                ))
+                            }
+                            {items.filter(i =>
+                                i.id !== historyItem?.id && i.inventory_code && !accessories.find(a => a.id === i.id) &&
+                                (i.name.toLowerCase().includes(accessorySearch.toLowerCase()) || (i.inventory_code || '').toLowerCase().includes(accessorySearch.toLowerCase()))
+                            ).length === 0 && (
+                                <div className="py-8 text-center text-sm text-slate-400">Nu s-au găsit scule disponibile pentru atașare.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

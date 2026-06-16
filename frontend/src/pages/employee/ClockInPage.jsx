@@ -60,6 +60,68 @@ function MapAutoFit({ userPos, sitePos }) {
     return null
 }
 
+
+const formatTimeGlobal = (hoursFraction) => {
+    if (!hoursFraction || hoursFraction < 0) return "00:00:00"
+    const h = Math.floor(hoursFraction)
+    const m = Math.floor((hoursFraction - h) * 60)
+    const s = Math.floor((((hoursFraction - h) * 60) - m) * 60)
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+}
+
+function WorkTimer({ activeShift, geofencePauseTime }) {
+
+    useEffect(() => {
+        if (!activeShift) return
+
+        if (activeShift.is_outside_geofence || activeShift.is_on_break) {
+            const frozenHours = Math.max(0,
+                (activeShift.elapsed_hours || 0) -
+                (activeShift.break_hours || 0) -
+                (activeShift.geofence_pause_hours || 0)
+            )
+            setElapsedTime(frozenHours)
+            return
+        }
+
+        const interval = setInterval(() => {
+            const now = new Date()
+            const checkIn = new Date(activeShift.check_in_time)
+            const totalElapsed = (now - checkIn) / 1000 / 3600
+            const currentBreakHours = activeShift.break_hours || 0
+            const geoFencePauseHours = activeShift.geofence_pause_hours || 0
+            const workTime = Math.max(0, totalElapsed - currentBreakHours - geoFencePauseHours)
+            setElapsedTime(workTime)
+        }, 1000)
+
+        return () => clearInterval(interval)
+    }, [activeShift, geofencePauseTime])
+
+    return <>{formatTimeGlobal(elapsedTime)}</>
+}
+
+function BreakTimer({ activeShift }) {
+
+    useEffect(() => {
+        if (!activeShift?.is_on_break || !activeShift?.break_start_time) {
+            setBreakTime(activeShift?.break_hours || 0)
+            return
+        }
+        const updateBreak = () => {
+            const now = new Date()
+            const breakStart = new Date(activeShift.break_start_time)
+            const breakSecs = (now - breakStart) / 1000 / 3600
+            setBreakTime(breakSecs)
+        }
+        updateBreak()
+        const interval = setInterval(updateBreak, 1000)
+        return () => clearInterval(interval)
+    }, [activeShift?.is_on_break, activeShift?.break_start_time, activeShift?.break_hours])
+
+    return <>{formatTimeGlobal(breakTime)}</>
+}
+
+
 // Calculate distance between two GPS points in meters
 function calcDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000
@@ -84,8 +146,6 @@ export default function ClockInPage() {
     const [selectedSite, setSelectedSite] = useState(null)
     const [location, setLocation] = useState(null)
     const [locationError, setLocationError] = useState(null)
-    const [elapsedTime, setElapsedTime] = useState(0)
-    const [breakTime, setBreakTime] = useState(0)
     const [currentAddress, setCurrentAddress] = useState(null)
     const [selfDeclaration, setSelfDeclaration] = useState(false)
     const [availableActivities, setAvailableActivities] = useState([])
@@ -156,8 +216,6 @@ export default function ClockInPage() {
         if (m === 0) return `${h}h`
         return `${h}h ${m}min`
     }
-
-    const timerInterval = useRef(null)
     const lastGeocodedCoords = useRef(null)
     const swRef = useRef(null) // Service Worker registration
     const locationRef = useRef(null) // Ref pentru coordonate curente (evita restart interval la fiecare update GPS)
@@ -320,57 +378,6 @@ export default function ClockInPage() {
 
     // To save battery, we no longer watchPosition continuously.
     // Location will be fetched periodically by the keepalivePing.
-
-    useEffect(() => {
-        if (activeShift) {
-            // Freeze timer when NOT actively working (geofence outside or on break)
-            // GPS lost does NOT freeze timer — just shows a warning
-            if (activeShift.is_outside_geofence || activeShift.is_on_break) {
-                const frozenHours = Math.max(0,
-                    (activeShift.elapsed_hours || 0) -
-                    (activeShift.break_hours || 0) -
-                    (activeShift.geofence_pause_hours || 0)
-                )
-                setElapsedTime(frozenHours)
-                // Don't start interval — timer stays frozen
-                return
-            }
-
-            timerInterval.current = setInterval(() => {
-                const now = new Date()
-                const checkIn = new Date(activeShift.check_in_time)
-                const totalElapsed = (now - checkIn) / 1000 / 3600
-
-                // Calculate total break time
-                let currentBreakHours = activeShift.break_hours || 0
-
-                // Calculate geofence pause time
-                let geoFencePauseHours = activeShift.geofence_pause_hours || 0
-
-                // Work time = total elapsed - break time - geofence pause time
-                const workTime = Math.max(0, totalElapsed - currentBreakHours - geoFencePauseHours)
-                setElapsedTime(workTime)
-            }, 1000)
-
-            return () => clearInterval(timerInterval.current)
-        }
-    }, [activeShift, geofencePauseTime])
-
-    // Break timer — counts up while on break
-    useEffect(() => {
-        if (!activeShift?.is_on_break || !activeShift?.break_start_time) {
-            return
-        }
-        const updateBreak = () => {
-            const now = new Date()
-            const breakStart = new Date(activeShift.break_start_time)
-            const breakSecs = (now - breakStart) / 1000 / 3600
-            setBreakTime(breakSecs)
-        }
-        updateBreak()
-        const interval = setInterval(updateBreak, 1000)
-        return () => clearInterval(interval)
-    }, [activeShift?.is_on_break, activeShift?.break_start_time])
 
     // Geofence location ping & keepalive — unified to run every 15 mins to save battery
     useEffect(() => {
@@ -788,17 +795,16 @@ export default function ClockInPage() {
             return
         }
 
-        if (!location) {
-            requestLocation()
-            return
+        // If no GPS, we still allow starting the break (Backend will save with null coords)
+        const payload = {}
+        if (location) {
+            payload.latitude = location.latitude
+            payload.longitude = location.longitude
         }
 
         try {
             setLoading(true)
-            await api.post('/timesheets/start-break', {
-                latitude: location.latitude,
-                longitude: location.longitude
-            })
+            await api.post('/timesheets/start-break', payload)
 
             await fetchActiveShift()
         } catch (error) {
@@ -818,13 +824,7 @@ export default function ClockInPage() {
         } finally {
             setLoading(false)
         }
-    }
-
-    const formatTime = (hours) => {
-        const h = Math.floor(hours)
-        const m = Math.floor((hours - h) * 60)
-        const s = Math.floor(((hours - h) * 60 - m) * 60)
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    }:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
 
     // Compute site position: from selected site OR from active shift
@@ -1129,7 +1129,7 @@ export default function ClockInPage() {
                                     </p>
                                     {geofencePauseTime > 0 && (
                                         <p className="text-xs text-white/70 mt-1">
-                                            {t('timesheets.time_lost_today')}: {formatTime(geofencePauseTime / 3600)}
+                                            {t('timesheets.time_lost_today')}: {formatTimeGlobal(geofencePauseTime / 3600)}
                                         </p>
                                     )}
                                     <div className="mt-3 pt-3 border-t border-white/20">
@@ -1183,7 +1183,7 @@ export default function ClockInPage() {
                                     : activeShift.is_on_break ? 'text-orange-500'
                                         : 'text-blue-600'
                                     }`}>
-                                    {formatTime(elapsedTime)}
+                                    <WorkTimer activeShift={activeShift} geofencePauseTime={geofencePauseTime} />
                                 </div>
                                 <div className="text-sm text-slate-500">
                                     📍 {activeShift.site_name}
@@ -1191,10 +1191,10 @@ export default function ClockInPage() {
                                 <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
                                     <span>{t('timesheets.check_in')}: {new Date(activeShift.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>
                                     {(breakTime > 0 || activeShift.break_hours > 0) && (
-                                        <span>☕ {t('timesheets.breaks')}: {formatTime(breakTime || activeShift.break_hours || 0)}</span>
+                                        <span>☕ {t('timesheets.breaks')}: <BreakTimer activeShift={activeShift} /></span>
                                     )}
                                     {geofencePauseTime > 0 && (
-                                        <span>🚫 {t('timesheets.outside')}: {formatTime(geofencePauseTime / 3600)}</span>
+                                        <span>🚫 {t('timesheets.outside')}: {formatTimeGlobal(geofencePauseTime / 3600)}</span>
                                     )}
                                 </div>
                             </div>
@@ -1217,7 +1217,7 @@ export default function ClockInPage() {
                                 <div className="bg-gradient-to-r from-orange-400 to-amber-500 rounded-2xl shadow-lg p-5 text-white text-center">
                                     <Coffee className="w-7 h-7 mx-auto mb-1" />
                                     <div className="font-semibold text-sm mb-1">{t('timesheets.lunch_break_btn')}</div>
-                                    <div className="text-2xl font-bold">{formatTime(breakTime)}</div>
+                                    <div className="text-2xl font-bold"><BreakTimer activeShift={activeShift} /></div>
                                     {activeShift.break_start_time && (
                                         <div className="text-xs text-white/80 mt-1">
                                             {t('timesheets.started_at')} {new Date(activeShift.break_start_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}

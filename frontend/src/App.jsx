@@ -70,20 +70,33 @@ class GlobalErrorBoundary extends React.Component {
     }
     componentDidCatch(error, errorInfo) {
         console.error('App routing error:', error)
-        // Auto-refresh if it's a chunk load error (network glitch / new deployment)
+        // Daca e eroare de incarcare fisier (ChunkLoadError), probabil serverul s-a actualizat.
+        // Asteptam 1 secunda si incercam sa reincarcam fortat fara cache o singura data.
         if (error.name === 'ChunkLoadError' || (error.message && error.message.includes('fetch dynamically imported module'))) {
-            window.location.reload()
+            const hasReloaded = sessionStorage.getItem('chunk_reload')
+            if (!hasReloaded) {
+                sessionStorage.setItem('chunk_reload', 'true')
+                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
+            }
         }
     }
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">A apărut o eroare de navigare.</h2>
-                    <p className="text-sm text-slate-500 mb-4">Te rugăm să reîncarci pagina.</p>
-                    <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-md transition-colors">
-                        Reîncarcă Pagina
-                    </button>
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+                    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
+                        <h2 className="text-xl font-bold text-slate-800 mb-3">Actualizare Aplicație</h2>
+                        <p className="text-sm text-slate-500 mb-6">Am lansat o versiune nouă a aplicației. Te rugăm să reîncarci pagina pentru a continua.</p>
+                        <button 
+                            onClick={() => {
+                                sessionStorage.removeItem('chunk_reload')
+                                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
+                            }} 
+                            className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-colors"
+                        >
+                            Reîncarcă Acum
+                        </button>
+                    </div>
                 </div>
             )
         }

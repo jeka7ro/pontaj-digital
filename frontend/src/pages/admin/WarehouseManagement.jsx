@@ -740,8 +740,8 @@ export default function WarehouseManagement() {
                         </div>
                     )}
 
-                    {/* KIT / ACCESORII — doar pentru scule cu inventory_code */}
-                    {historyItem.inventory_code && (
+                    {/* KIT / ACCESORII — pentru toate sculele (fără condiție de inventory_code) */}
+                    {(!historyItem.parent_id) && (
                         <div className="mx-6 mb-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
                             <div className="bg-slate-500 px-4 py-2.5 flex items-center justify-between">
                                 <div className="flex items-center gap-2">

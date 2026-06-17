@@ -824,7 +824,6 @@ export default function ClockInPage() {
         } finally {
             setLoading(false)
         }
-    }:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
 
     // Compute site position: from selected site OR from active shift

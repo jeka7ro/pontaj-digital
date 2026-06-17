@@ -1,11 +1,12 @@
 /**
  * SiteMap — Leaflet-based interactive map for the Admin Dashboard
  */
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../lib/api'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { Maximize2, Minimize2 } from 'lucide-react'
 
 // Fix Leaflet default icon broken paths in Vite/Webpack bundlers
 delete L.Icon.Default.prototype._getIconUrl
@@ -26,6 +27,24 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
     const [selectedSite, setSelectedSite] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+
+    const toggleFullscreen = useCallback(() => {
+        setIsFullscreen(prev => {
+            const next = !prev
+            setTimeout(() => {
+                mapInstanceRef.current?.invalidateSize()
+            }, 150)
+            return next
+        })
+    }, [])
+
+    // ESC key exits fullscreen
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape' && isFullscreen) toggleFullscreen() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [isFullscreen, toggleFullscreen])
 
     // Fetch map data from backend
     useEffect(() => {
@@ -46,10 +65,10 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
         if (!mapRef.current || mapInstanceRef.current) return
 
         mapInstanceRef.current = L.map(mapRef.current, {
-            center: [45.75, 24.5], // Romania
+            center: [45.75, 24.5],
             zoom: 7,
             zoomControl: true,
-            scrollWheelZoom: false, // Prevents page scrolling trap
+            scrollWheelZoom: false,
         })
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -70,7 +89,6 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
         const map = mapInstanceRef.current
         if (!map || sites.length === 0) return
 
-        // Clear old markers
         markersRef.current.forEach(m => m.remove())
         markersRef.current = []
         if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
@@ -111,27 +129,27 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                         color: '#3b82f6', fillColor: '#3b82f6',
                         fillOpacity: 0.12, weight: 2, dashArray: '6 4',
                     }).addTo(map)
-                    map.flyTo([site.latitude, site.longitude], 14, { duration: 1.2 })
+                    // Zoom exact la geofence
+                    const fenceBounds = L.latLng(site.latitude, site.longitude).toBounds((site.geofence_radius || 200) * 2)
+                    map.flyToBounds(fenceBounds, { duration: 1.2, padding: [30, 30] })
                 })
 
             markersRef.current.push(marker)
         })
 
-        // Auto-fit bounds to all markers (sites only)
         if (withCoords.length > 0 && !selectedSite) {
             try {
                 const group = L.featureGroup(markersRef.current)
                 map.fitBounds(group.getBounds().pad(0.2))
-            } catch (e) { /* ignore if bounds fail */ }
+            } catch (e) {}
         }
     }, [sites])
 
-    // Draw worker markers based on GPS Check-in
+    // Draw worker markers
     useEffect(() => {
         const map = mapInstanceRef.current
         if (!map) return
 
-        // Clear old worker markers
         workerMarkersRef.current.forEach(m => m.remove())
         workerMarkersRef.current = []
 
@@ -139,13 +157,12 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
 
         liveWorkers.forEach(worker => {
             const initial = worker.worker_name ? worker.worker_name.charAt(0).toUpperCase() : 'W'
-            // Color based on status
-            let color = '#10b981' // Green for active
+            let color = '#10b981'
             if (worker.status === 'gps_pierdut') color = '#f59e0b'
             if (worker.status === 'geofence') color = '#ef4444'
             if (worker.status === 'pauză') color = '#6366f1'
 
-            const iconHtml = worker.avatar_path 
+            const iconHtml = worker.avatar_path
                 ? `<div style="width:28px;height:28px;border-radius:50%;border:2.5px solid ${color};background-image:url(${worker.avatar_path});background-size:cover;background-position:center;box-shadow:0 3px 6px rgba(0,0,0,0.4);"></div>`
                 : `<div style="width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:${color};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;box-shadow:0 3px 6px rgba(0,0,0,0.4);">${initial}</div>`
 
@@ -157,12 +174,12 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
             })
 
             const checkInTime = new Date(worker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' })
-            
+
             let statusText = worker.status
             if (worker.status === 'geofence') statusText = 'În afara perimetrului'
             if (worker.status === 'gps_pierdut') statusText = 'GPS Pierdut'
             if (worker.status === 'activ') statusText = 'Activ pe șantier'
-            if (worker.status === 'pauză') statusText = 'În pauză'
+            if (worker.status === 'pauță') statusText = 'În pauză'
 
             const popupHtml = `
                 <div class="p-1 min-w-[200px] font-sans">
@@ -218,14 +235,24 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                 }
             }
         }
-        
+
         map.on('popupopen', handlePopupOpen)
-
-        return () => {
-            map.off('popupopen', handlePopupOpen)
-        }
-
+        return () => { map.off('popupopen', handlePopupOpen) }
     }, [workers, sites])
+
+    const handleResetView = () => {
+        setSelectedSite(null)
+        if (onSiteSelect) onSiteSelect(null)
+        if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
+        const map = mapInstanceRef.current
+        const withCoords = sites.filter(s => s.latitude && s.longitude)
+        if (map && withCoords.length > 0) {
+            try {
+                const group = L.featureGroup(markersRef.current)
+                map.fitBounds(group.getBounds().pad(0.2))
+            } catch (e) {}
+        }
+    }
 
     const handleSitePillClick = (site) => {
         if (!site.latitude || !site.longitude) return
@@ -233,7 +260,9 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
         setSelectedSite(site)
         if (onSiteSelect) onSiteSelect(site.id)
         if (map) {
-            map.flyTo([site.latitude, site.longitude], 14, { duration: 1.0 })
+            // Zoom exact la geofence
+            const fenceBounds = L.latLng(site.latitude, site.longitude).toBounds((site.geofence_radius || 200) * 2)
+            map.flyToBounds(fenceBounds, { duration: 1.0, padding: [30, 30] })
             if (circleRef.current) circleRef.current.remove()
             circleRef.current = L.circle([site.latitude, site.longitude], {
                 radius: site.geofence_radius || 100,
@@ -246,10 +275,14 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
     const sitesWithCoords = sites.filter(s => s.latitude && s.longitude)
     const sitesNoCoords = sites.filter(s => !s.latitude || !s.longitude)
 
+    const containerClass = isFullscreen
+        ? 'fixed inset-0 z-[9999] flex flex-col bg-white dark:bg-slate-900'
+        : 'rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm bg-white dark:bg-slate-900'
+
     return (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm bg-white dark:bg-slate-900">
+        <div className={containerClass}>
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
                 <div className="flex items-center gap-3">
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight">
                         {t('dashboard.map_title')}
@@ -258,29 +291,30 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                         {t('dashboard.live')}
                     </span>
                 </div>
-                {selectedSite && (
+                <div className="flex items-center gap-3">
+                    {selectedSite && (
+                        <button
+                            onClick={handleResetView}
+                            className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                        >
+                            {t('common.back')}
+                        </button>
+                    )}
                     <button
-                        onClick={() => {
-                            setSelectedSite(null)
-                            if (onSiteSelect) onSiteSelect(null)
-                            if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
-                            const map = mapInstanceRef.current
-                            if (map && sitesWithCoords.length > 0) {
-                                try {
-                                    const group = L.featureGroup(markersRef.current)
-                                    map.fitBounds(group.getBounds().pad(0.2))
-                                } catch (e) {}
-                            }
-                        }}
-                        className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                        onClick={toggleFullscreen}
+                        title={isFullscreen ? 'Ieși din fullscreen (ESC)' : 'Fullscreen'}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-400 transition-colors"
                     >
-                        {t('common.back')}
+                        {isFullscreen
+                            ? <Minimize2 className="w-4 h-4" />
+                            : <Maximize2 className="w-4 h-4" />
+                        }
                     </button>
-                )}
+                </div>
             </div>
 
-            <div className="flex" style={{ height: 420 }}>
-                {/* Map */}
+            {/* Map + panel */}
+            <div className="flex flex-1 min-h-0" style={isFullscreen ? {} : { height: 420 }}>
                 <div className="flex-1 relative">
                     {loading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 z-10">
@@ -305,7 +339,6 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                     <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
                 </div>
 
-                {/* Selected site detail panel */}
                 {selectedSite && (
                     <div className="w-60 border-l border-slate-200 dark:border-slate-700 p-4 overflow-y-auto bg-white dark:bg-slate-900 shrink-0">
                         <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-3 leading-snug">
@@ -363,20 +396,9 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
             </div>
 
             {/* Footer pills */}
-            <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 min-h-[48px]">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 min-h-[48px] shrink-0">
                 <button
-                    onClick={() => {
-                        setSelectedSite(null)
-                        if (onSiteSelect) onSiteSelect(null)
-                        if (circleRef.current) { circleRef.current.remove(); circleRef.current = null }
-                        const map = mapInstanceRef.current
-                        if (map && sitesWithCoords.length > 0) {
-                            try {
-                                const group = L.featureGroup(markersRef.current)
-                                map.fitBounds(group.getBounds().pad(0.2))
-                            } catch (e) {}
-                        }
-                    }}
+                    onClick={handleResetView}
                     className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                         !selectedSite
                             ? 'bg-blue-600 text-white border-blue-600'

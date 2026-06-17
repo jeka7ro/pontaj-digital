@@ -67,6 +67,117 @@ def _daily_clockin_loop():
         _scheduler_stop.wait(60)  # check every 60s
 
 
+def _auto_clockout_loop():
+    """Background thread: auto-close open shifts 5 minutes after the latest site's work_end_time.
+    
+    Logic:
+    - Every minute, check the latest work_end_time across all active sites (Europe/Berlin timezone).
+    - Once current site time >= (latest work_end_time + 5 min), run auto-close once per day.
+    - Close each open segment at its own site's work_end_time (not the current time).
+    """
+    from datetime import datetime, timedelta
+    from app.timezone import get_local_now, get_local_today  # Europe/Berlin — ora santierului
+
+    last_run_date = None
+
+    while not _scheduler_stop.is_set():
+        try:
+            now = get_local_now()
+            today = get_local_today()
+
+            # Only run once per day
+            if last_run_date == today:
+                _scheduler_stop.wait(60)
+                continue
+
+            # Find the latest work_end_time among all active sites
+            from app.database import SessionLocal
+            from app.models import ConstructionSite, TimesheetSegment, Timesheet, GeofencePause
+
+            db = SessionLocal()
+            try:
+                sites = db.query(ConstructionSite).filter(
+                    ConstructionSite.status == "active"
+                ).all()
+
+                if not sites:
+                    db.close()
+                    _scheduler_stop.wait(60)
+                    continue
+
+                # Find latest closing time across all active sites
+                latest_end = max(
+                    (s.work_end_time for s in sites if s.work_end_time),
+                    default=None
+                )
+                if not latest_end:
+                    db.close()
+                    _scheduler_stop.wait(60)
+                    continue
+
+                # Trigger time = latest_end + 5 minutes (ora santierului = Europe/Berlin)
+                trigger_dt = datetime.combine(today, latest_end) + timedelta(minutes=5)
+
+                if now < trigger_dt:
+                    db.close()
+                    _scheduler_stop.wait(60)
+                    continue
+
+                # Time to run! Close all open segments from today
+                print(f"🔒 Auto-clockout: closing open shifts for {today} (trigger: {trigger_dt.strftime('%H:%M')} Berlin time)")
+
+                sites_dict = {s.id: s for s in sites}
+
+                open_segs = db.query(TimesheetSegment).join(
+                    Timesheet, Timesheet.id == TimesheetSegment.timesheet_id
+                ).filter(
+                    Timesheet.date == today,
+                    TimesheetSegment.check_out_time == None
+                ).all()
+
+                closed_count = 0
+                for seg in open_segs:
+                    site = sites_dict.get(seg.site_id)
+                    if not site or not site.work_end_time:
+                        close_time = datetime.combine(today, latest_end)
+                    else:
+                        close_time = datetime.combine(today, site.work_end_time)
+
+                    seg.check_out_time = close_time
+
+                    # Close open lunch break
+                    if seg.break_start_time and not seg.break_end_time:
+                        seg.break_end_time = close_time
+
+                    # Close open geofence pauses
+                    open_geos = db.query(GeofencePause).filter(
+                        GeofencePause.segment_id == seg.id,
+                        GeofencePause.pause_end == None
+                    ).all()
+                    for gp in open_geos:
+                        gp.pause_end = close_time
+
+                    closed_count += 1
+
+                db.commit()
+                print(f"✅ Auto-clockout: {closed_count} ture inchise la ora santierului lor")
+                last_run_date = today
+
+            except Exception as e:
+                print(f"⚠️  Auto-clockout error: {e}")
+                db.rollback()
+            finally:
+                db.close()
+
+        except Exception as outer_e:
+            print(f"⚠️  Auto-clockout outer error: {outer_e}")
+
+        _scheduler_stop.wait(60)  # check every 60 seconds
+
+
+
+
+
 
 def _run_migrations(engine):
     """Auto-add any missing columns to keep DB in sync with models."""
@@ -182,6 +293,11 @@ async def lifespan(app: FastAPI):
     ka = threading.Thread(target=_keepalive_loop, daemon=True)
     ka.start()
     print("💓 Keep-alive thread started (pings every 14 min)")
+
+    # Start auto-clockout thread (closes open shifts 5min after last site's work_end_time)
+    co = threading.Thread(target=_auto_clockout_loop, daemon=True)
+    co.start()
+    print("🔒 Auto-clockout thread started (closes open shifts after site program ends)")
 
     yield
     # Shutdown

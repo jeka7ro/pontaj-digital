@@ -963,68 +963,70 @@ export default function ClockInPage() {
             ) : (
                 <div className="max-w-md mx-auto px-3 pt-3 pb-2 flex flex-col gap-2" style={{ minHeight: 'calc(100dvh - 160px)' }}>
                     {/* === MAP SECTION === */}
-                    <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-white" style={{ height: '200px' }}>
-                        <MapContainer
-                            center={mapCenter}
-                            zoom={16}
-                            style={{ height: '100%', width: '100%' }}
-                            zoomControl={true}
-                            attributionControl={false}
-                        >
-                            <TileLayer
-                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                attribution="Esri Satellite"
-                            />
-                            {/* Labels overlay on satellite */}
-                            <TileLayer
-                                url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}"
-                            />
-
-                            {/* Geofence circle */}
-                            {activeSitePos && (
-                                <Circle
-                                    center={[activeSitePos.lat, activeSitePos.lon]}
-                                    radius={activeSitePos.radius}
-                                    pathOptions={{
-                                        color: activeShift?.is_outside_geofence ? '#ef4444' : '#3b82f6',
-                                        fillColor: activeShift?.is_outside_geofence ? '#ef4444' : '#3b82f6',
-                                        fillOpacity: 0.15,
-                                        weight: 2,
-                                        dashArray: '8 4'
-                                    }}
+                    {!activeShift && (
+                        <div className="rounded-2xl overflow-hidden shadow-lg border-2 border-white shrink-0" style={{ height: '200px' }}>
+                            <MapContainer
+                                center={mapCenter}
+                                zoom={16}
+                                style={{ height: '100%', width: '100%' }}
+                                zoomControl={true}
+                                attributionControl={false}
+                            >
+                                <TileLayer
+                                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                    attribution="Esri Satellite"
                                 />
-                            )}
+                                {/* Labels overlay on satellite */}
+                                <TileLayer
+                                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}"
+                                />
 
-                            {/* Site marker (red pin) */}
-                            {activeSitePos && (
-                                <Marker
-                                    position={[activeSitePos.lat, activeSitePos.lon]}
-                                    icon={siteIcon}
-                                >
-                                    <Popup>{activeSitePos.name}</Popup>
-                                </Marker>
-                            )}
+                                {/* Geofence circle */}
+                                {activeSitePos && (
+                                    <Circle
+                                        center={[activeSitePos.lat, activeSitePos.lon]}
+                                        radius={activeSitePos.radius}
+                                        pathOptions={{
+                                            color: activeShift?.is_outside_geofence ? '#ef4444' : '#3b82f6',
+                                            fillColor: activeShift?.is_outside_geofence ? '#ef4444' : '#3b82f6',
+                                            fillOpacity: 0.15,
+                                            weight: 2,
+                                            dashArray: '8 4'
+                                        }}
+                                    />
+                                )}
 
-                            {/* User location marker (blue) */}
-                            {location && (
-                                <Marker
-                                    position={[location.latitude, location.longitude]}
-                                    icon={userIcon}
-                                >
-                                    <Popup>{t('common.your_location')}</Popup>
-                                </Marker>
-                            )}
+                                {/* Site marker (red pin) */}
+                                {activeSitePos && (
+                                    <Marker
+                                        position={[activeSitePos.lat, activeSitePos.lon]}
+                                        icon={siteIcon}
+                                    >
+                                        <Popup>{activeSitePos.name}</Popup>
+                                    </Marker>
+                                )}
 
-                            {/* Auto-fit bounds */}
-                            <MapAutoFit
-                                userPos={location ? [location.latitude, location.longitude] : null}
-                                sitePos={activeSitePos
-                                    ? [activeSitePos.lat, activeSitePos.lon]
-                                    : null
-                                }
-                            />
-                        </MapContainer>
-                    </div>
+                                {/* User location marker (blue) */}
+                                {location && (
+                                    <Marker
+                                        position={[location.latitude, location.longitude]}
+                                        icon={userIcon}
+                                    >
+                                        <Popup>{t('common.your_location')}</Popup>
+                                    </Marker>
+                                )}
+
+                                {/* Auto-fit bounds */}
+                                <MapAutoFit
+                                    userPos={location ? [location.latitude, location.longitude] : null}
+                                    sitePos={activeSitePos
+                                        ? [activeSitePos.lat, activeSitePos.lon]
+                                        : null
+                                    }
+                                />
+                            </MapContainer>
+                        </div>
+                    )}
 
                     {/* Address + GPS — single row */}
                     {location && currentAddress ? (

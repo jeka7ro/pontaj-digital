@@ -436,8 +436,8 @@ export default function ClockInPage() {
 
         // Fetch first time after 5s
         const firstPing = setTimeout(fetchAndSendLocation, 5000)
-        // Then every 15 mins
-        const interval = setInterval(fetchAndSendLocation, 15 * 60 * 1000)
+        // Then every 60 mins
+        const interval = setInterval(fetchAndSendLocation, 60 * 60 * 1000)
         
         // Also ping when visibility changes to visible
         const onVisible = () => {

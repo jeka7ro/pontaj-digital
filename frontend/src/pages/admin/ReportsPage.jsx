@@ -376,7 +376,20 @@ export default function ReportsPage() {
                             </h3>
                             <div style={{ width: '100%', height: 250 }}>
                                 <ResponsiveContainer>
-                                    <BarChart data={charts.byDay} barSize={28}>
+                                    <BarChart 
+                                        data={charts.byDay} 
+                                        barSize={28}
+                                        onClick={(state) => {
+                                            if (state && state.activePayload && state.activePayload.length > 0) {
+                                                const clickedDate = state.activePayload[0].payload.rawDate;
+                                                if (clickedDate) {
+                                                    setDateFrom(clickedDate);
+                                                    setDateTo(clickedDate);
+                                                }
+                                            }
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                                         <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="h" />
@@ -394,14 +407,6 @@ export default function ReportsPage() {
                                             dataKey="hours" 
                                             fill="url(#dayGrad)" 
                                             radius={[6, 6, 0, 0]}
-                                            cursor="pointer"
-                                            onClick={(data) => {
-                                                const clickedDate = data?.rawDate || data?.payload?.rawDate;
-                                                if (clickedDate) {
-                                                    setDateFrom(clickedDate);
-                                                    setDateTo(clickedDate);
-                                                }
-                                            }}
                                         >
                                             <LabelList dataKey="hours" position="top" formatter={(val) => `${Math.round(val * 10) / 10}h`} fill="#64748b" fontSize={11} fontWeight="bold" />
                                         </Bar>

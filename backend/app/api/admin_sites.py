@@ -529,13 +529,13 @@ def update_site(
     
     # Update schedule fields
     if site_data.work_start_time is not None:
-        site.work_start_time = time.fromisoformat(site_data.work_start_time)
+        site.work_start_time = time.fromisoformat(site_data.work_start_time) if site_data.work_start_time else None
     if site_data.work_end_time is not None:
-        site.work_end_time = time.fromisoformat(site_data.work_end_time)
+        site.work_end_time = time.fromisoformat(site_data.work_end_time) if site_data.work_end_time else None
     if site_data.lunch_break_start is not None:
-        site.lunch_break_start = time.fromisoformat(site_data.lunch_break_start)
+        site.lunch_break_start = time.fromisoformat(site_data.lunch_break_start) if site_data.lunch_break_start else None
     if site_data.lunch_break_end is not None:
-        site.lunch_break_end = time.fromisoformat(site_data.lunch_break_end)
+        site.lunch_break_end = time.fromisoformat(site_data.lunch_break_end) if site_data.lunch_break_end else None
     if site_data.max_overtime_minutes is not None:
         site.max_overtime_minutes = site_data.max_overtime_minutes
     

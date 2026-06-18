@@ -151,7 +151,7 @@ export default function ReportsPage() {
             dayMap[day].workers++
         })
         const byDay = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date))
-            .map(d => ({ ...d, date: new Date(d.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: '2-digit', month: 'short' }), hours: Math.round(d.hours * 10) / 10 }))
+            .map(d => ({ ...d, rawDate: d.date, date: new Date(d.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: '2-digit', month: 'short' }), hours: Math.round(d.hours * 10) / 10 }))
 
         // Summary
         const totalHours = ts.reduce((s, t) => s + (t.hours_worked || 0), 0)
@@ -390,7 +390,19 @@ export default function ReportsPage() {
                                                 <stop offset="100%" stopColor="#34d399" />
                                             </linearGradient>
                                         </defs>
-                                        <Bar dataKey="hours" fill="url(#dayGrad)" radius={[6, 6, 0, 0]}>
+                                        <Bar 
+                                            dataKey="hours" 
+                                            fill="url(#dayGrad)" 
+                                            radius={[6, 6, 0, 0]}
+                                            cursor="pointer"
+                                            onClick={(data) => {
+                                                const clickedDate = data?.rawDate || data?.payload?.rawDate;
+                                                if (clickedDate) {
+                                                    setDateFrom(clickedDate);
+                                                    setDateTo(clickedDate);
+                                                }
+                                            }}
+                                        >
                                             <LabelList dataKey="hours" position="top" formatter={(val) => `${Math.round(val * 10) / 10}h`} fill="#64748b" fontSize={11} fontWeight="bold" />
                                         </Bar>
                                     </BarChart>

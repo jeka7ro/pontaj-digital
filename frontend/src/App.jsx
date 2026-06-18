@@ -82,11 +82,8 @@ class GlobalErrorBoundary extends React.Component {
     }
     render() {
         if (this.state.hasError) {
-            // Reload silentios — fara niciun ecran pentru muncitori
-            setTimeout(() => {
-                sessionStorage.removeItem('chunk_reload')
-                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
-            }, 500)
+            // Nu facem nimic aici — componentDidCatch deja a dat redirect o singura data
+            // Returnam null = ecran alb scurt pana redirect-ul are loc
             return null
         }
         return this.props.children

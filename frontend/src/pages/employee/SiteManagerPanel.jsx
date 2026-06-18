@@ -256,7 +256,7 @@ export default function SiteManagerPanel() {
                 <div className="flex items-center gap-2">
                     {lastRefresh && (
                         <span className="text-xs text-slate-400">
-                            {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                            {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                         </span>
                     )}
                     <button onClick={fetchTeams} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -339,7 +339,7 @@ export default function SiteManagerPanel() {
                                             />
                                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
                                                 <p className="text-white/80 text-[10px]">
-                                                    {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                                    {photo.uploader_name} · {new Date(photo.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                             <button
@@ -374,7 +374,7 @@ export default function SiteManagerPanel() {
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-2xl">
                             <p className="text-white text-sm font-medium">{selectedPhoto.uploader_name}</p>
                             <p className="text-white/70 text-xs">
-                                {selectedPhoto.site_name} • {new Date(selectedPhoto.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                {selectedPhoto.site_name} • {new Date(selectedPhoto.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                             </p>
                             {selectedPhoto.description && (
                                 <p className="text-white/80 text-xs mt-1">{selectedPhoto.description}</p>
@@ -471,8 +471,8 @@ export default function SiteManagerPanel() {
                                                                     {formatHours(getLiveHours(member))}
                                                                 </div>
                                                                 <div className="text-[10px] text-slate-400">
-                                                                    {new Date(member.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
-                                                                    {member.check_out_time && ` - ${new Date(member.check_out_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}`}
+                                                                    {new Date(member.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
+                                                                    {member.check_out_time && ` - ${new Date(member.check_out_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}`}
                                                                 </div>
                                                             </div>
                                                         )}

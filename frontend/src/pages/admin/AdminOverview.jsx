@@ -240,17 +240,17 @@ export default function AdminOverview() {
                         {t('dashboard.title')}
                     </h1>
                     <p className="text-sm text-slate-500">
-                        {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         <span className="ml-2 text-slate-400">•</span>
                         <span className="ml-2 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
-                            {new Date(nowRef.current).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin' })} <span className="text-slate-500 font-medium ml-1">(Ora Germaniei)</span>
+                            {new Date(nowRef.current).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest' })} <span className="text-slate-500 font-medium ml-1">(Ora Germaniei)</span>
                         </span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     {lastRefresh && (
                         <span className="text-xs text-slate-400">
-                            {t('admin.updated_at')}: {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {t('admin.updated_at')}: {lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
                     )}
                     <button
@@ -469,7 +469,7 @@ export default function AdminOverview() {
                                         <AvatarImg path={w.avatar_path} name={w.worker_name} size="w-6 h-6" textSize="text-[10px]" />
                                         <span className="font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{w.worker_name}</span>
                                         <span className="text-[11px] font-bold text-amber-700 bg-white dark:bg-amber-950 px-2 py-0.5 rounded-full shadow-sm">
-                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                 ))}
@@ -814,7 +814,7 @@ export default function AdminOverview() {
                         key: 'check_in_time',
                         label: t('dashboard.check_in'),
                         sortable: true,
-                        render: (worker) => <span className="text-sm text-slate-600">{worker.check_in_time ? new Date(worker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                        render: (worker) => <span className="text-sm text-slate-600">{worker.check_in_time ? new Date(worker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' }) : '—'}</span>
                     },
                     {
                         key: 'worked_hours',
@@ -991,7 +991,7 @@ export default function AdminOverview() {
                                         </div>
                                         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-center">
                                             <div className="text-lg font-bold text-slate-700">
-                                                {selectedWorker.check_in_time ? new Date(selectedWorker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                {selectedWorker.check_in_time ? new Date(selectedWorker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' }) : '—'}
                                             </div>
                                             <div className="text-[10px] text-slate-500 mt-0.5">Check-in</div>
                                         </div>
@@ -1009,7 +1009,7 @@ export default function AdminOverview() {
                                                         <span className="text-sm font-medium text-slate-700">{act.name}</span>
                                                         {act.added_at && (
                                                             <span className="ml-2 text-[11px] text-slate-400">
-                                                                {new Date(act.added_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                                                {new Date(act.added_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1040,13 +1040,13 @@ export default function AdminOverview() {
                                             <div key={i} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                                        {new Date(entry.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'short', day: 'numeric', month: 'short' })}
+                                                        {new Date(entry.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  weekday: 'short', day: 'numeric', month: 'short' })}
                                                     </span>
                                                     <span className="text-sm font-bold text-blue-600">{formatTime(entry.worked_hours)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3 text-xs text-slate-500">
                                                     <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {entry.site_name}</span>
-                                                    {entry.check_in && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(entry.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>}
+                                                    {entry.check_in && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(entry.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}</span>}
                                                 </div>
                                                 {entry.activities.length > 0 && (
                                                     <div className="flex flex-wrap gap-1 mt-2">

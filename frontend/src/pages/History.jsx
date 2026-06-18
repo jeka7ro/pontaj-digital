@@ -103,7 +103,7 @@ export default function History() {
                     </div>
                     {/* Weekday label */}
                     <div className="text-center text-xs text-slate-500 mt-2">
-                        {new Date(historyDate + 'T12:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(historyDate + 'T12:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
                     {/* Quick date pills */}
                     {historyDates.length > 0 && (
@@ -117,7 +117,7 @@ export default function History() {
                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
-                                    {new Date(d + 'T12:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: 'numeric', month: 'short' })}
+                                    {new Date(d + 'T12:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  day: 'numeric', month: 'short' })}
                                 </button>
                             ))}
                         </div>
@@ -169,9 +169,9 @@ export default function History() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-slate-600">
-                                        <span>🕐 {new Date(seg.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span>🕐 {new Date(seg.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}</span>
                                         {seg.check_out && (
-                                            <span>→ {new Date(seg.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span>→ {new Date(seg.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}</span>
                                         )}
                                         <span className="font-bold text-blue-600">{formatHoursMinutes(seg.worked_hours)}</span>
                                     </div>

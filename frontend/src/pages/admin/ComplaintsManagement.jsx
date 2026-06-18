@@ -247,7 +247,7 @@ export default function ComplaintsManagement() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                                                {new Date(c.created_at).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' })}
+                                                {new Date(c.created_at).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
                                             </td>
                                             <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                                                 <button

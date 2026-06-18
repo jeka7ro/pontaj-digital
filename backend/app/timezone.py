@@ -1,11 +1,11 @@
 """
 Timezone helpers for Romanian time.
-Render server runs UTC — all timestamps must be in Europe/Berlin.
+Render server runs UTC — all timestamps must be in Europe/Bucharest.
 """
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
 
-DE_TZ = ZoneInfo("Europe/Berlin")
+DE_TZ = ZoneInfo("Europe/Bucharest")
 
 
 def get_local_now() -> datetime:

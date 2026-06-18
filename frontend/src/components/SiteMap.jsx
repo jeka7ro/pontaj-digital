@@ -173,7 +173,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                 popupAnchor: [0, -14],
             })
 
-            const checkInTime = new Date(worker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' })
+            const checkInTime = new Date(worker.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' })
 
             let statusText = worker.status
             if (worker.status === 'geofence') statusText = 'În afara perimetrului'

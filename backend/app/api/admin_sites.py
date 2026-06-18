@@ -514,7 +514,7 @@ def update_site(
     
     # Update solar panel fields
     if site_data.client_id is not None:
-        site.client_id = site_data.client_id
+        site.client_id = site_data.client_id if site_data.client_id else None
     if site_data.client_name is not None:
         site.client_name = site_data.client_name
     

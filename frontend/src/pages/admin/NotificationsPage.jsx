@@ -67,13 +67,13 @@ export default function NotificationsPage() {
 
     const formatTime = (t) => {
         try {
-            return new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            return new Date(t).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit', second: '2-digit' })
         } catch { return '' }
     }
 
     const formatDate = (t) => {
         try {
-            return new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: 'numeric', month: 'long', year: 'numeric' })
+            return new Date(t).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  day: 'numeric', month: 'long', year: 'numeric' })
         } catch { return '' }
     }
 
@@ -88,7 +88,7 @@ export default function NotificationsPage() {
     })
 
     // Group events by date
-    const today = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: 'numeric', month: 'long', year: 'numeric' })
+    const today = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  day: 'numeric', month: 'long', year: 'numeric' })
 
     return (
         <div className="min-h-screen bg-slate-50 p-4 md:p-8">

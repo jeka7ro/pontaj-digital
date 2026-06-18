@@ -1114,7 +1114,7 @@ export default function ClockInPage() {
                             <div className="bg-white rounded-2xl shadow-sm p-3 flex items-center justify-center gap-2 text-slate-700">
                                 <Calendar className="w-4 h-4 text-blue-500" />
                                 <span className="text-sm font-medium">
-                                    {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                    {new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </span>
                             </div>
 
@@ -1192,7 +1192,7 @@ export default function ClockInPage() {
                                     📍 {activeShift.site_name}
                                 </div>
                                 <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
-                                    <span>{t('timesheets.check_in')}: {new Date(activeShift.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span>{t('timesheets.check_in')}: {new Date(activeShift.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}</span>
                                     {(activeShift.is_on_break || activeShift.break_hours > 0) && (
                                         <span>☕ {t('timesheets.breaks')}: <BreakTimer activeShift={activeShift} /></span>
                                     )}
@@ -1223,7 +1223,7 @@ export default function ClockInPage() {
                                     <div className="text-2xl font-bold"><BreakTimer activeShift={activeShift} /></div>
                                     {activeShift.break_start_time && (
                                         <div className="text-xs text-white/80 mt-1">
-                                            {t('timesheets.started_at')} {new Date(activeShift.break_start_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                            {t('timesheets.started_at')} {new Date(activeShift.break_start_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     )}
                                     <button

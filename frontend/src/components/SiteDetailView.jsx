@@ -353,13 +353,13 @@ export default function SiteDetailView({ site, onBack }) {
                                                     <td className="px-4 py-3">
                                                         <input type="checkbox" checked={selectedRows.includes(a.id)} onChange={() => toggleRow(a.id)} onClick={e => e.stopPropagation()} className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer" />
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-200">{new Date(a.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' })}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-200">{new Date(a.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</td>
                                                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{a.user_name}</td>
                                                     <td className="px-4 py-3 font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                                        {a.check_in ? new Date(a.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                        {a.check_in ? new Date(a.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' }) : '—'}
                                                     </td>
                                                     <td className="px-4 py-3 font-bold text-red-500 dark:text-red-400 tabular-nums">
-                                                        {a.check_out ? new Date(a.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                        {a.check_out ? new Date(a.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' }) : '—'}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {a.activities?.length > 0 ? (

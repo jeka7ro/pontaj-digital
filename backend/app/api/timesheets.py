@@ -674,10 +674,17 @@ def get_dashboard_stats(
         for ts in day_timesheets:
             segments = segs_by_ts.get(ts.id, [])
             for seg in segments:
-                end_time = seg.check_out_time or now
+                # Cap end_time at end of that day (23:59:59) for past days
+                # This prevents unclosed segments from inflating hours across multiple days
+                day_end = datetime(day.year, day.month, day.day, 23, 59, 59)
+                max_end = now if day == today else day_end
+                end_time = seg.check_out_time or max_end
+                # Also cap end_time so it doesn't exceed day boundary
+                end_time = min(end_time, max_end)
                 hours = (end_time - seg.check_in_time).total_seconds() / 3600
                 if seg.break_start_time:
-                    break_end = seg.break_end_time or now
+                    break_end = seg.break_end_time or max_end
+                    break_end = min(break_end, max_end)
                     bh = (break_end - seg.break_start_time).total_seconds() / 3600
                     hours -= bh
                 day_hours += max(0, hours)
@@ -694,7 +701,7 @@ def get_dashboard_stats(
     today_timesheets = ts_by_date.get(today, [])
     today_segs = [seg for ts in today_timesheets for seg in segs_by_ts.get(ts.id, [])]
     
-    for hour in range(6, 21):
+    for hour in range(6, min(now.hour + 1, 21)):
         hour_time = datetime(today.year, today.month, today.day, hour, 0)
         active = 0
         for seg in today_segs:

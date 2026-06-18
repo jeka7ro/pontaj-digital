@@ -82,23 +82,12 @@ class GlobalErrorBoundary extends React.Component {
     }
     render() {
         if (this.state.hasError) {
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-                    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
-                        <h2 className="text-xl font-bold text-slate-800 mb-3">Actualizare Aplicație</h2>
-                        <p className="text-sm text-slate-500 mb-6">Am lansat o versiune nouă a aplicației. Te rugăm să reîncarci pagina pentru a continua.</p>
-                        <button 
-                            onClick={() => {
-                                sessionStorage.removeItem('chunk_reload')
-                                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
-                            }} 
-                            className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-colors"
-                        >
-                            Reîncarcă Acum
-                        </button>
-                    </div>
-                </div>
-            )
+            // Reload silentios — fara niciun ecran pentru muncitori
+            setTimeout(() => {
+                sessionStorage.removeItem('chunk_reload')
+                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
+            }, 500)
+            return null
         }
         return this.props.children
     }

@@ -206,6 +206,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.responses import JSONResponse
+from fastapi import Request
+from sqlalchemy.exc import SQLAlchemyError
+import logging
+
+logger = logging.getLogger(__name__)
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    logger.error(f"Database Error: {str(exc)}")
+    # Extragem eroarea de baza fara tot query-ul SQL care e foarte lung
+    error_msg = str(exc).split("\\n")[0]
+    return JSONResponse(
+        status_code=400,
+        content={"detail": f"Eroare salvare (Bază de date): {error_msg}"}
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled Error: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Eroare internă: {str(exc)}"}
+    )
+
 @app.get("/api")
 async def root():
     return {

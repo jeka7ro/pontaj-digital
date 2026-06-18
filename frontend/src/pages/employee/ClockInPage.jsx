@@ -1127,7 +1127,7 @@ export default function ClockInPage() {
                                     </div>
                                     <p className="text-xs text-white/90">
                                         {t('timesheets.outside_radius')} {activeShift.site_geofence_radius || 300}m de șantier
-                                        {geofencePing?.distance ? ` (${Math.round(geofencePing.distance)}m {t('timesheets.distance').toLowerCase()})` : ''}.
+                                        {geofencePing?.distance ? ` (${Math.round(geofencePing.distance)}m ${t('timesheets.distance').toLowerCase()})` : ''}.
                                         {t('timesheets.timer_stopped_desc')}
                                     </p>
                                     {geofencePauseTime > 0 && (
@@ -1193,7 +1193,7 @@ export default function ClockInPage() {
                                 </div>
                                 <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
                                     <span>{t('timesheets.check_in')}: {new Date(activeShift.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</span>
-                                    {(breakTime > 0 || activeShift.break_hours > 0) && (
+                                    {(activeShift.is_on_break || activeShift.break_hours > 0) && (
                                         <span>☕ {t('timesheets.breaks')}: <BreakTimer activeShift={activeShift} /></span>
                                     )}
                                     {geofencePauseTime > 0 && (

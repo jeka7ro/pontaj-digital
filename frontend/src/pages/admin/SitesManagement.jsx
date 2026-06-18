@@ -828,51 +828,42 @@ export default function SitesManagement() {
                                         </select>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Putere Sistem (kW)</label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.system_power_kw}
-                                            onChange={e => setFormData({ ...formData, system_power_kw: e.target.value })}
-                                            className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
-                                            placeholder="ex: 10.5"
-                                        />
-                                    </div>
+                                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Putere Sistem (kW)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={formData.system_power_kw}
+                                                onChange={e => setFormData({ ...formData, system_power_kw: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder="ex: 10.5"
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Număr Panouri</label>
-                                        <input
-                                            type="number"
-                                            value={formData.panel_count}
-                                            onChange={e => setFormData({ ...formData, panel_count: e.target.value })}
-                                            className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
-                                            placeholder="ex: 24"
-                                        />
-                                    </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Număr Panouri</label>
+                                            <input
+                                                type="number"
+                                                value={formData.panel_count}
+                                                onChange={e => setFormData({ ...formData, panel_count: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder="ex: 24"
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Status</label>
-                                        <select
-                                            value={formData.status}
-                                            onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                            className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
-                                        >
-                                            <option value="active">Activ</option>
-                                            <option value="completed">Finalizat</option>
-                                            <option value="suspended">Suspendat</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Descriere</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            rows={3}
-                                            className="w-full px-4 py-3 text-sm border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm resize-none"
-                                            placeholder="Detalii despre șantier..."
-                                        />
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Status</label>
+                                            <select
+                                                value={formData.status}
+                                                onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                            >
+                                                <option value="active">Activ</option>
+                                                <option value="completed">Finalizat</option>
+                                                <option value="suspended">Suspendat</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 

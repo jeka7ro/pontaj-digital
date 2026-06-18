@@ -605,9 +605,17 @@ export default function WarehouseManagement() {
     }
 
     // Filtering & Pagination for Items
-    const filteredItems = items
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
-    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    const filteredItems = items.filter(item => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+            (item.name && item.name.toLowerCase().includes(q)) ||
+            (item.model && item.model.toLowerCase().includes(q)) ||
+            (item.inventory_code && item.inventory_code.toLowerCase().includes(q))
+        );
+    });
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const filteredHistory = transactions.filter(t => {
         const searchLower = historySearch.toLowerCase()

@@ -1242,7 +1242,7 @@ export default function ClockInPage() {
                                             <Coffee className="w-5 h-5 text-orange-500" />
                                             <span className="text-sm font-semibold text-orange-800">{t('timesheets.break_taken')}</span>
                                         </div>
-                                        <span className="text-sm font-bold text-orange-700">{formatTime(activeShift.break_hours)}</span>
+                                        <span className="text-sm font-bold text-orange-700">{formatHoursMinutes(activeShift.break_hours)}</span>
                                     </div>
                                     <p className="text-xs text-orange-600 mt-1">{t('errors.second_break')}</p>
                                 </div>

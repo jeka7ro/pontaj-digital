@@ -82,9 +82,23 @@ class GlobalErrorBoundary extends React.Component {
     }
     render() {
         if (this.state.hasError) {
-            // Nu facem nimic aici — componentDidCatch deja a dat redirect o singura data
-            // Returnam null = ecran alb scurt pana redirect-ul are loc
-            return null
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+                    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
+                        <h2 className="text-xl font-bold text-slate-800 mb-3">A apărut o eroare</h2>
+                        <p className="text-sm text-slate-500 mb-6">Aplicația a întâmpinat o problemă la încărcare. Te rugăm să apeși butonul de mai jos pentru a reîncărca pagina.</p>
+                        <button 
+                            onClick={() => {
+                                sessionStorage.removeItem('chunk_reload')
+                                window.location.href = window.location.pathname + '?v=' + new Date().getTime()
+                            }} 
+                            className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-colors"
+                        >
+                            Reîncarcă Pagina
+                        </button>
+                    </div>
+                </div>
+            )
         }
         return this.props.children
     }

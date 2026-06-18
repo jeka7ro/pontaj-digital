@@ -264,11 +264,11 @@ export default function TimesheetApprovalPage() {
             render: (w) => (
                 <div>
                     <div className="text-sm text-slate-700 dark:text-slate-300">
-                        {w.check_in_time ? new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' }) : '—'}
+                        {w.check_in_time ? new Date(w.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' }) : '—'}
                     </div>
                     {w.check_out_time && (
                         <div className="text-xs text-slate-400">
-                            → {new Date(w.check_out_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
+                            → {new Date(w.check_out_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
                         </div>
                     )}
                 </div>
@@ -379,7 +379,7 @@ export default function TimesheetApprovalPage() {
                         <span className="hidden sm:inline">Refresh</span>
                     </button>
                     {lastRefresh && (
-                        <span className="text-xs text-slate-400">{lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        <span className="text-xs text-slate-400">{lastRefresh.toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                     )}
                 </div>
             </div>
@@ -444,7 +444,7 @@ export default function TimesheetApprovalPage() {
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className="absolute bottom-1.5 left-1.5 right-1.5">
                                         <p className="text-white text-[10px] font-medium truncate">{photo.uploaded_by_name}</p>
-                                        <p className="text-white/70 text-[9px]">{photo.site_name} • {new Date(photo.uploaded_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-white/70 text-[9px]">{photo.site_name} • {new Date(photo.uploaded_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                 </div>
                             </div>
@@ -592,7 +592,7 @@ export default function TimesheetApprovalPage() {
                                     {workerDetail.worker.birth_date && workerDetail.worker.birth_date !== 'None' && (
                                         <div className="flex items-center gap-3 text-sm">
                                             <Calendar className="w-4 h-4 text-slate-400" />
-                                            <span className="text-slate-700">{t('timesheets.birth_date')}: {new Date(workerDetail.worker.birth_date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>
+                                            <span className="text-slate-700">{t('timesheets.birth_date')}: {new Date(workerDetail.worker.birth_date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' })}</span>
                                         </div>
                                     )}
                                     {workerDetail.worker.cnp && (
@@ -627,7 +627,7 @@ export default function TimesheetApprovalPage() {
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                                                {new Date(entry.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  weekday: 'short', day: 'numeric', month: 'short' })}
+                                                                {new Date(entry.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  weekday: 'short', day: 'numeric', month: 'short' })}
                                                             </span>
                                                             <StatusBadge status={entry.status} />
                                                         </div>
@@ -638,8 +638,8 @@ export default function TimesheetApprovalPage() {
                                                         {entry.check_in && (
                                                             <span className="flex items-center gap-1">
                                                                 <Clock className="w-3 h-3" />
-                                                                {new Date(entry.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
-                                                                {entry.check_out && ` - ${new Date(entry.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}`}
+                                                                {new Date(entry.check_in).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
+                                                                {entry.check_out && ` - ${new Date(entry.check_out).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}`}
                                                             </span>
                                                         )}
                                                         {entry.break_hours > 0 && <span className="text-orange-500">☕ {formatHours(entry.break_hours)}</span>}

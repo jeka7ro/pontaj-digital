@@ -151,7 +151,7 @@ export default function ReportsPage() {
             dayMap[day].workers++
         })
         const byDay = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date))
-            .map(d => ({ ...d, date: new Date(d.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  day: '2-digit', month: 'short' }), hours: Math.round(d.hours * 10) / 10 }))
+            .map(d => ({ ...d, date: new Date(d.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: '2-digit', month: 'short' }), hours: Math.round(d.hours * 10) / 10 }))
 
         // Summary
         const totalHours = ts.reduce((s, t) => s + (t.hours_worked || 0), 0)
@@ -170,7 +170,7 @@ export default function ReportsPage() {
     const charts = preview ? computeCharts() : null
 
     const timesheetColumns = [
-        { key: 'date', label: t('users.date'), sortable: true, render: (r) => new Date(r.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) },
+        { key: 'date', label: t('users.date'), sortable: true, render: (r) => new Date(r.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' }) },
         { key: 'employee_name', label: t('users.employee_col'), sortable: true, render: (r) => (
             <span 
                 onClick={() => r.employee_id && navigate(`/admin/employees/${r.employee_id}`)}

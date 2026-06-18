@@ -211,7 +211,7 @@ export default function ExpensesManagement() {
                                     <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                                {new Date(exp.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
+                                                {new Date(exp.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' })}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">

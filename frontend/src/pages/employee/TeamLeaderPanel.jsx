@@ -97,7 +97,7 @@ export default function TeamLeaderPanel() {
                             id: Date.now() + member.user_id,
                             name: member.full_name,
                             hours: member.worked_hours,
-                            time: new Date().toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })
+                            time: new Date().toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })
                         }, ...n].slice(0, 10))
                     }
                 }
@@ -496,7 +496,7 @@ export default function TeamLeaderPanel() {
                                                 {m.status !== 'absent' && m.check_in_time && (
                                                     <span className="text-xs text-slate-500 flex items-center gap-1">
                                                         <Clock className="w-3 h-3" />
-                                                        {new Date(m.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
+                                                        {new Date(m.check_in_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 )}
                                                 {m.status !== 'absent' && (
@@ -522,9 +522,9 @@ export default function TeamLeaderPanel() {
                                                             <Coffee className="w-3 h-3" />
                                                             {m.break_start_time ? (
                                                                 <>
-                                                                    {new Date(m.break_start_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })}
+                                                                    {new Date(m.break_start_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })}
                                                                     {m.break_end_time ? (
-                                                                        <> → {new Date(m.break_end_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest',  hour: '2-digit', minute: '2-digit' })} ({formatHours(m.break_hours)})</>
+                                                                        <> → {new Date(m.break_end_time).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin',  hour: '2-digit', minute: '2-digit' })} ({formatHours(m.break_hours)})</>
                                                                     ) : (
                                                                         <> — în curs...</>
                                                                     )}
@@ -552,7 +552,7 @@ export default function TeamLeaderPanel() {
                                                     const liveWorked = getLiveHours(m)
                                                     const breakH = Math.max(0, m.break_hours || 0)
                                                     const totalOnSite = liveWorked + breakH
-                                                    const dateStr = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest',  day: 'numeric', month: 'long' })
+                                                    const dateStr = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin',  day: 'numeric', month: 'long' })
                                                     return (
                                                         <div className="mt-2 text-xs text-slate-600 bg-slate-50 rounded-full px-3 py-2">
                                                             <span className="font-medium">Timp șantier</span> ({formatHours(totalOnSite)})

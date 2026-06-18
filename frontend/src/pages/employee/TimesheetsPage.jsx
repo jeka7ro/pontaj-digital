@@ -116,7 +116,7 @@ export default function TimesheetsPage() {
                                 <div>
                                     <div className="flex items-center gap-2 text-slate-900 font-semibold mb-1">
                                         <Calendar className="w-4 h-4" />
-                                        {new Date(ts.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', 
+                                        {new Date(ts.date).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin', 
                                             day: 'numeric',
                                             month: 'long',
                                             year: 'numeric'

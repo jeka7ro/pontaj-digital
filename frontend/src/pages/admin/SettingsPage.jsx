@@ -32,7 +32,7 @@ export default function SettingsPage() {
         date_format: 'DD/MM/YYYY',
         time_format: '24h',
         language: 'ro',
-        timezone: 'Europe/Bucharest'
+        timezone: 'Europe/Berlin'
     })
 
     const [activeTab, setActiveTab] = useState('organization')
@@ -363,7 +363,7 @@ export default function SettingsPage() {
                                 onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
                                 className="w-full px-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="Europe/Bucharest">Europe/Bucharest (GMT+2)</option>
+                                <option value="Europe/Berlin">Europe/Berlin (GMT+2)</option>
                                 <option value="Europe/London">Europe/London (GMT+0)</option>
                                 <option value="America/New_York">America/New_York (GMT-5)</option>
                             </select>

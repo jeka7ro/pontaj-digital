@@ -936,7 +936,7 @@ export default function WarehouseManagement() {
                                                     <span className="text-slate-700 dark:text-slate-300 font-bold">{t.date}</span>
                                                     {t.created_at && (
                                                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded w-fit mt-1">
-                                                            Ora: {new Date(t.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute:'2-digit'})}
+                                                            Ora: {new Date(t.created_at).toLocaleTimeString('ro-RO', { timeZone: 'Europe/Berlin', hour: '2-digit', minute:'2-digit'})}
                                                         </span>
                                                     )}
                                                 </div>
@@ -1028,7 +1028,7 @@ export default function WarehouseManagement() {
                                         · Predat de <strong>{pr.returned_by}</strong>
                                         {pr.pending_return_at && (
                                             <span className="ml-2 text-amber-600">
-                                                {new Date(pr.pending_return_at).toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                                {new Date(pr.pending_return_at).toLocaleString('ro-RO', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                                             </span>
                                         )}
                                     </p>

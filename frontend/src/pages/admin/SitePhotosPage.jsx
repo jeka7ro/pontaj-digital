@@ -128,7 +128,7 @@ export default function SitePhotosPage() {
         }
     }
 
-    const formatDate = (d) => new Date(d).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', 
+    const formatDate = (d) => new Date(d).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin', 
         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     })
 

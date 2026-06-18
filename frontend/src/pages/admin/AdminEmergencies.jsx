@@ -209,7 +209,7 @@ export default function AdminEmergencies() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500 text-sm">
-                                                {new Date(c.created_at).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
+                                                {new Date(c.created_at).toLocaleDateString('ro-RO', { timeZone: 'Europe/Berlin' })}
                                             </td>
                                             <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                                                 <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-600"><X className="w-4 h-4" /></button>

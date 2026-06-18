@@ -311,7 +311,7 @@ export default function AdminOverview() {
                                 <Tooltip
                                     contentStyle={{ borderRadius: '12px', border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: isDark ? '#1e293b' : '#fff', color: isDark ? '#e2e8f0' : '#1e293b' }}
                                     formatter={(value, name) => [name === 'hours' ? `${value}h` : value, name === 'hours' ? 'Ore' : 'Muncitori']}
-                                    labelFormatter={(label) => `Data: ${label}`}
+                                    labelFormatter={(label) => `Data: ${label} — click pentru detalii`}
                                 />
                                 <defs>
                                     <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -319,7 +319,16 @@ export default function AdminOverview() {
                                         <stop offset="100%" stopColor="#6366f1" />
                                     </linearGradient>
                                 </defs>
-                                <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} />
+                                <Bar yAxisId="left" dataKey="hours" fill="url(#blueGrad)" radius={[6, 6, 0, 0]} cursor="pointer"
+                                    onClick={(data) => {
+                                        if (!data?.date) return
+                                        // Convert dd/mm to yyyy-mm-dd for current year
+                                        const [dd, mm] = data.date.split('/')
+                                        const year = new Date().getFullYear()
+                                        const isoDate = `${year}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`
+                                        navigate(`/admin/reports?date=${isoDate}`)
+                                    }}
+                                />
                                 <Line yAxisId="left" type="monotone" dataKey="workers" stroke="#f59e0b" strokeWidth={2.5} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
                             </ComposedChart>
                         </ResponsiveContainer>

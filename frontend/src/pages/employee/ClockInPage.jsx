@@ -70,6 +70,7 @@ const formatTimeGlobal = (hoursFraction) => {
 }
 
 function WorkTimer({ activeShift, geofencePauseTime }) {
+    const [elapsedTime, setElapsedTime] = useState(0)
 
     useEffect(() => {
         if (!activeShift) return
@@ -101,6 +102,7 @@ function WorkTimer({ activeShift, geofencePauseTime }) {
 }
 
 function BreakTimer({ activeShift }) {
+    const [breakTime, setBreakTime] = useState(0)
 
     useEffect(() => {
         if (!activeShift?.is_on_break || !activeShift?.break_start_time) {

@@ -13,6 +13,8 @@ const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
 const ADMIN_ROLE_NAMES = ['Administrator', 'Super Administrator']
 
 const EMPTY_FORM = {
+    employee_code: '',
+    pin: '',
     last_name: '',
     first_name: '',
     email: '',
@@ -65,7 +67,7 @@ export default function UsersManagement() {
     const fetchUsers = async () => {
         try {
             setLoading(true)
-            const params = { page: 1, page_size: 100 }
+            const params = { page: 1, page_size: 1000 }
             const response = await api.get('/admin/users/', { params })
             const all = response.data.users || []
             const adminUsers = all.filter(u =>
@@ -89,9 +91,24 @@ export default function UsersManagement() {
         }
     }
 
-    const openAdd = () => {
+    const openAdd = async () => {
         setEditingUser(null)
-        setFormData(EMPTY_FORM)
+        
+        let nextCode = ''
+        try {
+            const resp = await api.get('/admin/users/next-code')
+            if (resp.data.next_code) {
+                nextCode = resp.data.next_code
+            }
+        } catch (e) {
+            console.error('Could not fetch next employee code:', e)
+        }
+
+        setFormData({
+            ...EMPTY_FORM,
+            employee_code: nextCode,
+            pin: Math.floor(1000 + Math.random() * 9000).toString() // Generate random 4-digit PIN
+        })
         setShowPassword(false)
         setIdCardFile(null)
         setIdCardPreview(null)
@@ -202,13 +219,16 @@ export default function UsersManagement() {
                 last_name: formData.last_name.trim(),
                 first_name: formData.first_name.trim(),
                 email: formData.email.trim(),
-                phone: formData.phone.trim(),
+                phone: formData.phone.trim() || null,
                 role_id: formData.role_id,
                 is_active: formData.is_active,
-                cnp: formData.cnp,
-                birth_place: formData.birth_place,
-                id_card_series: formData.id_card_series,
-                birth_date: formData.birth_date
+                cnp: formData.cnp || null,
+                birth_place: formData.birth_place || null,
+                id_card_series: formData.id_card_series || null,
+                birth_date: formData.birth_date || null
+            }
+            if (!editingUser) {
+                payload.employee_code = formData.employee_code || 'ADM' + Math.floor(1000 + Math.random() * 9000);
             }
             if (formData.avatar_path) payload.avatar_path = formData.avatar_path;
             if (formData.password.trim()) payload.password = formData.password.trim()
@@ -651,7 +671,7 @@ export default function UsersManagement() {
                                         <label className={labelCls}>Rol *</label>
                                         <select value={formData.role_id} onChange={e => setFormData({ ...formData, role_id: e.target.value })} className={inputCls}>
                                             <option value="">Selectează rol...</option>
-                                            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                            {roles.filter(r => r.name !== 'Super Administrator').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                         </select>
                                     </div>
                                     {editingUser && (

@@ -37,7 +37,7 @@ class UserCreate(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100)
     first_name: str = Field(..., min_length=1, max_length=100)
     role_id: str
-    pin: str = Field(..., min_length=4, max_length=6)
+    pin: Optional[str] = Field(None, min_length=4, max_length=6)
     is_active: bool = True
     password: Optional[str] = None
     cnp: Optional[str] = Field(None, max_length=13)
@@ -777,12 +777,15 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
             birth_date_val = dt.strptime(user_data.birth_date, "%Y-%m-%d").date()
         except (ValueError, TypeError):
             birth_date_val = None
+            
+    # Auto-generate PIN if not provided
+    pin_to_hash = user_data.pin if user_data.pin else "0000"
     
     new_user = User(
         organization_id=role.organization_id,
         employee_code=user_data.employee_code,
         full_name=full_name, role_id=user_data.role_id,
-        pin_hash=hash_pin(user_data.pin), is_active=user_data.is_active,
+        pin_hash=hash_pin(pin_to_hash), is_active=user_data.is_active,
         birth_date=birth_date_val, cnp=user_data.cnp,
         birth_place=user_data.birth_place, id_card_series=user_data.id_card_series,
         phone=user_data.phone, email=user_data.email, address=user_data.address,

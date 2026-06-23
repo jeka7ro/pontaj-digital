@@ -94,7 +94,11 @@ def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends
         raise credentials_exception
     
     if not admin.is_active:
-        raise HTTPException(status_code=400, detail="Inactive admin account")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin account is inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     return admin
 
@@ -113,7 +117,11 @@ def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
         )
     
     if not admin.is_active:
-        raise HTTPException(status_code=400, detail="Inactive admin account")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin account is inactive. Please contact your system administrator.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     # Create access token with super admin flag
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

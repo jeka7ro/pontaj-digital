@@ -512,11 +512,11 @@ def get_users(
     page_size: int = 10,
     search: Optional[str] = None,
     role_id: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    is_active: Optional[bool] = True,
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin)
 ):
-    """Get paginated list of users with optional filters"""
+    """Get paginated list of users with optional filters. Default shows only ACTIVE users."""
     query = db.query(User).join(Role)
     
     if search:
@@ -1094,7 +1094,8 @@ async def ocr_extract_only(file: UploadFile = File(...), raw_text: Optional[str]
 
 
 @router.delete("/{user_id}")
-def delete_user(user_id: str, hard_delete: bool = False, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+def delete_user(user_id: str, hard_delete: bool = True, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+    """Delete a user. Default is hard_delete=True (permanent deletion)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

@@ -1092,11 +1092,21 @@ def delete_user(user_id: str, hard_delete: bool = False, db: Session = Depends(g
         raise HTTPException(status_code=403, detail="Nu ai permisiunea de a șterge un Super Administrator.")
 
     if hard_delete:
+        if user.email:
+            # Also delete the admin record if it exists
+            admin_record = db.query(Admin).filter(Admin.email == user.email).first()
+            if admin_record:
+                db.delete(admin_record)
         db.delete(user)
         db.commit()
         return {"message": "Utilizator șters definitiv din sistem"}
     else:
         user.is_active = False
+        if user.email:
+            # Also deactivate the admin record if it exists
+            admin_record = db.query(Admin).filter(Admin.email == user.email).first()
+            if admin_record:
+                admin_record.is_active = False
         db.commit()
         return {"message": "Utilizator arhivat cu succes (mutat în Arhivă)"}
 

@@ -794,24 +794,30 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_ad
     db.add(new_user)
     
     # Also create Admin record if role is an admin role
-    if role.name in ['Administrator', 'Super Administrator']:
+    if role.name in ['Administrator', 'Super Administrator', 'Logistica']:
         if not user_data.email:
-            raise HTTPException(status_code=400, detail="Email is required for Administrator accounts")
+            raise HTTPException(status_code=400, detail="Email is required for Administrator/Logistics accounts")
         if not user_data.password:
-            raise HTTPException(status_code=400, detail="Password is required for Administrator accounts")
+            raise HTTPException(status_code=400, detail="Password is required for Administrator/Logistics accounts")
         
         # Check if email is already used by an admin
         existing_admin = db.query(Admin).filter(Admin.email == user_data.email).first()
         if existing_admin:
-            raise HTTPException(status_code=400, detail="Adresa de email este deja folosită de alt administrator")
+            raise HTTPException(status_code=400, detail="Adresa de email este deja folosită de alt cont (Administrator/Logistică)")
             
+        admin_role_enum = "ADMIN"
+        if role.name == "Super Administrator":
+            admin_role_enum = "SUPER_ADMIN"
+        elif role.name == "Logistica":
+            admin_role_enum = "LOGISTICS"
+
         new_admin = Admin(
             id=str(uuid.uuid4()),
             organization_id=role.organization_id,
             email=user_data.email,
             full_name=full_name,
             password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
-            role="SUPER_ADMIN" if role.name == "Super Administrator" else "ADMIN",
+            role=admin_role_enum,
             is_active=user_data.is_active,
             is_super_admin=True if role.name == "Super Administrator" else False
         )
@@ -897,12 +903,12 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
 
     # Handle Admin record update if user has an admin role
     user_role = db.query(Role).filter(Role.id == user.role_id).first()
-    if user_role and user_role.name in {'Administrator', 'Super Administrator'}:
+    if user_role and user_role.name in {'Administrator', 'Super Administrator', 'Logistica'}:
         if user_data.email and user_data.email != user.email:
             # Check if new email is taken
             existing_admin = db.query(Admin).filter(Admin.email == user_data.email, Admin.email != user.email).first()
             if existing_admin:
-                raise HTTPException(status_code=400, detail="Noua adresă de email este deja folosită de alt administrator")
+                raise HTTPException(status_code=400, detail="Noua adresă de email este deja folosită de alt cont (Administrator/Logistică)")
                 
         # Try to find the existing admin record using the old email or new email
         email_to_search = user.email
@@ -910,10 +916,16 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
         if email_to_search:
             admin_record = db.query(Admin).filter(Admin.email == email_to_search).first()
             
+        admin_role_enum = "ADMIN"
+        if user_role.name == "Super Administrator":
+            admin_role_enum = "SUPER_ADMIN"
+        elif user_role.name == "Logistica":
+            admin_role_enum = "LOGISTICS"
+
         if admin_record:
             admin_record.full_name = user.full_name
             admin_record.is_active = user.is_active
-            admin_record.role = "SUPER_ADMIN" if user_role.name == "Super Administrator" else "ADMIN"
+            admin_record.role = admin_role_enum
             admin_record.is_super_admin = True if user_role.name == "Super Administrator" else False
             if user_data.email:
                 admin_record.email = user_data.email
@@ -930,7 +942,7 @@ def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_d
                         email=target_email,
                         full_name=user.full_name,
                         password_hash=hashlib.sha256(user_data.password.encode()).hexdigest(),
-                        role="SUPER_ADMIN" if user_role.name == "Super Administrator" else "ADMIN",
+                        role=admin_role_enum,
                         is_active=user.is_active,
                         is_super_admin=True if user_role.name == "Super Administrator" else False
                     )

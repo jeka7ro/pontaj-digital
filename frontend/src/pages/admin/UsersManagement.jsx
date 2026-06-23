@@ -10,7 +10,7 @@ import useViewPreferencesStore from '../../store/viewPreferencesStore'
 
 const PAGE_ID = 'admin-users'
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
-const ADMIN_ROLE_NAMES = ['Administrator', 'Super Administrator']
+const ADMIN_ROLE_NAMES = ['Administrator', 'Super Administrator', 'Logistica']
 
 const EMPTY_FORM = {
     employee_code: '',
@@ -671,7 +671,7 @@ export default function UsersManagement() {
                                         <label className={labelCls}>Rol *</label>
                                         <select value={formData.role_id} onChange={e => setFormData({ ...formData, role_id: e.target.value })} className={inputCls}>
                                             <option value="">Selectează rol...</option>
-                                            {roles.filter(r => r.name !== 'Super Administrator').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                            {roles.filter(r => ['Administrator', 'Logistica'].includes(r.name)).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                         </select>
                                     </div>
                                     {editingUser && (

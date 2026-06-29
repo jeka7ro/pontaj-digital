@@ -28,6 +28,7 @@ const EMPTY_USER = {
     phone: '',
     email: '',
     address: '',
+    password: '',
     is_active: true,
     hourly_rate: '',
 }
@@ -224,6 +225,7 @@ export default function EmployeesManagement() {
             phone: user.phone || '',
             email: user.email || '',
             address: user.address || '',
+            password: '',
             is_active: user.is_active,
             hourly_rate: user.hourly_rate != null ? String(user.hourly_rate) : '',
         })
@@ -250,6 +252,19 @@ export default function EmployeesManagement() {
             return
         }
 
+        const selectedRoleObj = roles.find(r => r.id === formData.role_id)
+        const needsPassword = selectedRoleObj && ['Administrator', 'Super Administrator', 'Logistica'].includes(selectedRoleObj.name)
+
+        if (needsPassword && !formData.email) {
+            showToast('Adresa de email este obligatorie pentru acest rol', 'error')
+            return
+        }
+
+        if (!editingUser && needsPassword && !formData.password) {
+            showToast('Parola este obligatorie pentru acest rol', 'error')
+            return
+        }
+
         try {
             setSaving(true)
             let savedUser
@@ -266,6 +281,7 @@ export default function EmployeesManagement() {
                 if (formData.phone !== (editingUser.phone || '')) updatePayload.phone = formData.phone || null
                 if (formData.email !== (editingUser.email || '')) updatePayload.email = formData.email || null
                 if (formData.address !== (editingUser.address || '')) updatePayload.address = formData.address || null
+                if (formData.password) updatePayload.password = formData.password
                 // hourly_rate: always send if present (0 is valid)
                 const hrVal = formData.hourly_rate !== '' ? parseFloat(formData.hourly_rate) : null
                 if (hrVal !== (editingUser.hourly_rate ?? null)) updatePayload.hourly_rate = hrVal
@@ -276,7 +292,7 @@ export default function EmployeesManagement() {
             } else {
                 // Clean empty strings to null for optional fields
                 const cleanData = { ...formData }
-                const optionalFields = ['birth_date', 'cnp', 'birth_place', 'id_card_series', 'phone', 'email', 'address', 'avatar_path']
+                const optionalFields = ['birth_date', 'cnp', 'birth_place', 'id_card_series', 'phone', 'email', 'address', 'avatar_path', 'password']
                 optionalFields.forEach(f => { if (cleanData[f] === '') cleanData[f] = null })
                 const resp = await api.post('/admin/users/', cleanData)
                 savedUser = resp.data
@@ -834,6 +850,21 @@ export default function EmployeesManagement() {
                                         ))}
                                     </select>
                                 </div>
+
+                                {roles.find(r => r.id === formData.role_id) && ['Administrator', 'Super Administrator', 'Logistica'].includes(roles.find(r => r.id === formData.role_id)?.name) && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                                            {editingUser ? 'Parolă nouă (opțional)' : 'Parolă *'}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                            placeholder="Parola de acces"
+                                        />
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">CNP</label>

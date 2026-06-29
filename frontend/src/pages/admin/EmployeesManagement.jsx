@@ -29,6 +29,7 @@ const EMPTY_USER = {
     email: '',
     address: '',
     password: '',
+    password_confirm: '',
     is_active: true,
     hourly_rate: '',
 }
@@ -226,6 +227,7 @@ export default function EmployeesManagement() {
             email: user.email || '',
             address: user.address || '',
             password: '',
+            password_confirm: '',
             is_active: user.is_active,
             hourly_rate: user.hourly_rate != null ? String(user.hourly_rate) : '',
         })
@@ -262,6 +264,11 @@ export default function EmployeesManagement() {
 
         if (!editingUser && needsPassword && !formData.password) {
             showToast('Parola este obligatorie pentru acest rol', 'error')
+            return
+        }
+
+        if (needsPassword && formData.password && formData.password !== formData.password_confirm) {
+            showToast('Parolele introduse nu sunt identice!', 'error')
             return
         }
 
@@ -852,18 +859,32 @@ export default function EmployeesManagement() {
                                 </div>
 
                                 {roles.find(r => r.id === formData.role_id) && ['Administrator', 'Super Administrator', 'Logistica'].includes(roles.find(r => r.id === formData.role_id)?.name) && (
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
-                                            {editingUser ? 'Parolă nouă (opțional)' : 'Parolă *'}
-                                        </label>
-                                        <input
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
-                                            placeholder="Parola de acces"
-                                        />
-                                    </div>
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                                                {editingUser ? 'Parolă nouă (opțional)' : 'Parolă *'}
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={formData.password || ''}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder="Parola de acces"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                                                Confirmă Parola *
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={formData.password_confirm || ''}
+                                                onChange={e => setFormData({ ...formData, password_confirm: e.target.value })}
+                                                className="w-full px-4 h-10 text-sm rounded-full border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none transition-all shadow-sm"
+                                                placeholder="Repetă parola"
+                                            />
+                                        </div>
+                                    </>
                                 )}
 
                                 <div>

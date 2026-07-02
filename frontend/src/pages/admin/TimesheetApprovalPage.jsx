@@ -28,9 +28,9 @@ export default function TimesheetApprovalPage() {
     const [workers, setWorkers] = useState([])
     const [loading, setLoading] = useState(true)
     const today = new Date().toISOString().split('T')[0]
-    const [dateFrom, setDateFrom] = useState(() => localStorage.getItem('pontaj_dateFrom') || today)
-    const [dateTo, setDateTo] = useState(() => localStorage.getItem('pontaj_dateTo') || today)
-    const [activePeriod, setActivePeriod] = useState(() => localStorage.getItem('pontaj_activePeriod') || 'today')
+    const [dateFrom, setDateFrom] = useState(today)
+    const [dateTo, setDateTo] = useState(today)
+    const [activePeriod, setActivePeriod] = useState('today')
     const [lastRefresh, setLastRefresh] = useState(null)
     const refreshTimer = useRef(null)
     const isRange = dateFrom !== dateTo

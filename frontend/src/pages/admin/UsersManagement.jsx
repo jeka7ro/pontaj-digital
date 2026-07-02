@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../../lib/api'
-import { Shield, Plus, Search, Edit2, Trash2, Loader2, Mail, Phone, X, Save, Eye, EyeOff, UserCog, Lock, ScanLine, Upload, UploadCloud, FileText } from 'lucide-react'
+import { Shield, Plus, Search, Edit2, Trash2, Loader2, Mail, Phone, X, Save, Eye, EyeOff, UserCog, Lock, ScanLine, Upload, UploadCloud, FileText, Star } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAdminStore } from '../../store/adminStore'
 import AvatarCropModal from '../../components/AvatarCropModal'
+import UserEvaluationsTab from '../../components/users/UserEvaluationsTab'
 import Pagination from '../../components/Pagination'
 import useViewPreferencesStore from '../../store/viewPreferencesStore'
 
@@ -41,6 +42,7 @@ export default function UsersManagement() {
 
     // Modal state
     const [showModal, setShowModal] = useState(false)
+    const [activeModalTab, setActiveModalTab] = useState('info') // info, evaluations
     const [editingUser, setEditingUser] = useState(null)
     const [formData, setFormData] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
@@ -117,6 +119,7 @@ export default function UsersManagement() {
 
     const openEdit = (user) => {
         setEditingUser(user)
+        setActiveModalTab('info')
         setFormData({
             last_name: user.last_name || '',
             first_name: user.first_name || '',
@@ -445,7 +448,14 @@ export default function UsersManagement() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{user.last_name} {user.first_name}</p>
-                                                <p className="text-[11px] font-mono text-slate-400">{user.employee_code}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-xs text-slate-500">{user.employee_code}</p>
+                                                    {user.overall_rating && (
+                                                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-100 dark:border-amber-800">
+                                                            <Star className="w-3 h-3 fill-amber-500" /> {user.overall_rating}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -557,9 +567,32 @@ export default function UsersManagement() {
                             </button>
                         </div>
 
+
+                        {/* Tabs */}
+                        {editingUser && (
+                            <div className="flex border-b border-slate-200 dark:border-slate-700 px-5 pt-2 gap-4">
+                                <button 
+                                    onClick={() => setActiveModalTab('info')}
+                                    className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeModalTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Informații
+                                </button>
+                                <button 
+                                    onClick={() => setActiveModalTab('evaluations')}
+                                    className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeModalTab === 'evaluations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Evaluări / Rating
+                                </button>
+                            </div>
+                        )}
+
                         {/* Body - Scrollable */}
                         <div className="p-5 overflow-y-auto space-y-6">
                             
+                            {activeModalTab === 'evaluations' && editingUser ? (
+                                <UserEvaluationsTab userId={editingUser.id} />
+                            ) : (
+                                <>
                             {/* SCANNER SECTION */}
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
                                 <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Extragere Automată Date (OCR)</h3>

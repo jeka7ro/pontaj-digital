@@ -315,6 +315,14 @@ export default function ComplaintsManagement() {
                             <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Conținut Sesizare</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{detailComplaint.content}</p>
+                                {detailComplaint.photo_url && (
+                                    <div className="mt-4">
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Poză Atașată</p>
+                                        <a href={detailComplaint.photo_url} target="_blank" rel="noopener noreferrer">
+                                            <img src={detailComplaint.photo_url} alt="Atașament" className="max-h-48 rounded-xl border border-slate-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-900" />
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Status change */}

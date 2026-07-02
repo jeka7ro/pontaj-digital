@@ -106,6 +106,7 @@ class UserResponse(BaseModel):
     site_name: Optional[str] = None
     contract_path: Optional[str] = None
     hourly_rate: Optional[float] = None  # Tarif orar — confidential
+    overall_rating: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -136,7 +137,7 @@ def build_user_response(user, role_name=None):
     """Build UserResponse from a User model instance"""
     rname = role_name or (user.role.name if user.role else 'N/A')
     last_name, first_name = split_full_name(user.full_name)
-    return UserResponse(
+    response = UserResponse(
         id=user.id,
         employee_code=user.employee_code,
         full_name=user.full_name,
@@ -160,7 +161,19 @@ def build_user_response(user, role_name=None):
         site_name=user.site.name if getattr(user, 'site', None) else None,
         contract_path=getattr(user, 'contract_path', None),
         hourly_rate=float(user.hourly_rate) if user.hourly_rate is not None else None,
+        overall_rating=None,
     )
+    
+    # Calculate overall rating
+    evals = getattr(user, 'evaluations', [])
+    if evals:
+        total_sum = 0
+        for e in evals:
+            total_sum += (e.score_attendance + e.score_quality + e.score_productivity + 
+                          e.score_responsibility + e.score_attitude + e.score_initiative + e.score_adaptability) / 7.0
+        response.overall_rating = round(total_sum / len(evals), 2)
+        
+    return response
 
 
 def extract_id_card_data(image_path: str, raw_text: str = None) -> dict:
@@ -1435,3 +1448,96 @@ def delete_employee_document(user_id: str, doc_id: str, db: Session = Depends(ge
     db.delete(doc)
     db.commit()
     return {"status": "ok"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# USER EVALUATIONS (ADMIN ONLY)
+# ─────────────────────────────────────────────────────────────────────────────
+from pydantic import BaseModel
+
+class UserEvaluationCreate(BaseModel):
+    score_attendance: float
+    score_quality: float
+    score_productivity: float
+    score_responsibility: float
+    score_attitude: float
+    score_initiative: float
+    score_adaptability: float
+    notes: Optional[str] = None
+    evaluation_month: Optional[str] = None
+
+from app.models import UserEvaluation
+
+@router.post("/{user_id}/evaluations", status_code=201)
+def create_user_evaluation(
+    user_id: str,
+    eval_data: UserEvaluationCreate,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    evaluation = UserEvaluation(
+        user_id=user_id,
+        organization_id=current_admin.organization_id,
+        evaluator_id=current_admin.id,
+        score_attendance=eval_data.score_attendance,
+        score_quality=eval_data.score_quality,
+        score_productivity=eval_data.score_productivity,
+        score_responsibility=eval_data.score_responsibility,
+        score_attitude=eval_data.score_attitude,
+        score_initiative=eval_data.score_initiative,
+        score_adaptability=eval_data.score_adaptability,
+        notes=eval_data.notes,
+        evaluation_month=eval_data.evaluation_month
+    )
+    db.add(evaluation)
+    db.commit()
+    db.refresh(evaluation)
+    return {"status": "success", "id": evaluation.id}
+
+
+@router.get("/{user_id}/evaluations")
+def get_user_evaluations(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    evals = db.query(UserEvaluation).filter(UserEvaluation.user_id == user_id).order_by(UserEvaluation.created_at.desc()).all()
+    
+    result = []
+    total_avg_sum = 0
+    count = 0
+    
+    for e in evals:
+        # Calculate average for this evaluation
+        avg = (e.score_attendance + e.score_quality + e.score_productivity + 
+               e.score_responsibility + e.score_attitude + e.score_initiative + e.score_adaptability) / 7.0
+        
+        result.append({
+            "id": e.id,
+            "created_at": str(e.created_at),
+            "evaluator_name": e.evaluator.full_name if e.evaluator else "Admin",
+            "evaluation_month": e.evaluation_month,
+            "score_attendance": e.score_attendance,
+            "score_quality": e.score_quality,
+            "score_productivity": e.score_productivity,
+            "score_responsibility": e.score_responsibility,
+            "score_attitude": e.score_attitude,
+            "score_initiative": e.score_initiative,
+            "score_adaptability": e.score_adaptability,
+            "average": round(avg, 2),
+            "notes": e.notes
+        })
+        
+        total_avg_sum += avg
+        count += 1
+        
+    overall_average = round(total_avg_sum / count, 2) if count > 0 else None
+    
+    return {
+        "evaluations": result,
+        "overall_average": overall_average
+    }

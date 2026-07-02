@@ -92,6 +92,7 @@ class User(Base):
     role = relationship("Role")
     site = relationship("ConstructionSite")
     documents = relationship("EmployeeDocument", back_populates="user", cascade="all, delete-orphan")
+    evaluations = relationship("UserEvaluation", foreign_keys="[UserEvaluation.user_id]")
 
 class EmployeeDocument(Base):
     """Additional documents for an employee (medical certs, safety training, etc)"""
@@ -682,6 +683,7 @@ class Complaint(Base):
 
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
+    photo_url = Column(String(255), nullable=True)
 
     # Valori posibile: open, in_review, resolved, closed
     status = Column(String(20), nullable=False, default="open")
@@ -845,3 +847,32 @@ class Task(Base):
 
     organization = relationship("Organization")
     assignee = relationship("User", foreign_keys=[assignee_id])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# USER EVALUATIONS / RATINGS
+# ─────────────────────────────────────────────────────────────────────────────
+
+class UserEvaluation(Base):
+    """Evaluari angajati facute de admini"""
+    __tablename__ = "user_evaluations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    evaluator_id = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    
+    score_attendance = Column(Float, nullable=False)
+    score_quality = Column(Float, nullable=False)
+    score_productivity = Column(Float, nullable=False)
+    score_responsibility = Column(Float, nullable=False)
+    score_attitude = Column(Float, nullable=False)
+    score_initiative = Column(Float, nullable=False)
+    score_adaptability = Column(Float, nullable=False)
+    
+    notes = Column(Text, nullable=True)
+    evaluation_month = Column(String(7), nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+    evaluator = relationship("Admin", foreign_keys=[evaluator_id])

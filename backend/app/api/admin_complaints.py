@@ -40,6 +40,7 @@ def complaint_to_dict(c: Complaint) -> dict:
         "updated_at": str(c.updated_at),
         "user_id": c.user_id,
         "user_name": c.user.full_name if c.user else "N/A",
+        "photo_url": getattr(c, 'photo_url', None),
     }
 
 

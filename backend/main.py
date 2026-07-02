@@ -346,6 +346,7 @@ from app.database import get_db as _get_db
 def user_submit_complaint(
     title: str = Body(...),
     content: str = Body(...),
+    photo_url: str = Body(None),
     db=Depends(_get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
@@ -354,12 +355,27 @@ def user_submit_complaint(
         user_id=current_user.id,
         title=title,
         content=content,
+        photo_url=photo_url,
         status="open",
     )
     db.add(c)
     db.commit()
     db.refresh(c)
     return {"id": c.id, "title": c.title, "status": c.status, "created_at": str(c.created_at)}
+
+from fastapi import UploadFile, File
+from app.storage import upload_file, get_content_type
+
+@app.post("/api/user/complaints/upload-photo", tags=["user-complaints"], status_code=201)
+async def user_upload_complaint_photo(
+    file: UploadFile = File(...),
+    current_user: UserModel = Depends(get_current_user),
+):
+    file_bytes = await file.read()
+    content_type = get_content_type(file.filename)
+    path = f"complaints/{current_user.organization_id}/{current_user.id}_{file.filename}"
+    url = upload_file(file_bytes, path, content_type)
+    return {"photo_url": url}
 
 
 @app.get("/api/user/complaints/unread-count", tags=["user-complaints"])

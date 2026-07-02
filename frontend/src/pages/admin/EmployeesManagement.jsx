@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAdminStore } from '../../store/adminStore'
 import useViewPreferencesStore from '../../store/viewPreferencesStore'
 import api from '../../lib/api'
-import { Users, Plus, Search, Edit2, Trash2, Key, UserCheck, UserX, Loader2, Mail, Phone, Calendar, X, Save, Eye, Download, Upload, CreditCard, FileSpreadsheet, ScanLine, MapPin, Filter, XCircle, FileText, FileUp, FileDown } from 'lucide-react'
+import { Users, Plus, Search, Edit2, Trash2, Key, UserCheck, UserX, Loader2, Mail, Phone, Calendar, X, Save, Eye, Download, Upload, CreditCard, FileSpreadsheet, ScanLine, MapPin, Filter, XCircle, FileText, FileUp, FileDown, Star } from 'lucide-react'
 import ViewToggle from '../../components/ViewToggle'
 import Pagination from '../../components/Pagination'
 import AvatarCropModal from '../../components/AvatarCropModal'
@@ -1336,17 +1336,24 @@ function UsersTable({ users, onToggleActive, onDelete, onEdit, onResetPin, onVie
                                 </div>
                             </td>
                             <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                                {user.is_active ? (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        {t('common.active')}
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
-                                        {t('common.inactive')}
-                                    </span>
-                                )}
+                                <div className="flex flex-col items-start gap-1">
+                                    {user.is_active ? (
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                            {t('common.active')}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                            {t('common.inactive')}
+                                        </span>
+                                    )}
+                                    {user.overall_rating && (
+                                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-100 dark:border-amber-800">
+                                            <Star className="w-3 h-3 fill-amber-500" /> {user.overall_rating}
+                                        </span>
+                                    )}
+                                </div>
                             </td>
                             <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                                 <div className="flex items-center justify-end gap-1 transition-opacity">

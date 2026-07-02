@@ -19,6 +19,8 @@ export default function EmployeeComplaints() {
     const [content, setContent] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [successMsg, setSuccessMsg] = useState('')
+    const [photoFile, setPhotoFile] = useState(null)
+    const [photoPreview, setPhotoPreview] = useState(null)
 
     useEffect(() => { fetchComplaints() }, [])
 
@@ -35,10 +37,28 @@ export default function EmployeeComplaints() {
         e.preventDefault()
         if (!title.trim() || !content.trim()) return
         setSubmitting(true)
+
+        let photo_url = null
+        if (photoFile) {
+            try {
+                const formData = new FormData()
+                formData.append('file', photoFile)
+                const uploadRes = await api.post('/user/complaints/upload-photo', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                photo_url = uploadRes.data.photo_url
+            } catch (err) {
+                console.error("Failed to upload photo", err)
+            }
+        }
+        
         try {
-            await api.post('/user/complaints', { title, content })
+            await api.post('/user/complaints', { title, content, photo_url })
+
             setTitle('')
             setContent('')
+            setPhotoFile(null)
+            setPhotoPreview(null)
             setShowForm(false)
             setSuccessMsg('Sesizarea a fost trimisă cu succes!')
             setTimeout(() => setSuccessMsg(''), 4000)
@@ -105,6 +125,32 @@ export default function EmployeeComplaints() {
                                     className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 bg-slate-50 text-slate-900 outline-none transition-all resize-none"
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Poză atașată (Opțional)</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0]
+                                            if (file) {
+                                                setPhotoFile(file)
+                                                setPhotoPreview(URL.createObjectURL(file))
+                                            }
+                                        }}
+                                        className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                    {photoPreview && (
+                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
+                                            <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
+                                            <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm transform scale-75">
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className="flex gap-3">
                                 <button type="button" onClick={() => setShowForm(false)}
                                     className="flex-1 h-11 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
@@ -147,7 +193,16 @@ export default function EmployeeComplaints() {
                                                 <StatusIcon className="w-3 h-3" />{sc.label}
                                             </span>
                                         </div>
+
                                         <p className="text-slate-500 text-xs leading-relaxed line-clamp-3">{c.content}</p>
+                                        {c.photo_url && (
+                                            <div className="mt-3">
+                                                <a href={c.photo_url} target="_blank" rel="noopener noreferrer">
+                                                    <img src={c.photo_url} alt="Atașament" className="h-20 w-auto rounded-lg border border-slate-200 object-cover" />
+                                                </a>
+                                            </div>
+                                        )}
+
                                         <p className="text-[10px] text-slate-300 mt-2">
                                             {new Date(c.created_at).toLocaleString('ro-RO')}
                                         </p>

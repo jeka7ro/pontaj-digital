@@ -304,6 +304,20 @@ def reverse_geocode(lat: float, lon: float):
         return {"display_name": ""}
 
 # Include routers
+
+@app.on_event("startup")
+def run_migrations():
+    from app.database import engine
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            # Check if column exists, if not add it
+            conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);"))
+            conn.commit()
+            print("Migration successful: added photo_url to complaints")
+        except Exception as e:
+            print("Migration skipped or failed:", e)
+
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["admin"])
 app.include_router(admin_users.router, prefix="/api", tags=["admin-users"])

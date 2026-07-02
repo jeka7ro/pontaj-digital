@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import api from '../lib/api'
 import UserEvaluationsTab from './users/UserEvaluationsTab'
 
-export default function EmployeeDetailView({ user, onBack, onExport }) {
+export default function EmployeeDetailView({ user, onBack, onExport, onEvaluationAdded }) {
     const [activeTab, setActiveTab] = useState('analytics')
     const [analytics, setAnalytics] = useState(null)
     const [warehouseHistory, setWarehouseHistory] = useState([])
@@ -617,7 +617,7 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
 
                 {activeTab === 'evaluations' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <UserEvaluationsTab userId={user.id} />
+                        <UserEvaluationsTab userId={user.id} onEvaluationAdded={onEvaluationAdded} />
                     </div>
                 )}
 

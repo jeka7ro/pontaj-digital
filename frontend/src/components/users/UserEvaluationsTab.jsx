@@ -28,7 +28,7 @@ function getColor(score) {
     return 'text-red-600 bg-red-100';
 }
 
-export default function UserEvaluationsTab({ userId }) {
+export default function UserEvaluationsTab({ userId, onEvaluationAdded }) {
     const [evaluations, setEvaluations] = useState([]);
     const [overallAvg, setOverallAvg] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -49,6 +49,7 @@ export default function UserEvaluationsTab({ userId }) {
 
     useEffect(() => {
         fetchEvaluations();
+            if (onEvaluationAdded) onEvaluationAdded();
     }, [userId]);
 
     const fetchEvaluations = async () => {
@@ -79,6 +80,7 @@ export default function UserEvaluationsTab({ userId }) {
             await api.post(`/admin/users/${userId}/evaluations`, formData);
             setShowForm(false);
             fetchEvaluations();
+            if (onEvaluationAdded) onEvaluationAdded();
         } catch (err) {
             console.error(err);
         } finally {

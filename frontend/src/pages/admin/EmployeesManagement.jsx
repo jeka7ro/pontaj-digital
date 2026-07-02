@@ -661,7 +661,7 @@ export default function EmployeesManagement() {
 
                 <div className="bg-slate-50/30 dark:bg-slate-900/50 flex-1 relative">
                     {detailUser ? (
-                        <EmployeeDetailView user={detailUser} onBack={() => {
+                        <EmployeeDetailView user={detailUser} onEvaluationAdded={() => { fetchUsers(); api.get(`/admin/users/${detailUser.id}`).then(res => setDetailUser(res.data)).catch(console.error); }} onBack={() => {
                             if (window.history.length > 2) {
                                 navigate(-1)
                             } else {

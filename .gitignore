@@ -43,7 +43,7 @@ Thumbs.db
 *.sqlite3
 
 # Uploads (stored in Supabase Storage in production)
-# uploads/
+# # uploads/
 
 # Logs
 *.log
@@ -54,6 +54,6 @@ logs/
 htmlcov/
 .pytest_cache/
 coverage/
-uploads/
+# uploads/
 *.pdf
 *.jpg

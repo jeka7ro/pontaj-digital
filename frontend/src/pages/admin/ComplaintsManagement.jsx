@@ -221,7 +221,14 @@ export default function ComplaintsManagement() {
                                     const StatusIcon = sc.icon
                                     return (
                                         <tr key={c.id}
-                                            onClick={() => { setDetailComplaint(c); setResponseText(c.admin_response || ''); setResponseStatus(c.status === 'open' || c.status === 'in_review' ? 'resolved' : c.status) }}
+                                            onClick={() => { 
+                                                setDetailComplaint(c); 
+                                                setResponseText(c.admin_response || ''); 
+                                                setResponseStatus(c.status === 'open' || c.status === 'in_review' ? 'resolved' : c.status);
+                                                if (c.status === 'open') {
+                                                    handleStatusChange(c.id, 'in_review');
+                                                }
+                                            }}
                                             className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer ${selectedIds.includes(c.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                                         >
                                             <td className="px-4 py-4 text-center" onClick={e => e.stopPropagation()}>

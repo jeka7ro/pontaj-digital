@@ -72,7 +72,7 @@ def unread_count(
         
     count = db.query(Complaint).filter(
         Complaint.organization_id == current_admin.organization_id,
-        Complaint.status.in_(["open", "in_review"])
+        Complaint.status == "open"
     ).count()
     return {"count": count}
 

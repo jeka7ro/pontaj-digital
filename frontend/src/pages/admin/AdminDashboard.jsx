@@ -180,8 +180,16 @@ export default function AdminDashboard() {
 
     const filteredCategories = categories.map(cat => ({
         ...cat,
-        items: admin?.role === 'LOGISTIC'
-            ? cat.items.filter(item => ['/admin/warehouse', '/admin/fleet', '/admin/settings', '/admin/notifications'].includes(item.path))
+        items: admin?.role === 'LOGISTICS'
+            ? cat.items.filter(item => [
+                '/admin/warehouse', 
+                '/admin/fleet', 
+                '/admin/material-requests', 
+                '/admin/expenses',
+                '/admin/alerts',
+                '/admin/emergencies',
+                '/admin/complaints'
+            ].includes(item.path))
             : cat.items
     })).filter(cat => cat.items.length > 0)
 

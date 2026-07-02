@@ -142,7 +142,7 @@ function App() {
                     {/* Admin Routes - MUST BE FIRST to prevent employee wildcard from catching them */}
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>}>
-                        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                        <Route index element={<AdminIndexRedirect />} />
                         <Route path="dashboard" element={<AdminOverview />} />
                         <Route path="users" element={<UsersManagement />} />
                         <Route path="employees" element={<EmployeesManagement />} />
@@ -238,6 +238,14 @@ function AdminProtectedRoute({ children }) {
     }
 
     return children
+}
+
+function AdminIndexRedirect() {
+    const admin = useAdminStore((state) => state.admin)
+    if (admin?.role === 'LOGISTICS') {
+        return <Navigate to="/admin/warehouse" replace />
+    }
+    return <Navigate to="/admin/dashboard" replace />
 }
 
 export default App

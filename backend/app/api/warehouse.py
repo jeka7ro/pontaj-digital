@@ -15,7 +15,7 @@ import uuid
 router = APIRouter()
 
 def is_admin_or_logistic(admin: Admin):
-    allowed_roles = ["ADMIN", "LOGISTIC", "SUPER_ADMIN", "SUPERVIZOR", "TESA", "FINANCIAR"]
+    allowed_roles = ["ADMIN", "LOGISTICS", "SUPER_ADMIN", "SUPERVIZOR", "TESA", "FINANCIAR"]
     if admin.role.upper() not in allowed_roles:
         raise HTTPException(status_code=403, detail="Nu aveți permisiunea de a accesa această secțiune")
     return True

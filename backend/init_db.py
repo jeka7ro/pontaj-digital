@@ -32,7 +32,7 @@ def init_db():
         roles = [
             Role(id=str(uuid.uuid4()), organization_id=org.id, code="SUPER_ADMIN", name="Super Administrator", is_employee=False),
             Role(id=str(uuid.uuid4()), organization_id=org.id, code="ADMIN", name="Administrator", is_employee=False),
-            Role(id=str(uuid.uuid4()), organization_id=org.id, code="LOGISTIC", name="Logistică", is_employee=False),
+            Role(id=str(uuid.uuid4()), organization_id=org.id, code="LOGISTICS", name="Logistică", is_employee=False),
             Role(id=str(uuid.uuid4()), organization_id=org.id, code="SITE_MANAGER", name="Șef Șantier", is_employee=True),
             Role(id=str(uuid.uuid4()), organization_id=org.id, code="TEAM_LEAD", name="Șef Echipă", is_employee=True),
             Role(id=str(uuid.uuid4()), organization_id=org.id, code="WORKER", name="Muncitor", is_employee=True),

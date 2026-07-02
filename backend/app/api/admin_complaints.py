@@ -9,7 +9,7 @@ from app.models import Complaint, Admin, Organization
 from app.api.admin_auth import get_current_admin
 
 def check_complaint_permission(admin: Admin):
-    allowed_roles = ["TESA", "ADMIN", "SUPER_ADMIN", "FINANCIAR", "SUPERVIZOR"]
+    allowed_roles = ["TESA", "ADMIN", "SUPER_ADMIN", "FINANCIAR", "SUPERVIZOR", "LOGISTICS"]
     if admin.is_super_admin:
         return
     if admin.role.upper() not in allowed_roles:

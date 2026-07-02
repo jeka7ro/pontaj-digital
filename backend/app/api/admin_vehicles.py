@@ -2,6 +2,7 @@
 Admin API endpoints for Fleet Management (Vehicles & Machinery)
 Supports Many-to-Many: Vehicle <-> Sites, Vehicle <-> Drivers
 """
+from app.storage import upload_file, get_content_type
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 import os

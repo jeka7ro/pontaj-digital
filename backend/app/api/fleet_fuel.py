@@ -1,3 +1,4 @@
+from app.storage import upload_file, get_content_type
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -108,18 +109,13 @@ async def upload_receipt(
     if not entry:
         raise HTTPException(status_code=404, detail="Alimentare negasita")
 
-    upload_dir = "uploads/receipts"
-    os.makedirs(upload_dir, exist_ok=True)
-    
     file_ext = file.filename.split(".")[-1]
     safe_filename = f"{uuid.uuid4().hex}.{file_ext}"
-    file_path = os.path.join(upload_dir, safe_filename)
+    content = await file.read()
     
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-        
-    entry.receipt_photo_url = f"/api/{file_path}"
+    # Use global storage (Cloud/Supabase or local fallback)
+    file_url = upload_file(content, f"receipts/{safe_filename}", get_content_type(safe_filename))
+    entry.receipt_photo_url = file_url
     db.commit()
     db.refresh(entry)
     return entry

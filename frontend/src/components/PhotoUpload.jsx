@@ -107,7 +107,7 @@ export default function PhotoUpload({ timesheetId, onUploadSuccess, maxPhotos = 
     return (
         <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-2xl">
                     <Camera className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
@@ -146,7 +146,7 @@ export default function PhotoUpload({ timesheetId, onUploadSuccess, maxPhotos = 
                         />
                         <button
                             onClick={handleCancel}
-                            className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-2xl transition-colors"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -161,7 +161,7 @@ export default function PhotoUpload({ timesheetId, onUploadSuccess, maxPhotos = 
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Adaugă o descriere pentru această fotografie..."
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                             rows={3}
                         />
                     </div>
@@ -205,7 +205,7 @@ export default function PhotoUpload({ timesheetId, onUploadSuccess, maxPhotos = 
 
             {/* Error Message */}
             {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-red-700">{error}</p>
                 </div>
@@ -213,7 +213,7 @@ export default function PhotoUpload({ timesheetId, onUploadSuccess, maxPhotos = 
 
             {/* Success Message */}
             {success && (
-                <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+                <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
                     <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-emerald-700">Fotografie încărcată cu succes!</p>
                 </div>

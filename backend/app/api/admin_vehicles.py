@@ -11,9 +11,10 @@ from pydantic import BaseModel, Field
 from datetime import datetime, date, timedelta
 
 import json
+from sqlalchemy import func
 
 from app.database import get_db
-from app.models import Vehicle, VehicleSiteAssignment, VehicleUserAssignment, ConstructionSite, User, Admin, EquipmentDailyLog, WarehouseTransaction, WarehouseItem
+from app.models import Vehicle, VehicleSiteAssignment, VehicleUserAssignment, ConstructionSite, User, Admin, EquipmentDailyLog, VehicleFuelEntry, VehicleDailyKm, WarehouseTransaction, WarehouseItem
 from app.api.admin_auth import get_current_admin
 
 router = APIRouter(prefix="/admin/vehicles", tags=["admin-fleet"])
@@ -86,6 +87,18 @@ def get_vehicle_with_ids(vehicle: Vehicle, db: Session) -> dict:
         .filter(VehicleUserAssignment.vehicle_id == vehicle.id, VehicleUserAssignment.is_active == True)
         .all()
     ]
+    
+    # Calculate total km and fuel, and fetch fuel receipts
+    total_km = sum([entry.km_driven or 0 for entry in db.query(VehicleDailyKm).filter(VehicleDailyKm.vehicle_id == vehicle.id).all()])
+    
+    fuel_entries = db.query(VehicleFuelEntry).filter(VehicleFuelEntry.vehicle_id == vehicle.id).all()
+    total_fuel = sum([entry.liters or 0 for entry in fuel_entries])
+    
+    fuel_receipts = [
+        {"url": e.receipt_photo_url, "name": f"Bon Combustibil {e.date}", "date": str(e.date)} 
+        for e in fuel_entries if e.receipt_photo_url
+    ]
+    
     return {
         "id": vehicle.id,
         "name": vehicle.name,
@@ -98,6 +111,9 @@ def get_vehicle_with_ids(vehicle: Vehicle, db: Session) -> dict:
         "documents": vehicle.documents,
         "site_ids": site_ids,
         "user_ids": user_ids,
+        "total_km": total_km,
+        "total_fuel": total_fuel,
+        "fuel_receipts": fuel_receipts,
         "created_at": vehicle.created_at,
     }
 
@@ -134,7 +150,75 @@ def list_vehicles(
     if status:
         q = q.filter(Vehicle.status == status)
     vehicles = q.order_by(Vehicle.name).all()
-    return [get_vehicle_with_ids(v, db) for v in vehicles]
+    
+    if not vehicles:
+        return []
+        
+    vehicle_ids = [v.id for v in vehicles]
+    
+    # Batch fetch site assignments
+    site_assignments = db.query(VehicleSiteAssignment).filter(
+        VehicleSiteAssignment.vehicle_id.in_(vehicle_ids),
+        VehicleSiteAssignment.is_active == True
+    ).all()
+    sites_by_vehicle = {}
+    for a in site_assignments:
+        sites_by_vehicle.setdefault(a.vehicle_id, []).append(a.site_id)
+        
+    # Batch fetch user assignments
+    user_assignments = db.query(VehicleUserAssignment).filter(
+        VehicleUserAssignment.vehicle_id.in_(vehicle_ids),
+        VehicleUserAssignment.is_active == True
+    ).all()
+    users_by_vehicle = {}
+    for a in user_assignments:
+        users_by_vehicle.setdefault(a.vehicle_id, []).append(a.user_id)
+        
+    # Calculate totals per vehicle
+    vehicle_km = db.query(VehicleDailyKm.vehicle_id, func.sum(VehicleDailyKm.km_driven).label('total_km')).filter(
+        VehicleDailyKm.vehicle_id.in_(vehicle_ids)
+    ).group_by(VehicleDailyKm.vehicle_id).all()
+    km_by_vehicle = {row.vehicle_id: row.total_km for row in vehicle_km}
+
+    vehicle_fuel = db.query(VehicleFuelEntry.vehicle_id, func.sum(VehicleFuelEntry.liters).label('total_fuel')).filter(
+        VehicleFuelEntry.vehicle_id.in_(vehicle_ids)
+    ).group_by(VehicleFuelEntry.vehicle_id).all()
+    fuel_by_vehicle = {row.vehicle_id: row.total_fuel for row in vehicle_fuel}
+
+    # Fetch fuel receipts for all vehicles in list
+    receipts_query = db.query(VehicleFuelEntry).filter(
+        VehicleFuelEntry.vehicle_id.in_(vehicle_ids),
+        VehicleFuelEntry.receipt_photo_url.isnot(None)
+    ).all()
+    receipts_by_vehicle = {}
+    for r in receipts_query:
+        receipts_by_vehicle.setdefault(r.vehicle_id, []).append({
+            "url": r.receipt_photo_url, 
+            "name": f"Bon Combustibil {r.date}", 
+            "date": str(r.date)
+        })
+
+    results = []
+    for v in vehicles:
+        results.append({
+            "id": v.id,
+            "name": v.name,
+            "plate_number": v.plate_number,
+            "chassis_number": v.chassis_number,
+            "type": v.type,
+            "year": v.year,
+            "status": v.status,
+            "notes": v.notes,
+            "documents": v.documents,
+            "fuel_receipts": receipts_by_vehicle.get(v.id, []),
+            "site_ids": sites_by_vehicle.get(v.id, []),
+            "user_ids": users_by_vehicle.get(v.id, []),
+            "total_km": km_by_vehicle.get(v.id, 0),
+            "total_fuel": fuel_by_vehicle.get(v.id, 0),
+            "created_at": v.created_at,
+        })
+        
+    return results
 
 
 @router.get("/expiring-documents", response_model=List[dict])
@@ -222,43 +306,53 @@ def fleet_report(
 
     result = []
     for v in vehicles:
-        logs = db.query(EquipmentDailyLog).filter(
-            EquipmentDailyLog.vehicle_id == v.id,
-            EquipmentDailyLog.date >= d_from,
-            EquipmentDailyLog.date <= d_to,
+        km_logs = db.query(VehicleDailyKm).filter(
+            VehicleDailyKm.vehicle_id == v.id,
+            VehicleDailyKm.date >= d_from,
+            VehicleDailyKm.date <= d_to,
+        ).all()
+        
+        fuel_logs = db.query(VehicleFuelEntry).filter(
+            VehicleFuelEntry.vehicle_id == v.id,
+            VehicleFuelEntry.date >= d_from,
+            VehicleFuelEntry.date <= d_to,
         ).all()
 
-        days_used = sum(1 for l in logs if l.is_used)
-        total_fuel = sum((l.refuel_liters or 0) for l in logs if l.refueled)
-        refuel_events = sum(1 for l in logs if l.refueled)
-
-        warehouse_txs = db.query(WarehouseTransaction).join(WarehouseItem).filter(
-            WarehouseTransaction.assigned_to_vehicle_id == v.id,
-            WarehouseTransaction.transaction_type == "OUT",
-            WarehouseItem.category == "COMBUSTIBIL",
-            WarehouseTransaction.date >= d_from,
-            WarehouseTransaction.date <= d_to,
-        ).all()
-
-        total_fuel += sum((tx.quantity or 0) for tx in warehouse_txs)
-        refuel_events += len(warehouse_txs)
+        days_used = len(km_logs)
+        total_fuel = sum((l.liters or 0) for l in fuel_logs)
+        refuel_events = len(fuel_logs)
 
         last_op_name = None
-        last_logs = sorted(logs, key=lambda l: l.date, reverse=True)
-        if last_logs and last_logs[0].operator_id:
-            op = db.query(User).filter(User.id == last_logs[0].operator_id).first()
+        
+        # We need to correctly sort checking dates
+        all_logs = []
+        for km in km_logs:
+            # Note: driver_id might not exist on VehicleDailyKm, if it doesn't we skip or use operator if we add it
+            d_id = getattr(km, 'driver_id', None) or getattr(km, 'user_id', None)
+            d_date = getattr(km, 'date', None) or getattr(km, 'created_at')
+            if d_id and d_date:
+                all_logs.append({"date": d_date, "driver_id": d_id})
+        for fl in fuel_logs:
+            d_id = getattr(fl, 'driver_id', None) or getattr(fl, 'user_id', None)
+            d_date = getattr(fl, 'date', None) or getattr(fl, 'created_at')
+            if d_id and d_date:
+                all_logs.append({"date": d_date, "driver_id": d_id})
+            
+        last_logs = sorted(all_logs, key=lambda l: l['date'], reverse=True)
+        if last_logs and last_logs[0].get('driver_id'):
+            op = db.query(User).filter(User.id == last_logs[0]['driver_id']).first()
             if op:
                 last_op_name = f"{op.first_name} {op.last_name}"
 
         result.append({
             "vehicle_id": v.id,
             "vehicle_name": v.name,
-            "registration": v.registration_number or v.chassis_number or "N/A",
-            "type": v.vehicle_type or "—",
+            "registration": v.plate_number or v.chassis_number or "N/A",
+            "type": v.type or "—",
             "status": v.status,
             "days_used": days_used,
-            "days_idle": len(logs) - days_used,
-            "total_logs": len(logs),
+            "days_idle": 0,
+            "total_logs": len(km_logs) + len(fuel_logs),
             "total_fuel_liters": round(total_fuel, 2),
             "refuel_events": refuel_events,
             "last_operator": last_op_name,
@@ -405,7 +499,7 @@ async def upload_vehicle_document(
         
     doc_url = f"/api/{file_path}"
     
-    docs = v.documents or []
+    docs = list(v.documents or [])
     new_doc = {
         "id": str(uuid.uuid4()),
         "name": custom_name.strip() if custom_name and custom_name.strip() else file.filename,
@@ -488,9 +582,22 @@ def get_equipment_logs_for_operator(
     current_admin: Admin = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    from app.models import VehicleUserAssignment, VehicleFuelEntry
     logs = db.query(EquipmentDailyLog).filter(
         EquipmentDailyLog.operator_id == operator_id
     ).order_by(desc(EquipmentDailyLog.date)).all()
+    
+    # Also fetch fuel entries for vehicles assigned to this operator
+    user_vehicle_ids = [row[0] for row in db.query(VehicleUserAssignment.vehicle_id).filter(
+        VehicleUserAssignment.user_id == operator_id,
+        VehicleUserAssignment.is_active == True
+    ).all()]
+
+    fuel_entries = []
+    if user_vehicle_ids:
+        fuel_entries = db.query(VehicleFuelEntry).filter(
+            VehicleFuelEntry.vehicle_id.in_(user_vehicle_ids)
+        ).order_by(desc(VehicleFuelEntry.date)).all()
     
     result = []
     # Pre-fetch vehicles
@@ -512,8 +619,32 @@ def get_equipment_logs_for_operator(
             "is_used": log.is_used,
             "refueled": log.refueled,
             "refuel_liters": log.refuel_liters,
-            "notes": log.notes
+            "notes": log.notes,
+            "type": "equipment_log"
         })
+        
+    for entry in fuel_entries:
+        v = all_vehicles.get(entry.vehicle_id)
+        if not v:
+            continue
+            
+        result.append({
+            "id": entry.id,
+            "vehicle_id": entry.vehicle_id,
+            "vehicle_name": v.name,
+            "plate_number": v.plate_number or v.chassis_number or "N/A",
+            "site_id": entry.site_id,
+            "operator_id": operator_id,
+            "date": str(entry.date),
+            "is_used": True,
+            "refueled": True,
+            "refuel_liters": entry.liters,
+            "notes": f"Bon Combustibil: {entry.supplier} - {entry.liters}L. " + (entry.notes or ""),
+            "type": "fuel_entry"
+        })
+        
+    # Sort descending by date
+    result.sort(key=lambda x: x["date"], reverse=True)
     return result
 
 

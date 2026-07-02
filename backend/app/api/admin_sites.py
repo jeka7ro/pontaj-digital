@@ -181,8 +181,53 @@ def get_sites(
     offset = (page - 1) * page_size
     sites = query.order_by(ConstructionSite.created_at.desc()).offset(offset).limit(page_size).all()
     
+    if not sites:
+        return {"sites": [], "total": total, "page": page, "page_size": page_size}
+
+    site_ids = [s.id for s in sites]
+
+    from app.models import User, Team, TeamMember
+    
+    # Batch load direct users
+    direct_users = db.query(User.id, User.site_id).filter(User.site_id.in_(site_ids)).all()
+    direct_by_site = {}
+    for uid, sid in direct_users:
+        direct_by_site.setdefault(sid, set()).add(uid)
+
+    # Batch load teams
+    teams = db.query(Team.id, Team.site_id).filter(Team.site_id.in_(site_ids)).all()
+    teams_by_site = {}
+    team_ids = []
+    for tid, sid in teams:
+        teams_by_site.setdefault(sid, []).append(tid)
+        team_ids.append(tid)
+
+    # Batch load team members
+    team_users = {}
+    if team_ids:
+        members = db.query(TeamMember.user_id, TeamMember.team_id).filter(TeamMember.team_id.in_(team_ids)).all()
+        for uid, tid in members:
+            team_users.setdefault(tid, []).append(uid)
+
+    sites_data = []
+    for site in sites:
+        s_dict = site_to_dict(site, db=None)
+        
+        d_users = direct_by_site.get(site.id, set())
+        
+        t_users = set()
+        for tid in teams_by_site.get(site.id, []):
+            t_users.update(team_users.get(tid, []))
+            
+        all_users = d_users.union(t_users)
+        
+        s_dict["assigned_workers"] = len(all_users)
+        s_dict["assigned_worker_ids"] = list(all_users)
+        s_dict["team_ids"] = teams_by_site.get(site.id, [])
+        sites_data.append(s_dict)
+        
     return {
-        "sites": [site_to_dict(site, db) for site in sites],
+        "sites": sites_data,
         "total": total,
         "page": page,
         "page_size": page_size

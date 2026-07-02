@@ -150,9 +150,9 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                             <Paperclip className="w-6 h-6" />
                         </div>
                         {user.avatar_path ? (
-                            <img src={user.avatar_path} alt="Avatar" className="w-16 h-20 rounded-lg object-cover object-[center_20%] border-2 border-white dark:border-slate-800 shadow-md relative z-0 bg-white" />
+                            <img src={user.avatar_path} alt="Avatar" className="w-16 h-20 rounded-2xl object-cover object-[center_20%] border-2 border-white dark:border-slate-800 shadow-md relative z-0 bg-white" />
                         ) : (
-                            <div className="w-16 h-20 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm border-2 border-white dark:border-slate-800 shadow-md relative z-0">
+                            <div className="w-16 h-20 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm border-2 border-white dark:border-slate-800 shadow-md relative z-0">
                                 {user.full_name?.charAt(0)}
                             </div>
                         )}
@@ -480,7 +480,7 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                                         <p className="text-xs text-slate-500 mt-1">Act oficial generat la angajare</p>
                                         <div className="mt-3 flex gap-2">
                                             {user.contract_path ? (
-                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${user.contract_path}`)} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">Vizualizare Document</button>
+                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${user.contract_path}`)} className="text-xs font-bold px-3 py-1.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">Vizualizare Document</button>
                                             ) : (
                                                 <span className="text-xs font-medium text-slate-400">Nespecificat</span>
                                             )}
@@ -498,7 +498,7 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                                         <p className="text-xs text-slate-500 mt-1">Scanat la creare profil</p>
                                         <div className="mt-3 flex gap-2">
                                             {user.id_card_path ? (
-                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${user.id_card_path}`)} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">Vizualizare Scan</button>
+                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${user.id_card_path}`)} className="text-xs font-bold px-3 py-1.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">Vizualizare Scan</button>
                                             ) : (
                                                 <span className="text-xs font-medium text-slate-400">Nespecificat</span>
                                             )}
@@ -580,7 +580,7 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                                     {documents.map(doc => (
                                         <div key={doc.id} className="group bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:-translate-y-1 hover:shadow-md transition-all relative">
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
                                                     {doc.file_path.toLowerCase().endsWith('.pdf') ? <FileText className="w-5 h-5" /> : <File className="w-5 h-5" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0 pr-6">
@@ -589,12 +589,12 @@ export default function EmployeeDetailView({ user, onBack, onExport }) {
                                                 </div>
                                             </div>
                                             <div className="mt-3 flex items-center gap-2">
-                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${doc.file_path}`)} className="flex-1 text-center py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Deschide</button>
+                                                <button onClick={() => setPreviewDoc(`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${doc.file_path}`)} className="flex-1 text-center py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Deschide</button>
                                             </div>
                                             
                                             <button 
                                                 onClick={() => handleDeleteDocument(doc.id)}
-                                                className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                className="absolute top-3 right-3 p-1.5 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                                 title="Șterge document"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />

@@ -1100,7 +1100,7 @@ export default function AdminOverview() {
                         </div>
                         <div className="space-y-2 max-h-[40vh] overflow-y-auto hide-scrollbar">
                             {activityPopup.activities.map((a, i) => (
-                                <div key={i} className="flex justify-between items-center gap-4 bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                                <div key={i} className="flex justify-between items-center gap-4 bg-slate-800/50 rounded-2xl p-2 border border-slate-700/50">
                                     <span className="font-medium text-slate-200 text-xs">{a.name}</span>
                                     <span className="font-bold text-purple-300 text-xs whitespace-nowrap">{a.quantity} <span className="text-[10px] text-slate-400 font-normal">{a.unit_type}</span></span>
                                 </div>
@@ -1126,17 +1126,17 @@ function AvatarImg({ path, name, size = 'w-8 h-8', textSize = 'text-xs' }) {
                 <img 
                     src={path.startsWith('http') ? path : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${path}`} 
                     alt="" 
-                    className={`${size} rounded-lg object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[2.5] hover:shadow-2xl`} 
+                    className={`${size} rounded-2xl object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[2.5] hover:shadow-2xl`} 
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} 
                 />
-                <div className={`${size} rounded-lg bg-slate-100 dark:bg-slate-800 items-center justify-center font-bold ${textSize} text-slate-500 shrink-0 hidden`}>
+                <div className={`${size} rounded-2xl bg-slate-100 dark:bg-slate-800 items-center justify-center font-bold ${textSize} text-slate-500 shrink-0 hidden`}>
                     {name?.substring(0, 2).toUpperCase() || 'W'}
                 </div>
             </div>
         )
     }
     return (
-        <div className={`${size} rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0`}>
+        <div className={`${size} rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0`}>
             {name?.substring(0, 2).toUpperCase() || 'W'}
         </div>
     )

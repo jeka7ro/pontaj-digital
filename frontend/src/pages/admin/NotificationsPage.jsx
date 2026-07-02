@@ -23,17 +23,17 @@ function AvatarImg({ path, name, size = 'w-8 h-8', textSize = 'text-xs' }) {
                 <img 
                     src={path.startsWith('http') ? path : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${path}`} 
                     alt="" 
-                    className={`${size} rounded-lg object-cover object-[center_20%] ring-1 ring-slate-200 shrink-0`} 
+                    className={`${size} rounded-2xl object-cover object-[center_20%] ring-1 ring-slate-200 shrink-0`} 
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} 
                 />
-                <div className={`${size} rounded-lg bg-slate-100 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0 hidden`}>
+                <div className={`${size} rounded-2xl bg-slate-100 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0 hidden`}>
                     {name?.substring(0, 2).toUpperCase() || 'W'}
                 </div>
             </div>
         )
     }
     return (
-        <div className={`${size} rounded-lg bg-slate-100 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0`}>
+        <div className={`${size} rounded-2xl bg-slate-100 flex items-center justify-center font-bold ${textSize} text-slate-500 shrink-0`}>
             {name?.substring(0, 2).toUpperCase() || 'W'}
         </div>
     )

@@ -187,7 +187,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                         <CalendarIcon className="w-6 h-6" />
                         <h2 className="text-xl font-bold">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
                     </div>
-                    <div className="flex items-center bg-white/10 rounded-lg overflow-hidden text-white shadow-sm border border-white/20">
+                    <div className="flex items-center bg-white/10 rounded-2xl overflow-hidden text-white shadow-sm border border-white/20">
                         <button onClick={prevWeek} className="px-3 py-1.5 hover:bg-white/20 border-r border-white/20 transition-colors">
                             <ChevronLeft className="w-5 h-5" />
                         </button>
@@ -543,7 +543,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                             placeholder="Caută..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 shadow-sm"
+                            className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 shadow-sm"
                         />
                     </div>
                 </div>
@@ -562,7 +562,7 @@ export default function TasksCalendarView({ tasks, users, workers, sites, fetchD
                                     setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
                                 }}
                                 onDragEnd={(e) => { e.target.style.opacity = '1'; }}
-                                className="p-2 bg-white dark:bg-slate-800 rounded-lg cursor-grab active:cursor-grabbing hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-all flex items-center gap-2"
+                                className="p-2 bg-white dark:bg-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-all flex items-center gap-2"
                             >
                                 {/* Avatar */}
                                 <div className="w-7 h-7 shrink-0 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 border border-blue-200 dark:border-blue-700/50 flex items-center justify-center overflow-hidden">

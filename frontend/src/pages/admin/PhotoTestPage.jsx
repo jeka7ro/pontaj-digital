@@ -51,7 +51,7 @@ export default function PhotoTestPage() {
                         type="text"
                         value={testTimesheetId}
                         onChange={(e) => setTestTimesheetId(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         placeholder="test-timesheet-123"
                     />
                     <p className="text-sm text-slate-500 mt-2">

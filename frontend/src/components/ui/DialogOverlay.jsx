@@ -27,7 +27,7 @@ export function DialogOverlay() {
                     </div>
                     <button 
                         onClick={closeDialog}
-                        className="p-1 -mr-2 -mt-2 text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 hover:text-slate-600 rounded-lg transition-colors"
+                        className="p-1 -mr-2 -mt-2 text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 hover:text-slate-600 rounded-2xl transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>

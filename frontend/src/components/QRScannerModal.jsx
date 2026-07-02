@@ -50,7 +50,7 @@ export default function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
                     />
                     
                     {error && (
-                        <div className="absolute top-4 left-4 right-4 bg-red-500/90 text-white px-4 py-3 rounded-lg text-sm shadow-lg animate-fade-in-down backdrop-blur-md">
+                        <div className="absolute top-4 left-4 right-4 bg-red-500/90 text-white px-4 py-3 rounded-2xl text-sm shadow-lg animate-fade-in-down backdrop-blur-md">
                             {error}
                         </div>
                     )}

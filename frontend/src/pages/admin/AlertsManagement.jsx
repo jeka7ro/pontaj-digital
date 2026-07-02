@@ -79,7 +79,7 @@ export default function AlertsManagement() {
                 </div>
                 <button
                     onClick={() => setIsCreating(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl font-medium flex items-center gap-2"
                 >
                     <Plus className="w-5 h-5" />
                     Mesaj Nou
@@ -95,7 +95,7 @@ export default function AlertsManagement() {
                             <textarea
                                 required
                                 rows={3}
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500"
                                 placeholder="Scrie aici mesajul care va apărea pe ecranul muncitorilor..."
                                 value={formData.message}
                                 onChange={e => setFormData({...formData, message: e.target.value})}
@@ -106,7 +106,7 @@ export default function AlertsManagement() {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Destinatar (Cine vede mesajul)</label>
                                 <select
-                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full p-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500"
                                     value={formData.target_type}
                                     onChange={e => setFormData({...formData, target_type: e.target.value, target_id: ''})}
                                 >
@@ -121,7 +121,7 @@ export default function AlertsManagement() {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Alege Șantierul</label>
                                     <select
                                         required
-                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="w-full p-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500"
                                         value={formData.target_id}
                                         onChange={e => setFormData({...formData, target_id: e.target.value})}
                                     >
@@ -138,7 +138,7 @@ export default function AlertsManagement() {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Alege Muncitorul</label>
                                     <select
                                         required
-                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="w-full p-3 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-blue-500"
                                         value={formData.target_id}
                                         onChange={e => setFormData({...formData, target_id: e.target.value})}
                                     >
@@ -155,13 +155,13 @@ export default function AlertsManagement() {
                             <button
                                 type="button"
                                 onClick={() => setIsCreating(false)}
-                                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-2xl font-medium"
                             >
                                 Anulează
                             </button>
                             <button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-2xl font-bold flex items-center gap-2"
                             >
                                 <AlertCircle className="w-5 h-5" />
                                 Trimite Mesajul
@@ -188,7 +188,7 @@ export default function AlertsManagement() {
                         {alerts.map(alert => (
                             <div key={alert.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-4">
                                 <div className="mt-1">
-                                    <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
+                                    <div className="bg-amber-100 p-2 rounded-2xl text-amber-600">
                                         <AlertCircle className="w-6 h-6" />
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@ export default function AlertsManagement() {
                                     </div>
                                 </div>
                                 <div>
-                                    <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Șterge">
+                                    <button className="text-red-500 hover:bg-red-50 p-2 rounded-2xl transition-colors" title="Șterge">
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>

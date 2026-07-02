@@ -348,13 +348,13 @@ export default function TasksManagement() {
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full sm:w-auto">
                     <button 
                         onClick={() => setViewMode('list')}
-                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-2xl transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         Listă
                     </button>
                     <button 
                         onClick={() => setViewMode('calendar')}
-                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-2xl transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         Calendar (Orare)
                     </button>
@@ -418,7 +418,7 @@ export default function TasksManagement() {
                                     {columnTasks.map(task => (
                                         <div 
                                             key={task.id} 
-                                            className="grid grid-cols-12 gap-2 items-center py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg group transition-colors px-3 border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+                                            className="grid grid-cols-12 gap-2 items-center py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl group transition-colors px-3 border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
                                         >
                                             {/* Nume & Checkbox */}
                                             <div className="col-span-3 pl-2 flex items-center gap-3">
@@ -438,7 +438,7 @@ export default function TasksManagement() {
                                             {/* Șantier */}
                                             <div className="col-span-2 flex items-center justify-center">
                                                 {task.site_id ? (
-                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg max-w-full">
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-2xl max-w-full">
                                                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                                         <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">
                                                             {sites.find(s => s.id === task.site_id)?.name || 'Șantier sters'}

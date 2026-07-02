@@ -511,6 +511,46 @@ class VehicleUserAssignment(Base):
     vehicle = relationship("Vehicle")
     user = relationship("User")
 
+
+class VehicleFuelEntry(Base):
+    """Fuel entries for vehicles"""
+    __tablename__ = "vehicle_fuel_entries"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    vehicle_id = Column(String(36), ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, nullable=False)
+    time = Column(Time, nullable=True)
+    supplier = Column(String(100), nullable=False)  # DKV, OMV, altul
+    fuel_card = Column(String(100), nullable=True)
+    country = Column(String(100), nullable=True)
+    city = Column(String(100), nullable=True)
+    liters = Column(Float, nullable=False)
+    total_cost = Column(Float, nullable=False)
+    currency = Column(String(10), default="EUR")
+    site_id = Column(String(36), ForeignKey("construction_sites.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
+    receipt_photo_url = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    vehicle = relationship("Vehicle")
+    site = relationship("ConstructionSite")
+
+
+class VehicleDailyKm(Base):
+    """Daily kilometers log for vehicles"""
+    __tablename__ = "vehicle_daily_km"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    vehicle_id = Column(String(36), ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, nullable=False)
+    site_id = Column(String(36), ForeignKey("construction_sites.id", ondelete="SET NULL"), nullable=True)
+    km_driven = Column(Float, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    vehicle = relationship("Vehicle")
+    site = relationship("ConstructionSite")
+
 # =================== WAREHOUSE MANAGEMENT ===================
 
 class WarehouseItem(Base):

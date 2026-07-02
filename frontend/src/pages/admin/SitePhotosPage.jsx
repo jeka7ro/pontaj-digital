@@ -159,7 +159,7 @@ export default function SitePhotosPage() {
                                 <select
                                     value={siteFilter}
                                     onChange={(e) => { setSiteFilter(e.target.value); setPage(1) }}
-                                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 outline-none"
+                                    className="border border-slate-200 rounded-2xl px-3 py-2 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 outline-none"
                                 >
                                     <option value="">Toate șantierele</option>
                                     {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -169,7 +169,7 @@ export default function SitePhotosPage() {
                             {/* Select all */}
                             <button
                                 onClick={toggleSelectAll}
-                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors"
                             >
                                 {selected.size === photos.length && photos.length > 0
                                     ? <CheckSquare className="w-4 h-4 text-violet-500" />
@@ -185,13 +185,13 @@ export default function SitePhotosPage() {
                                     </span>
                                     <button
                                         onClick={handleBulkDownload}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-100 transition-colors"
                                     >
                                         <Download className="w-3.5 h-3.5" /> Descarcă
                                     </button>
                                     <button
                                         onClick={handleBulkDelete}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 rounded-2xl hover:bg-red-100 transition-colors"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" /> Șterge
                                     </button>
@@ -200,7 +200,7 @@ export default function SitePhotosPage() {
                         </div>
 
                         {/* View toggle */}
-                        <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                        <div className="flex items-center bg-slate-100 rounded-2xl p-0.5">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-400 hover:text-slate-600'}`}
@@ -248,13 +248,13 @@ export default function SitePhotosPage() {
                                     </button>
                                     {/* Actions */}
                                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => { e.stopPropagation(); handleDownload(photo) }} className="p-1.5 bg-white/90 hover:bg-white text-slate-600 rounded-lg shadow-sm" title={t('common.download')}>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDownload(photo) }} className="p-1.5 bg-white/90 hover:bg-white text-slate-600 rounded-2xl shadow-sm" title={t('common.download')}>
                                             <Download className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={(e) => { e.stopPropagation(); startEdit(photo) }} className="p-1.5 bg-white/90 hover:bg-white text-slate-600 rounded-lg shadow-sm" title="Editează">
+                                        <button onClick={(e) => { e.stopPropagation(); startEdit(photo) }} className="p-1.5 bg-white/90 hover:bg-white text-slate-600 rounded-2xl shadow-sm" title="Editează">
                                             <Edit3 className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }} className="p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-lg shadow-sm" title="Șterge">
+                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }} className="p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-2xl shadow-sm" title="Șterge">
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
@@ -266,13 +266,13 @@ export default function SitePhotosPage() {
                                             <input
                                                 value={editDesc}
                                                 onChange={(e) => setEditDesc(e.target.value)}
-                                                className="flex-1 border border-violet-300 rounded-lg px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-violet-400"
+                                                className="flex-1 border border-violet-300 rounded-2xl px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-violet-400"
                                                 placeholder="Descriere..."
                                                 autoFocus
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEdit(photo.id)}
                                             />
-                                            <button onClick={() => saveEdit(photo.id)} className="px-2 py-1 bg-violet-500 text-white rounded-lg text-xs font-semibold">✓</button>
-                                            <button onClick={() => setEditingId(null)} className="px-2 py-1 bg-slate-200 text-slate-600 rounded-lg text-xs">✕</button>
+                                            <button onClick={() => saveEdit(photo.id)} className="px-2 py-1 bg-violet-500 text-white rounded-2xl text-xs font-semibold">✓</button>
+                                            <button onClick={() => setEditingId(null)} className="px-2 py-1 bg-slate-200 text-slate-600 rounded-2xl text-xs">✕</button>
                                         </div>
                                     ) : photo.description ? (
                                         <p className="text-sm text-slate-800 font-medium mb-2 line-clamp-2 cursor-pointer hover:text-violet-600" onClick={() => startEdit(photo)}>
@@ -333,7 +333,7 @@ export default function SitePhotosPage() {
                                             <img
                                                 src={getPhotoUrl(photo)}
                                                 alt=""
-                                                className="w-16 h-12 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                                className="w-16 h-12 object-cover rounded-2xl cursor-pointer hover:opacity-80 transition-opacity"
                                                 onClick={() => setLightbox(photo)}
                                             />
                                         </td>
@@ -343,12 +343,12 @@ export default function SitePhotosPage() {
                                                     <input
                                                         value={editDesc}
                                                         onChange={(e) => setEditDesc(e.target.value)}
-                                                        className="flex-1 border border-violet-300 rounded-lg px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-violet-400"
+                                                        className="flex-1 border border-violet-300 rounded-2xl px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-violet-400"
                                                         autoFocus
                                                         onKeyDown={(e) => e.key === 'Enter' && saveEdit(photo.id)}
                                                     />
-                                                    <button onClick={() => saveEdit(photo.id)} className="px-2 py-1 bg-violet-500 text-white rounded-lg text-xs">✓</button>
-                                                    <button onClick={() => setEditingId(null)} className="px-2 py-1 bg-slate-200 rounded-lg text-xs">✕</button>
+                                                    <button onClick={() => saveEdit(photo.id)} className="px-2 py-1 bg-violet-500 text-white rounded-2xl text-xs">✓</button>
+                                                    <button onClick={() => setEditingId(null)} className="px-2 py-1 bg-slate-200 rounded-2xl text-xs">✕</button>
                                                 </div>
                                             ) : (
                                                 <span
@@ -370,13 +370,13 @@ export default function SitePhotosPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
-                                                <button onClick={() => handleDownload(photo)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg transition-colors" title={t('common.download')}>
+                                                <button onClick={() => handleDownload(photo)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-2xl transition-colors" title={t('common.download')}>
                                                     <Download className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => startEdit(photo)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg transition-colors" title="Editează">
+                                                <button onClick={() => startEdit(photo)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-2xl transition-colors" title="Editează">
                                                     <Edit3 className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDelete(photo.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors" title="Șterge">
+                                                <button onClick={() => handleDelete(photo.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-2xl transition-colors" title="Șterge">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -394,7 +394,7 @@ export default function SitePhotosPage() {
                         <button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-30 transition-colors"
+                            className="p-2 rounded-2xl hover:bg-slate-200 disabled:opacity-30 transition-colors"
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </button>
@@ -402,7 +402,7 @@ export default function SitePhotosPage() {
                         <button
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
-                            className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-30 transition-colors"
+                            className="p-2 rounded-2xl hover:bg-slate-200 disabled:opacity-30 transition-colors"
                         >
                             <ChevronRight className="w-5 h-5" />
                         </button>
@@ -434,7 +434,7 @@ export default function SitePhotosPage() {
                         </button>
                     )}
                     <div className="max-w-4xl max-h-[90vh] relative" onClick={e => e.stopPropagation()}>
-                        <img src={getPhotoUrl(lightbox)} alt="" className="max-w-full max-h-[80vh] object-contain rounded-lg" />
+                        <img src={getPhotoUrl(lightbox)} alt="" className="max-w-full max-h-[80vh] object-contain rounded-2xl" />
                         <div className="mt-3 flex items-center justify-between">
                             <div>
                                 {lightbox.description && <p className="text-white text-lg font-medium">{lightbox.description}</p>}
@@ -444,7 +444,7 @@ export default function SitePhotosPage() {
                             </div>
                             <button
                                 onClick={() => handleDownload(lightbox)}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-sm font-medium transition-colors"
                             >
                                 <Download className="w-4 h-4" /> Descarcă
                             </button>

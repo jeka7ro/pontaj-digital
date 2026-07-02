@@ -517,7 +517,8 @@ def get_users(
     current_admin: Admin = Depends(get_current_admin)
 ):
     """Get paginated list of users with optional filters. Default shows only ACTIVE users."""
-    query = db.query(User).join(Role)
+    from sqlalchemy.orm import joinedload
+    query = db.query(User).options(joinedload(User.role), joinedload(User.site))
     
     if search:
         query = query.filter(or_(
@@ -1154,7 +1155,7 @@ def get_user_analytics(
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin)
 ):
-    from app.models import Timesheet, TimesheetSegment, TimesheetLine, Activity, EquipmentDailyLog, AccommodationAssignment, Accommodation, ConstructionSite, WarehouseTransaction, WarehouseItem
+    from app.models import Timesheet, TimesheetSegment, TimesheetLine, Activity, EquipmentDailyLog, AccommodationAssignment, Accommodation, ConstructionSite, WarehouseTransaction, WarehouseItem, VehicleUserAssignment, VehicleFuelEntry
     from sqlalchemy import func, desc
     import datetime
     from calendar import monthrange
@@ -1253,7 +1254,18 @@ def get_user_analytics(
         WarehouseTransaction.date <= today
     ).scalar() or 0
     
-    user_fuel = float(equipment_fuel) + float(warehouse_fuel)
+    # Fuel this month (from vehicle fuel entries)
+    user_vehicle_ids_query = db.query(VehicleUserAssignment.vehicle_id).filter(
+        VehicleUserAssignment.user_id == user_id,
+        VehicleUserAssignment.is_active == True
+    )
+    vehicle_fuel = db.query(func.sum(VehicleFuelEntry.liters)).filter(
+        VehicleFuelEntry.vehicle_id.in_(user_vehicle_ids_query),
+        VehicleFuelEntry.date >= first_day_of_month,
+        VehicleFuelEntry.date <= today
+    ).scalar() or 0
+    
+    user_fuel = float(equipment_fuel) + float(warehouse_fuel) + float(vehicle_fuel)
 
     # Fuel received — OUT-urile din magazie pentru COMBUSTIBIL
     # Sursa 1: direct pe numele angajatului
@@ -1287,7 +1299,7 @@ def get_user_analytics(
             WarehouseTransaction.date <= today
         ).scalar() or 0
 
-    warehouse_fuel_received = max(float(fuel_received_direct), float(fuel_received_at_sites))
+    warehouse_fuel_received = max(float(fuel_received_direct), float(fuel_received_at_sites)) + float(vehicle_fuel)
     
     # 4. ACTIVITIES BREAKDOWN & ANOMALIES
     lines = db.query(TimesheetLine, Activity.name).join(Activity).join(TimesheetSegment).join(Timesheet).filter(

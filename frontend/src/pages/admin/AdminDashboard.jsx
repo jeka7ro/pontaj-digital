@@ -394,11 +394,11 @@ export default function AdminDashboard() {
                                 <img 
                                     src={admin.avatar_path.startsWith('http') ? admin.avatar_path : `${API_BASE}${admin.avatar_path}`}
                                     alt={admin.full_name}
-                                    className="w-9 h-11 rounded-lg object-cover object-[center_20%] ring-2 ring-white/20 shadow-md hover:ring-blue-400/50 transition-all cursor-pointer hover:scale-105"
+                                    className="w-9 h-11 rounded-2xl object-cover object-[center_20%] ring-2 ring-white/20 shadow-md hover:ring-blue-400/50 transition-all cursor-pointer hover:scale-105"
                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
                                 />
                             ) : null}
-                            <div className={`w-9 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg items-center justify-center font-bold text-white shadow-md cursor-pointer hover:shadow-lg transition-all border-2 border-white/20 ${admin?.avatar_path ? 'hidden' : 'flex'}`}>
+                            <div className={`w-9 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl items-center justify-center font-bold text-white shadow-md cursor-pointer hover:shadow-lg transition-all border-2 border-white/20 ${admin?.avatar_path ? 'hidden' : 'flex'}`}>
                                 {admin?.full_name?.charAt(0)}
                             </div>
                         </div>

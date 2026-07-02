@@ -437,9 +437,9 @@ export default function UsersManagement() {
                                                 title="Schimbă poza (doar Adminii autorizați)"
                                             >
                                                 {user.avatar_path ? (
-                                                    <img src={`${API_BASE}${user.avatar_path}`} alt="" className="w-10 h-12 rounded-lg object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl" onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} />
+                                                    <img src={`${API_BASE}${user.avatar_path}`} alt="" className="w-10 h-12 rounded-2xl object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl" onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} />
                                                 ) : null}
-                                                <div className={`w-10 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-sm ring-1 ring-blue-200 dark:ring-blue-800 shrink-0 ${user.avatar_path ? 'hidden' : 'flex'} group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors`}>
+                                                <div className={`w-10 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-sm ring-1 ring-blue-200 dark:ring-blue-800 shrink-0 ${user.avatar_path ? 'hidden' : 'flex'} group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors`}>
                                                     {(user.last_name?.charAt(0) || '') + (user.first_name?.charAt(0) || '')}
                                                 </div>
                                             </div>
@@ -574,7 +574,7 @@ export default function UsersManagement() {
                                                 className="hidden"
                                             />
                                             {idCardPreview ? (
-                                                <div className="relative w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                                                <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                                                     {idCardFile?.type === 'application/pdf' ? (
                                                         <iframe src={idCardPreview} className="w-full h-[300px] border-0" title="PDF Preview" />
                                                     ) : (
@@ -595,7 +595,7 @@ export default function UsersManagement() {
                                                 <button
                                                     type="button"
                                                     onClick={() => document.getElementById('idCardInputUsers').click()}
-                                                    className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                                                    className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
                                                 >
                                                     <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
                                                     <span className="text-sm font-medium text-slate-500">Încărcă Poză / PDF</span>
@@ -607,7 +607,7 @@ export default function UsersManagement() {
                                                 type="button"
                                                 onClick={handleScanIdCard}
                                                 disabled={ocrLoading}
-                                                className="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                                                className="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white rounded-2xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
                                             >
                                                 {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
                                                 Scanează CI

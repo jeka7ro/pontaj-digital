@@ -281,7 +281,7 @@ export default function LeavesManagement() {
                                 {error ? (
                                     <tr>
                                         <td colSpan="7" className="p-12 text-center">
-                                            <div className="text-red-500 bg-red-50 p-4 rounded-lg inline-block border border-red-200">
+                                            <div className="text-red-500 bg-red-50 p-4 rounded-2xl inline-block border border-red-200">
                                                 <p className="font-bold mb-1">Eroare API</p>
                                                 <p className="text-sm">{error}</p>
                                             </div>
@@ -312,12 +312,12 @@ export default function LeavesManagement() {
                                                         <img 
                                                             src={`${apiBase}${leave.avatar_path}`} 
                                                             alt="" 
-                                                            className="w-9 h-11 rounded-lg object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl"
+                                                            className="w-9 h-11 rounded-2xl object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl"
                                                             onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
                                                         />
                                                     ) : null}
                                                     <div 
-                                                        className={`w-9 h-11 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 ${leave.avatar_path ? 'hidden' : 'flex'}`}
+                                                        className={`w-9 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 ${leave.avatar_path ? 'hidden' : 'flex'}`}
                                                     >
                                                         {leave.full_name?.charAt(0)}
                                                     </div>

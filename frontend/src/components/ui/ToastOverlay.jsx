@@ -32,7 +32,7 @@ export function ToastOverlay() {
                 </div>
                 <button 
                     onClick={() => useUIStore.setState({ toast: null })}
-                    className="shrink-0 -mr-1 -mt-1 p-1 hover:bg-black/5 rounded-lg transition-colors opacity-60 hover:opacity-100"
+                    className="shrink-0 -mr-1 -mt-1 p-1 hover:bg-black/5 rounded-2xl transition-colors opacity-60 hover:opacity-100"
                 >
                     <X className="w-4 h-4" />
                 </button>

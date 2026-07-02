@@ -483,7 +483,7 @@ export default function AccommodationsManagement() {
                                         <td className="px-6 py-4 text-slate-500 font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                                                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-2xl">
                                                     <BedDouble className="w-4 h-4 text-blue-500" />
                                                 </div>
                                                 <span className="font-bold text-slate-900 dark:text-white">{acc.name}</span>

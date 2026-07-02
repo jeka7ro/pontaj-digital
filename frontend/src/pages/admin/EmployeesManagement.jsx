@@ -569,7 +569,7 @@ export default function EmployeesManagement() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden rounded-3xl">
-                {!detailUser && (
+                {!id && !detailUser && (
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
                     <div className="relative group flex items-center w-full sm:w-auto">
                             <div className="absolute left-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors">
@@ -597,7 +597,7 @@ export default function EmployeesManagement() {
                             )}
                         </div>
                     <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                        {!detailUser && (
+                        {!id && !detailUser && (
                             <>
                                 <select
                                     value={statusFilter}
@@ -641,13 +641,13 @@ export default function EmployeesManagement() {
                             <span className="hidden sm:inline">Export Excel</span>
                         </button>
 
-                        {!detailUser && selectedUserIds.length > 0 && (
+                        {!id && !detailUser && selectedUserIds.length > 0 && (
                             <button onClick={handleBulkDelete} className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap">
                                 <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">{t('common.delete')} ({selectedUserIds.length})</span>
                             </button>
                         )}
 
-                        {!detailUser && (
+                        {!id && !detailUser && (
                             <button 
                                 onClick={handleAddUser} 
                                 className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-all whitespace-nowrap"
@@ -661,8 +661,14 @@ export default function EmployeesManagement() {
 
                 <div className="bg-slate-50/30 dark:bg-slate-900/50 flex-1 relative">
                     {detailUser ? (
-                        <EmployeeDetailView user={detailUser} onBack={() => navigate('/admin/employees')} onExport={handleExportExcel} />
-                    ) : loading ? (
+                        <EmployeeDetailView user={detailUser} onBack={() => {
+                            if (window.history.length > 2) {
+                                navigate(-1)
+                            } else {
+                                navigate('/admin/employees')
+                            }
+                        }} onExport={handleExportExcel} />
+                    ) : id || loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                         </div>
@@ -707,7 +713,7 @@ export default function EmployeesManagement() {
                                             src={`${API_BASE}${editingUser.avatar_path}`}
                                             style={{ objectPosition: 'top' }}
                                             alt=""
-                                            className="w-10 h-12 rounded-lg object-cover object-[center_20%] ring-2 ring-slate-200 shrink-0"
+                                            className="w-10 h-12 rounded-2xl object-cover object-[center_20%] ring-2 ring-slate-200 shrink-0"
                                             onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
                                         />
                                     ) : null}
@@ -1289,9 +1295,9 @@ function UsersTable({ users, onToggleActive, onDelete, onEdit, onResetPin, onVie
                             <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                     {user.avatar_path ? (
-                                        <img src={`${apiBase}${user.avatar_path}`} alt="" className="w-9 h-11 rounded-lg object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl" onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} />
+                                        <img src={`${apiBase}${user.avatar_path}`} alt="" className="w-9 h-11 rounded-2xl object-cover object-[center_20%] ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl" onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }} />
                                     ) : null}
-                                    <div className={`w-9 h-11 rounded-lg bg-blue-100 dark:bg-blue-900/30 items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs ring-1 ring-blue-200 dark:ring-blue-800 shrink-0 ${user.avatar_path ? 'hidden' : 'flex'}`}>
+                                    <div className={`w-9 h-11 rounded-2xl bg-blue-100 dark:bg-blue-900/30 items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs ring-1 ring-blue-200 dark:ring-blue-800 shrink-0 ${user.avatar_path ? 'hidden' : 'flex'}`}>
                                         {(user.last_name?.charAt(0) || '') + (user.first_name?.charAt(0) || '')}
                                     </div>
                                     <div>
@@ -1390,11 +1396,11 @@ function UsersGrid({ users, onToggleActive, onDelete, onEdit, onResetPin, onView
                                     src={`${apiBase}${user.avatar_path}`}
                                     style={{ objectPosition: 'top' }}
                                     alt=""
-                                    className="w-12 h-16 rounded-lg object-cover object-[center_20%] ring-2 ring-white shadow-lg shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl"
+                                    className="w-12 h-16 rounded-2xl object-cover object-[center_20%] ring-2 ring-white shadow-lg shrink-0 relative z-0 hover:z-50 transition-transform duration-200 hover:scale-[1.8] hover:shadow-2xl"
                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }}
                                 />
                             ) : null}
-                            <div className={`w-12 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white shrink-0 ${user.avatar_path ? 'hidden' : 'flex'}`}>
+                            <div className={`w-12 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl items-center justify-center text-white font-bold text-sm shadow-lg ring-2 ring-white shrink-0 ${user.avatar_path ? 'hidden' : 'flex'}`}>
                                 {(user.last_name?.charAt(0) || '') + (user.first_name?.charAt(0) || '')}
                             </div>
                             <div>

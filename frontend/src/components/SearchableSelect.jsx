@@ -47,7 +47,7 @@ export default function SearchableSelect({ value, onChange, options, placeholder
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder={searchPlaceholder}
-                                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none focus:border-blue-500 dark:text-slate-200"
+                                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-2xl text-xs outline-none focus:border-blue-500 dark:text-slate-200"
                                 />
                             </div>
                         </div>

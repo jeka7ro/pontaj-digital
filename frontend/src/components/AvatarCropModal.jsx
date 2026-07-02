@@ -89,7 +89,7 @@ export default function AvatarCropModal({ imageFile, onCancel, onSave }) {
                             step={0.1}
                             aria-labelledby="Zoom"
                             onChange={(e) => setZoom(Number(e.target.value))}
-                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            className="w-full h-2 bg-slate-700 rounded-2xl appearance-none cursor-pointer accent-blue-500"
                         />
                     </div>
                     <div className="flex justify-end gap-3 mt-2">

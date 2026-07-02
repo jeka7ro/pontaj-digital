@@ -21,7 +21,8 @@ export default function DataTable({
     defaultPageSize = 25,
     emptyText,
     searchable = false,
-    searchPlaceholder = 'Caută...'
+    searchPlaceholder = 'Caută...',
+    footer = null
 }) {
     const { t } = useTranslation()
     const [page, setPage] = useState(1)
@@ -158,11 +159,11 @@ export default function DataTable({
                                     key={row.id ?? idx}
                                     className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
                                 >
-                                    <td className="px-6 py-4 text-center text-slate-500 font-medium tabular-nums">
+                                    <td className="px-6 py-4 text-center text-sm font-normal text-slate-700 dark:text-slate-300 tabular-nums">
                                         {from + idx + 1}
                                     </td>
                                     {columns.map(col => (
-                                        <td key={col.key} className="px-6 py-4 align-middle text-slate-900 dark:text-white font-medium">
+                                        <td key={col.key} className="px-6 py-4 align-middle text-sm font-normal text-slate-700 dark:text-slate-300">
                                             {col.render ? col.render(row, from + idx) : (row[col.key] ?? '—')}
                                         </td>
                                     ))}
@@ -170,22 +171,30 @@ export default function DataTable({
                             ))
                         )}
                     </tbody>
+                    {footer && (
+                        <tfoot className="bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+                            {footer}
+                        </tfoot>
+                    )}
                 </table>
             </div>
 
             {/* Pagination Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-slate-800/20 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                <div className="flex items-center gap-2">
-                    <span className="uppercase tracking-wide">Afișează</span>
-                    <select
-                        value={pageSize}
-                        onChange={handlePageSize}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                        {PAGE_SIZE_OPTIONS.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                        ))}
-                    </select>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-slate-800/20 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400 rounded-b-xl">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <span className="uppercase tracking-wide">Afișează</span>
+                        <select
+                            value={pageSize}
+                            onChange={handlePageSize}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                        >
+                            {[10, 15, 25, 50, 9999].map(s => (
+                                <option key={s} value={s}>{s === 9999 ? 'Toți' : s}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <span className="hidden sm:inline">Total înregistrări: <strong className="text-slate-700 dark:text-slate-300">{sorted.length}</strong></span>
                 </div>
                 <div className="flex items-center gap-4">
                     <span>Pagina {safePage} din {totalPages || 1}</span>

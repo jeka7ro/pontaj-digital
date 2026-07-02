@@ -211,7 +211,7 @@ export default function SiteMap({ selectedSiteId, onSiteSelect, workers = [], on
                             <span class="font-bold text-blue-600">${worker.activities ? worker.activities.length : 0}</span>
                         </div>
                     </div>
-                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition-colors shadow-sm worker-detail-btn" data-worker-id="${worker.worker_id}">
+                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-2xl transition-colors shadow-sm worker-detail-btn" data-worker-id="${worker.worker_id}">
                         Vezi Profil Complet
                     </button>
                 </div>

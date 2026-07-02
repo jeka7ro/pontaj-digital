@@ -407,12 +407,12 @@ export default function TimesheetApprovalPage() {
                         <div className="flex items-center gap-2">
                             <label className="text-xs text-slate-500 font-medium whitespace-nowrap">{t('timesheets.from')}:</label>
                             <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setActivePeriod('custom') }}
-                                className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 focus:border-blue-500 outline-none transition-all cursor-pointer" />
+                                className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 focus:border-blue-500 outline-none transition-all cursor-pointer" />
                         </div>
                         <div className="flex items-center gap-2">
                             <label className="text-xs text-slate-500 font-medium whitespace-nowrap">{t('timesheets.to')}:</label>
                             <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setActivePeriod('custom') }}
-                                className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 focus:border-blue-500 outline-none transition-all cursor-pointer" />
+                                className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs bg-slate-50 dark:bg-slate-900 dark:text-slate-200 focus:border-blue-500 outline-none transition-all cursor-pointer" />
                         </div>
                     </div>
                 </div>
@@ -522,13 +522,13 @@ export default function TimesheetApprovalPage() {
                                     <Activity className="w-4 h-4 text-blue-500" />
                                     {t('dashboard.activities')} — {activityPopup.worker_name}
                                 </h4>
-                                <button onClick={() => setActivityPopup(null)} className="p-1 hover:bg-slate-100 rounded-lg">
+                                <button onClick={() => setActivityPopup(null)} className="p-1 hover:bg-slate-100 rounded-2xl">
                                     <X className="w-4 h-4 text-slate-400" />
                                 </button>
                             </div>
                             <div className="space-y-2">
                                 {activityPopup.activities.map((a, i) => (
-                                    <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2.5 border border-slate-100 dark:border-slate-700">
+                                    <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-2xl px-3 py-2.5 border border-slate-100 dark:border-slate-700">
                                         <span className="text-sm text-slate-700 dark:text-slate-200 font-medium">{a.name}</span>
                                         <span className="text-sm font-bold text-blue-600">{a.quantity} <span className="text-xs text-slate-400 font-normal">{a.unit_type}</span></span>
                                     </div>
@@ -548,7 +548,7 @@ export default function TimesheetApprovalPage() {
                             <button onClick={closeWorkerDetail} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium">
                                 <ArrowLeft className="w-4 h-4" /> {t('common.back')}
                             </button>
-                            <button onClick={closeWorkerDetail} className="p-1.5 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
+                            <button onClick={closeWorkerDetail} className="p-1.5 hover:bg-slate-100 rounded-2xl"><X className="w-5 h-5 text-slate-400" /></button>
                         </div>
 
                         {detailLoading ? (
@@ -676,7 +676,7 @@ export default function TimesheetApprovalPage() {
 
 /* ─── Shared Components ─── */
 
-function AvatarImg({ path, name, size = 'w-10 h-12', textSize = 'text-sm', rounded = 'rounded-lg' }) {
+function AvatarImg({ path, name, size = 'w-10 h-12', textSize = 'text-sm', rounded = 'rounded-2xl' }) {
     if (path) {
         return (
             <div className={`shrink-0 group flex items-center justify-center`}>

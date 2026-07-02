@@ -751,6 +751,7 @@ export default function UsersManagement() {
                                     </div>
                                 </div>
                             </div>
+                        </>)}
                         </div>
 
                         {/* Footer */}

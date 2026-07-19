@@ -116,7 +116,7 @@ def get_cleaning_sessions(
             "vehicle_id": s.vehicle_id,
             "vehicle_name": s.vehicle.name if s.vehicle else "Unknown",
             "vehicle_plate": s.vehicle.plate_number if s.vehicle else "",
-            "user_name": f"{s.user.first_name} {s.user.last_name}" if s.user else "Unknown",
+            "user_name": s.user.full_name if s.user else "Unknown",
             "created_at": s.created_at,
             "photos": s.photos
         })

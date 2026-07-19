@@ -321,13 +321,16 @@ export default function VehicleCleaning() {
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
                         {renderPhotoBox('interior', 'bord', 'Bord & Consolă', Gauge)}
+                        {renderPhotoBox('interior', 'scaune', 'Scaune', Sofa)}
+                        {renderPhotoBox('interior', 'portbagaj', 'Portbagaj', Package)}
                     </div>
                 </div>
+            </div>
                 
-                {/* Bottom Bar - Scrollable instead of fixed for better mobile support */}
-                <div className="mt-8 mb-6">
-                    <button 
-                        onClick={handleSubmit}
+            {/* Bottom Bar - Scrollable instead of fixed for better mobile support */}
+            <div className="mt-8 mb-6">
+                <button 
+                    onClick={handleSubmit}
                     disabled={submitting}
                     className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20"
                 >

@@ -432,13 +432,16 @@ export default function FleetManagement() {
         {
             key: 'name', label: t('common.name'), sortable: true,
             render: (v) => (
-                <div>
+                <div 
+                    onClick={() => openEdit(v)}
+                    className="cursor-pointer group"
+                >
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-normal text-slate-700 dark:text-slate-300">{v.name}</span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{v.name}</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 w-full max-w-[220px]">
-                        {v.plate_number && <span className="text-sm font-normal text-slate-700 dark:text-slate-300 shrink-0">{v.plate_number}</span>}
-                        {v.chassis_number && <span className="text-sm font-normal text-slate-700 dark:text-slate-300 truncate flex-1 min-w-0" title={v.chassis_number}>SN: {v.chassis_number}</span>}
+                        {v.plate_number && <span className="text-sm font-normal text-slate-700 dark:text-slate-300 shrink-0 group-hover:text-blue-500/80 transition-colors">{v.plate_number}</span>}
+                        {v.chassis_number && <span className="text-sm font-normal text-slate-700 dark:text-slate-300 truncate flex-1 min-w-0 group-hover:text-blue-500/80 transition-colors" title={v.chassis_number}>SN: {v.chassis_number}</span>}
                     </div>
                 </div>
             )

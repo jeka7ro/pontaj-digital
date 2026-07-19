@@ -262,10 +262,16 @@ export default function VehicleCleaning() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24">
+        <div className="min-h-screen bg-slate-50 pb-36">
             {/* Header */}
             <div className="bg-white px-4 py-4 sticky top-0 z-20 flex items-center gap-3 border-b shadow-sm">
-                <button onClick={() => setSelectedVehicle(null)} className="p-2 -ml-2 hover:bg-slate-100 rounded-full">
+                <button 
+                    onClick={() => {
+                        setSelectedVehicle(null);
+                        setPhotos({ exterior: {}, interior: {} });
+                    }} 
+                    className="p-2 -ml-2 hover:bg-slate-100 rounded-full"
+                >
                     <ArrowLeft className="w-6 h-6 text-slate-700" />
                 </button>
                 <div>
@@ -309,7 +315,7 @@ export default function VehicleCleaning() {
             </div>
 
             {/* Bottom Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 z-50">
+            <div className="fixed bottom-[88px] left-0 right-0 p-4 bg-white border-t border-slate-200 z-40 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
                 <button 
                     onClick={handleSubmit}
                     disabled={submitting}

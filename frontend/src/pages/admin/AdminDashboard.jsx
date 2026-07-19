@@ -154,6 +154,7 @@ export default function AdminDashboard() {
             items: [
                 { path: '/admin/warehouse', icon: Package, label: t('nav.warehouse', 'Magazie') },
                 { path: '/admin/fleet', icon: Truck, label: t('nav.fleet') },
+                { path: '/admin/fleet-cleaning', icon: Sparkles, label: 'Curățenie Auto' },
                 { path: '/admin/material-requests', icon: PackageSearch, label: 'Necesar Materiale' },
                 { path: '/admin/expenses', icon: Wallet, label: 'Deconturi / Cheltuieli' },
             ]
@@ -184,6 +185,7 @@ export default function AdminDashboard() {
             ? cat.items.filter(item => [
                 '/admin/warehouse', 
                 '/admin/fleet', 
+                '/admin/fleet-cleaning',
                 '/admin/material-requests', 
                 '/admin/expenses',
                 '/admin/alerts',

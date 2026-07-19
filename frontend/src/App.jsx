@@ -40,6 +40,7 @@ const AccommodationsManagement = lazy(() => import('./pages/admin/Accommodations
 const ExpensesManagement = lazy(() => import('./pages/admin/ExpensesManagement'))
 const AdminMaterialRequests = lazy(() => import('./pages/admin/AdminMaterialRequests'))
 const AdminEmergencies = lazy(() => import('./pages/admin/AdminEmergencies'))
+const AdminVehicleCleaning = lazy(() => import('./pages/admin/AdminVehicleCleaning'))
 const EmployeeComplaints = lazy(() => import('./pages/employee/EmployeeComplaints'))
 const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMaterialRequests'))
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
@@ -168,6 +169,7 @@ function App() {
                         <Route path="site-photos" element={<SitePhotosPage />} />
                         <Route path="teams" element={<TeamsManagement />} />
                         <Route path="fleet" element={<FleetManagement />} />
+                        <Route path="fleet-cleaning" element={<AdminVehicleCleaning />} />
                         <Route path="warehouse" element={<WarehouseManagement />} />
                         <Route path="complaints" element={<ComplaintsManagement />} />
                         <Route path="accommodations" element={<AccommodationsManagement />} />

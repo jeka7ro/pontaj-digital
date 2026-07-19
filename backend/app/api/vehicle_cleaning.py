@@ -121,3 +121,21 @@ def get_cleaning_sessions(
             "photos": s.photos
         })
     return result
+
+@router.delete("/admin/vehicle-cleaning/{session_id}")
+def delete_cleaning_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    session = db.query(VehicleCleaningSession).filter(
+        VehicleCleaningSession.id == session_id,
+        VehicleCleaningSession.organization_id == admin.organization_id
+    ).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    db.delete(session)
+    db.commit()
+    return {"status": "success"}

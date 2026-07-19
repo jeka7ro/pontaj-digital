@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, ChevronLeft, Download, ZoomIn } from 'lucide-react';
+import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, ChevronLeft, Download, ZoomIn, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
@@ -52,6 +52,19 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (e, sessionId) => {
+        e.stopPropagation();
+        if (!window.confirm('Ești sigur că vrei să ștergi acest dosar de curățenie? Acțiunea este ireversibilă și pozele vor dispărea din istoric.')) return;
+        
+        try {
+            await api.delete(`/admin/vehicle-cleaning/${sessionId}`);
+            setSessions(sessions.filter(s => s.id !== sessionId));
+        } catch (err) {
+            console.error('Error deleting session:', err);
+            alert('A apărut o eroare la ștergerea dosarului.');
         }
     };
 
@@ -159,11 +172,20 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                         </div>
                                     </td>
                                     <td className="p-4 text-right">
-                                        <button 
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors pointer-events-none"
-                                        >
-                                            Vezi poze <ChevronRight className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors pointer-events-none"
+                                            >
+                                                Vezi poze <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(e, session.id)}
+                                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer relative z-10"
+                                                title="Șterge dosar"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

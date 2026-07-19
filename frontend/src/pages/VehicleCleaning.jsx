@@ -18,7 +18,14 @@ export default function VehicleCleaning() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [viewImage, setViewImage] = useState(null);
+    const [lightboxState, setLightboxState] = useState(null); // { session, index }
+
+    const getSessionPhotos = (session) => {
+        if (!session) return [];
+        const ext = Object.entries(session.photos?.exterior || {}).map(([k, u]) => ({ title: `Exterior - ${k.replace('_', ' ')}`, url: u }));
+        const int = Object.entries(session.photos?.interior || {}).map(([k, u]) => ({ title: `Interior - ${k.replace('_', ' ')}`, url: u }));
+        return [...ext, ...int];
+    };
 
     // Photos state
     const [photos, setPhotos] = useState({
@@ -65,6 +72,17 @@ export default function VehicleCleaning() {
 
     const triggerFileInput = (id) => {
         document.getElementById(id).click();
+    };
+
+    const handleRemovePhoto = (e, category, key) => {
+        e.stopPropagation();
+        setPhotos(prev => ({
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [key]: null
+            }
+        }));
     };
 
     const handleSubmit = async () => {
@@ -142,9 +160,12 @@ export default function VehicleCleaning() {
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                 <Camera className="w-8 h-8 text-white" />
                             </div>
-                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
-                                <Check className="w-4 h-4" />
-                            </div>
+                            <button 
+                                onClick={(e) => handleRemovePhoto(e, category, key)}
+                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full z-10 transition-colors shadow-sm"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         </>
                     ) : (
                         <>
@@ -258,11 +279,14 @@ export default function VehicleCleaning() {
                                             </span>
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
-                                            {Object.values(session.photos?.exterior || {}).map((url, i) => (
-                                                <img key={`ext-${i}`} src={url} onClick={() => setViewImage(url)} className="w-full aspect-square object-cover rounded-lg border border-gray-100 active:scale-95 transition-transform" />
-                                            ))}
-                                            {Object.values(session.photos?.interior || {}).map((url, i) => (
-                                                <img key={`int-${i}`} src={url} onClick={() => setViewImage(url)} className="w-full aspect-square object-cover rounded-lg border border-gray-100 active:scale-95 transition-transform" />
+                                            {getSessionPhotos(session).map((photo, i) => (
+                                                <img 
+                                                    key={i} 
+                                                    src={photo.url} 
+                                                    onClick={() => setLightboxState({ session, index: i })} 
+                                                    className="w-full aspect-square object-cover rounded-lg border border-gray-100 active:scale-95 transition-transform" 
+                                                    alt={photo.title}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -328,45 +352,62 @@ export default function VehicleCleaning() {
                 </div>
             </div>
                 
-            {/* Bottom Bar - Scrollable instead of fixed for better mobile support */}
-            <div className="mt-8 mb-6">
-                <button 
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20"
-                >
-                    {submitting ? (
-                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                        <>
-                            <Check className="w-6 h-6" />
-                            Trimite Dosar Curățenie
-                        </>
-                    )}
-                </button>
+            {/* Fixed Bottom Bar for Submit Button */}
+            <div className="fixed bottom-[80px] left-0 right-0 p-4 z-40 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pointer-events-none">
+                <div className="max-w-md mx-auto pointer-events-auto">
+                    <button 
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-blue-600/30"
+                    >
+                        {submitting ? (
+                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <Check className="w-6 h-6" />
+                                Trimite Dosar Curățenie
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
             
-            {/* Fullscreen Image Viewer Modal */}
-            {viewImage && (
-                <div 
-                    className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
-                    onClick={() => setViewImage(null)}
-                >
-                    <div className="relative w-full h-full flex flex-col items-center justify-center">
-                        <button 
-                            className="absolute top-4 right-4 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 active:bg-white/30 transition-colors"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setViewImage(null);
-                            }}
-                        >
+            {/* Fullscreen Gallery Lightbox Modal */}
+            {lightboxState && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col" onClick={() => setLightboxState(null)}>
+                    <div className="flex justify-between items-center p-4 text-white" onClick={e => e.stopPropagation()}>
+                        <div className="text-sm font-medium">
+                            {lightboxState.index + 1} / {getSessionPhotos(lightboxState.session).length} - {getSessionPhotos(lightboxState.session)[lightboxState.index].title}
+                        </div>
+                        <button onClick={() => setLightboxState(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                             <X className="w-6 h-6" />
                         </button>
+                    </div>
+                    
+                    <div className="flex-1 flex items-center justify-center relative px-4 sm:px-16" onClick={e => e.stopPropagation()}>
+                        {lightboxState.index > 0 && (
+                            <button 
+                                onClick={() => setLightboxState({ ...lightboxState, index: lightboxState.index - 1 })} 
+                                className="absolute left-2 sm:left-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            >
+                                <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </button>
+                        )}
+                        
                         <img 
-                            src={viewImage} 
-                            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
-                            onClick={(e) => e.stopPropagation()} 
+                            src={getSessionPhotos(lightboxState.session)[lightboxState.index].url} 
+                            className="max-w-full max-h-[85vh] object-contain select-none shadow-2xl" 
+                            alt={getSessionPhotos(lightboxState.session)[lightboxState.index].title} 
                         />
+                        
+                        {lightboxState.index < getSessionPhotos(lightboxState.session).length - 1 && (
+                            <button 
+                                onClick={() => setLightboxState({ ...lightboxState, index: lightboxState.index + 1 })} 
+                                className="absolute right-2 sm:right-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            >
+                                <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

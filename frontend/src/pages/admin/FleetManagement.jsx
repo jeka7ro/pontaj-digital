@@ -622,7 +622,10 @@ export default function FleetManagement() {
         {
             key: '_actions', label: t('common.actions'),
             render: (v) => (
-                <div className="flex items-center justify-end gap-1">
+                <div 
+                    className="flex items-center justify-end gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {!CAR_TYPES.includes(v.type) && (
                         <button onClick={() => { setLogEquipment(v); setShowLogModal(true); setLogForm({ date: new Date().toISOString().split('T')[0], site_id: v.site_ids?.[0] || '', operator_id: v.user_ids?.[0] || '', is_used: true, refueled: false, refuel_liters: '', notes: '' }) }} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400" title="Pontaj Zilnic">
                             <CalendarClock className="w-4 h-4" />
@@ -764,6 +767,11 @@ export default function FleetManagement() {
                         data={filteredCategories}
                         loading={loading}
                         defaultPageSize={25}
+                        onRowClick={(row) => {
+                            setEditingCat(row);
+                            setCatForm({ name: row.name, group: row.group || 'equipment', icon: row.icon || 'tractor' });
+                            setShowCatModal(true);
+                        }}
                     />
                 </div>
             )}
@@ -830,6 +838,7 @@ export default function FleetManagement() {
                         data={filteredVehicles}
                         loading={loading}
                         defaultPageSize={25}
+                        onRowClick={(row) => openEdit(row)}
                     />
                 </div>
             )}

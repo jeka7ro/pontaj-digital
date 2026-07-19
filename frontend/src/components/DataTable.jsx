@@ -22,7 +22,8 @@ export default function DataTable({
     emptyText,
     searchable = false,
     searchPlaceholder = 'Caută...',
-    footer = null
+    footer = null,
+    onRowClick = null
 }) {
     const { t } = useTranslation()
     const [page, setPage] = useState(1)
@@ -157,7 +158,8 @@ export default function DataTable({
                             slice.map((row, idx) => (
                                 <tr
                                     key={row.id ?? idx}
-                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
+                                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
                                 >
                                     <td className="px-6 py-4 text-center text-sm font-normal text-slate-700 dark:text-slate-300 tabular-nums">
                                         {from + idx + 1}

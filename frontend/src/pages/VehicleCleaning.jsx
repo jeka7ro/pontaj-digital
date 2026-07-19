@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '../store/uiStore';
+import imageCompression from 'browser-image-compression';
 
 export default function VehicleCleaning() {
     const { t } = useTranslation();
@@ -76,21 +77,33 @@ export default function VehicleCleaning() {
             const formData = new FormData();
             formData.append('vehicle_id', selectedVehicle.id);
             
-            const photoMap = { exterior: {}, interior: {} };
+            const photosMeta = { exterior: {}, interior: {} };
             
-            // Append files and build map
+            // Compression options to reduce 5-10MB photos to ~100-300KB
+            const compressionOptions = {
+                maxSizeMB: 0.5,
+                maxWidthOrHeight: 1280,
+                useWebWorker: true,
+                fileType: 'image/jpeg'
+            };
+            
             for (const cat of ['exterior', 'interior']) {
-                for (const [angle, file] of Object.entries(photos[cat])) {
+                for (const key in photos[cat]) {
+                    const file = photos[cat][key];
                     if (file) {
-                        // Generate a unique field name for the backend to recognize
-                        const uniqueName = `${cat}_${angle}_${file.name}`;
-                        formData.append('files', file, uniqueName);
-                        photoMap[cat][angle] = uniqueName;
+                        try {
+                            // Try to compress, if fails fallback to original
+                            const compressedFile = await imageCompression(file, compressionOptions);
+                            formData.append('files', compressedFile, file.name);
+                        } catch (err) {
+                            console.error("Compression error:", err);
+                            formData.append('files', file);
+                        }
+                        photosMeta[cat][key] = file.name;
                     }
                 }
             }
-            
-            formData.append('photos', JSON.stringify(photoMap));
+            formData.append('photos', JSON.stringify(photosMeta));
 
             await api.post('/worker/vehicle-cleaning', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }

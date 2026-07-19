@@ -36,14 +36,7 @@ export default function EmployeeLayout() {
             {/* Bottom Navigation Bar (Glossy Glass Theme) */}
             <nav className="fixed bottom-0 left-0 right-0 bg-blue-100/40 backdrop-blur-xl border-4 border-b-0 border-white/80 px-1 py-3 flex justify-between items-center shadow-[0_-10px_25px_rgba(59,130,246,0.5)] z-50 rounded-t-3xl">
                 
-                {/* 1. Istoric (Blue) */}
-                <NavLink 
-                    to="/history" 
-                    className={({isActive}) => `flex flex-col items-center p-1 w-[56px] transition-all ${isActive ? 'text-blue-700 scale-110 drop-shadow-md' : (isHome ? 'text-blue-600/90' : 'text-slate-400')}`}
-                >
-                    <Calendar className="w-6 h-6 mb-1.5" />
-                    <span className="text-[10px] font-bold">Istoric</span>
-                </NavLink>
+                {/* 1. Removed Istoric to keep Home perfectly centered */}
 
                 {/* 2. Materiale (Orange) */}
                 <NavLink 

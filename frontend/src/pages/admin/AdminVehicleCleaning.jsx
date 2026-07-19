@@ -26,7 +26,7 @@ export default function AdminVehicleCleaning({ vehicleId }) {
     };
 
     const filteredSessions = sessions.filter(s => {
-        if (vehicleId && s.vehicle_id !== vehicleId) return false;
+        if (vehicleId && String(s.vehicle_id) !== String(vehicleId)) return false;
         return s.vehicle_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                s.vehicle_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
                s.user_name.toLowerCase().includes(searchQuery.toLowerCase());

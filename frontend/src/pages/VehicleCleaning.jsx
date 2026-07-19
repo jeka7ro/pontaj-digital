@@ -308,18 +308,15 @@ export default function VehicleCleaning() {
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
                         {renderPhotoBox('interior', 'bord', 'Bord & Consolă', Gauge)}
-                        {renderPhotoBox('interior', 'scaune', 'Scaune', Sofa)}
-                        {renderPhotoBox('interior', 'portbagaj', 'Portbagaj', Package)}
                     </div>
                 </div>
-            </div>
-
-            {/* Bottom Bar */}
-            <div className="fixed bottom-[88px] left-0 right-0 p-4 bg-white border-t border-slate-200 z-40 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
-                <button 
-                    onClick={handleSubmit}
+                
+                {/* Bottom Bar - Scrollable instead of fixed for better mobile support */}
+                <div className="mt-8 mb-6">
+                    <button 
+                        onClick={handleSubmit}
                     disabled={submitting}
-                    className="w-full max-w-md mx-auto flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20"
                 >
                     {submitting ? (
                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />

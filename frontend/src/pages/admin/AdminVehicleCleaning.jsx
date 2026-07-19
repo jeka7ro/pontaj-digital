@@ -111,7 +111,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                             </tr>
                         ) : (
                             filteredSessions.map(session => (
-                                <tr key={session.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <tr key={session.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => setSelectedSession(session)}>
                                     <td className="p-4">
                                         <div className="font-medium text-slate-900 dark:text-white">
                                             {format(new Date(session.created_at), "dd MMM yyyy", { locale: ro })}
@@ -130,7 +130,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                         <div className="font-medium text-slate-700 dark:text-slate-300">{session.user_name}</div>
                                     </td>
                                     <td className="p-4">
-                                        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setSelectedSession(session)}>
+                                        <div className="flex items-center gap-2 group">
                                             <div className="flex -space-x-2">
                                                 {Object.values(session.photos?.exterior || {}).slice(0,2).map((url, i) => (
                                                     <img key={`ext-${i}`} src={url} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
@@ -146,8 +146,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                     </td>
                                     <td className="p-4 text-right">
                                         <button 
-                                            onClick={() => setSelectedSession(session)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors pointer-events-none"
                                         >
                                             Vezi poze <ChevronRight className="w-4 h-4" />
                                         </button>

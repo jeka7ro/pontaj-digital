@@ -906,8 +906,8 @@ export default function FleetManagement() {
 
             {/* Add / Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:pl-[17rem]">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl h-[90vh] md:h-[800px] max-h-[95vh] shadow-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-white dark:bg-slate-900 overflow-hidden" onClick={() => setShowModal(false)}>
+                    <div className="bg-white dark:bg-slate-900 w-full h-full flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                         {/* Modal Header */}
                         <div className="px-6 py-5 flex justify-between items-center border-b border-slate-200 dark:border-slate-800 shrink-0">
                             <div className="flex items-center gap-3">
@@ -1255,10 +1255,9 @@ export default function FleetManagement() {
                                 )
                             )}
 
-                            {/* Cleaning Tab */}
                             {activeTab === 'cleaning' && (
                                 editingVehicle ? (
-                                    <AdminVehicleCleaning vehicleId={editingVehicle.id} />
+                                    <AdminVehicleCleaning vehicleId={editingVehicle.id} vehicleName={editingVehicle.name} />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4">
                                         <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4 text-blue-500">

@@ -4,7 +4,7 @@ import { ro } from 'date-fns/locale';
 import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, Download } from 'lucide-react';
 import api from '../../lib/api';
 
-export default function AdminVehicleCleaning({ vehicleId }) {
+export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +26,16 @@ export default function AdminVehicleCleaning({ vehicleId }) {
     };
 
     const filteredSessions = sessions.filter(s => {
-        if (vehicleId && String(s.vehicle_id) !== String(vehicleId)) return false;
+        if (vehicleId) {
+            // Check if backend returned vehicle_id
+            if (s.vehicle_id !== undefined) {
+                if (String(s.vehicle_id) !== String(vehicleId)) return false;
+            } else if (vehicleName) {
+                // Fallback for old backend that doesn't return vehicle_id
+                if (s.vehicle_name !== vehicleName) return false;
+            }
+        }
+        
         return s.vehicle_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                s.vehicle_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
                s.user_name.toLowerCase().includes(searchQuery.toLowerCase());

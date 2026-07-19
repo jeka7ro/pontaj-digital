@@ -140,20 +140,23 @@ export default function EmployeesManagement() {
 
     // Sync detailUser with URL id
     useEffect(() => {
-        if (id && users.length > 0) {
-            const user = users.find(u => u.id === id)
-            if (user) {
-                setDetailUser(user)
-            } else {
-                // If ID is in URL but user not in current page, maybe fetch specifically?
-                // For now, if we can't find it locally, we clear it or just let it be.
-                // Ideally, we'd fetch the specific user.
-                api.get(`/admin/users/${id}`).then(res => setDetailUser(res.data)).catch(console.error)
-            }
-        } else if (!id) {
+        if (!id) {
             setDetailUser(null)
+            return
         }
-    }, [id, users])
+
+        const localUser = users.find(u => u.id === id)
+        if (localUser) {
+            setDetailUser(localUser)
+        } else if (!loading) {
+            api.get(`/admin/users/${id}`)
+               .then(res => setDetailUser(res.data))
+               .catch(err => {
+                   console.error('Error fetching specific user:', err)
+                   navigate('/admin/employees')
+               })
+        }
+    }, [id, users, loading, navigate])
 
     const fetchRoles = async () => {
         try {

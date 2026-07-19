@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, ChevronLeft, Download, ZoomIn, Trash2 } from 'lucide-react';
+import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, ChevronLeft, Download, ZoomIn, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
@@ -12,6 +12,8 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
     const [lightboxIndex, setLightboxIndex] = useState(null);
     const [page, setPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [deleteSessionId, setDeleteSessionId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const getSessionPhotos = (session) => {
         if (!session) return [];
@@ -55,16 +57,23 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
         }
     };
 
-    const handleDelete = async (e, sessionId) => {
+    const handleDeleteClick = (e, sessionId) => {
         e.stopPropagation();
-        if (!window.confirm('Ești sigur că vrei să ștergi acest dosar de curățenie? Acțiunea este ireversibilă și pozele vor dispărea din istoric.')) return;
-        
+        setDeleteSessionId(sessionId);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteSessionId) return;
+        setIsDeleting(true);
         try {
-            await api.delete(`/admin/vehicle-cleaning/${sessionId}`);
-            setSessions(sessions.filter(s => s.id !== sessionId));
+            await api.delete(`/admin/vehicle-cleaning/${deleteSessionId}`);
+            setSessions(sessions.filter(s => s.id !== deleteSessionId));
+            setDeleteSessionId(null);
         } catch (err) {
             console.error('Error deleting session:', err);
             alert('A apărut o eroare la ștergerea dosarului.');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -179,7 +188,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                                 Vezi poze <ChevronRight className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={(e) => handleDelete(e, session.id)}
+                                                onClick={(e) => handleDeleteClick(e, session.id)}
                                                 className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer relative z-10"
                                                 title="Șterge dosar"
                                             >
@@ -293,6 +302,46 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteSessionId && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                                    <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ștergere dosar curățenie</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ești sigur că vrei să ștergi acest dosar? Acțiunea este ireversibilă și pozele vor dispărea din istoric.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-3 mt-6">
+                                <button
+                                    onClick={() => setDeleteSessionId(null)}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl transition-colors disabled:opacity-50"
+                                >
+                                    Anulează
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isDeleting ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                    )}
+                                    Șterge definitiv
+                                </button>
                             </div>
                         </div>
                     </div>

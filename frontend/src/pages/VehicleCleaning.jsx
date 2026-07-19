@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Car, Camera, Check, Sparkles, Plus, Image as ImageIcon, ChevronRight, CarFront, Gauge, Sofa, Package, History } from 'lucide-react';
+import { ArrowLeft, Car, Camera, Check, Sparkles, Plus, Image as ImageIcon, ChevronRight, CarFront, Gauge, Sofa, Package, History, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ export default function VehicleCleaning() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [viewImage, setViewImage] = useState(null);
 
     // Photos state
     const [photos, setPhotos] = useState({
@@ -256,14 +257,13 @@ export default function VehicleCleaning() {
                                             </span>
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
-                                            {Object.values(session.photos?.exterior || {}).slice(0, 2).map((url, i) => (
-                                                <img key={`ext-${i}`} src={url} className="w-full aspect-square object-cover rounded-lg border border-gray-100" />
+                                            {Object.values(session.photos?.exterior || {}).map((url, i) => (
+                                                <img key={`ext-${i}`} src={url} onClick={() => setViewImage(url)} className="w-full aspect-square object-cover rounded-lg border border-gray-100 active:scale-95 transition-transform" />
                                             ))}
-                                            {Object.values(session.photos?.interior || {}).slice(0, 2).map((url, i) => (
-                                                <img key={`int-${i}`} src={url} className="w-full aspect-square object-cover rounded-lg border border-gray-100" />
+                                            {Object.values(session.photos?.interior || {}).map((url, i) => (
+                                                <img key={`int-${i}`} src={url} onClick={() => setViewImage(url)} className="w-full aspect-square object-cover rounded-lg border border-gray-100 active:scale-95 transition-transform" />
                                             ))}
                                         </div>
-                                        <p className="text-xs text-center text-slate-400 mt-2">Toate pozele sunt salvate în cloud</p>
                                     </div>
                                 ))
                             )}
@@ -344,6 +344,31 @@ export default function VehicleCleaning() {
                     )}
                 </button>
             </div>
+            
+            {/* Fullscreen Image Viewer Modal */}
+            {viewImage && (
+                <div 
+                    className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
+                    onClick={() => setViewImage(null)}
+                >
+                    <div className="relative w-full h-full flex flex-col items-center justify-center">
+                        <button 
+                            className="absolute top-4 right-4 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 active:bg-white/30 transition-colors"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setViewImage(null);
+                            }}
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <img 
+                            src={viewImage} 
+                            className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                            onClick={(e) => e.stopPropagation()} 
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

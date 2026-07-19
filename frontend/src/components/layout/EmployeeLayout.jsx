@@ -68,7 +68,7 @@ export default function EmployeeLayout() {
 
                 {/* 5. Curățenie (Purple) */}
                 <NavLink 
-                    to="/employee-fleet" 
+                    to="/vehicle-cleaning" 
                     className={({isActive}) => `flex flex-col items-center p-1 w-[56px] transition-all ${isActive ? 'text-purple-600 scale-110 drop-shadow-md' : (isHome ? 'text-purple-500/90' : 'text-slate-400')}`}
                 >
                     <Car className="w-6 h-6 mb-1.5" />

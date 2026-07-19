@@ -213,12 +213,12 @@ export default function VehicleCleaning() {
         return (
             <div className="min-h-screen bg-slate-50 pb-24">
                 <div className="bg-white px-4 py-4 sticky top-0 z-20 flex items-center gap-3 border-b shadow-sm">
-                    <button onClick={() => navigate('/employee-fleet')} className="p-2 -ml-2 hover:bg-slate-100 rounded-full">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-slate-100 rounded-full">
                         <ArrowLeft className="w-6 h-6 text-slate-700" />
                     </button>
                     <div>
                         <h1 className="text-lg font-bold text-slate-900 leading-tight">Curățenie Auto</h1>
-                        <p className="text-xs text-slate-500">Selectează mașina pentru a adăuga poze</p>
+                        <p className="text-xs text-slate-500">Gestionează pozele pentru mașina ta</p>
                     </div>
                 </div>
 

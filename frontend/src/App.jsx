@@ -45,7 +45,6 @@ const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMat
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
 const EmployeeInventory = lazy(() => import('./pages/employee/EmployeeInventory'))
 const VehicleCleaning = lazy(() => import('./pages/VehicleCleaning'))
-const EmployeeFleetHub = lazy(() => import('./pages/employee/EmployeeFleetHub'))
 import EmployeeLayout from './components/layout/EmployeeLayout'
 import { DialogOverlay } from './components/ui/DialogOverlay'
 import { ToastOverlay } from './components/ui/ToastOverlay'
@@ -200,7 +199,6 @@ function App() {
                             <Route path="/sesizari" element={<EmployeeComplaints />} />
                             <Route path="/material-requests" element={<EmployeeMaterialRequests />} />
                             <Route path="/my-inventory" element={<EmployeeInventory />} />
-                            <Route path="/employee-fleet" element={<EmployeeFleetHub />} />
                             <Route path="/vehicle-cleaning" element={<VehicleCleaning />} />
                             <Route path="/emergencies" element={<EmployeeEmergencies />} />
                         </Route>

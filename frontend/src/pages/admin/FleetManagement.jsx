@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../lib/api'
 import DataTable from '../../components/DataTable'
-import { Loader2, X, Plus, Edit2, Trash2, Building2, Users, CalendarClock, UploadCloud, FileText, Check as CheckIcon, BarChart2, Download, Paperclip, ExternalLink, Search, Car, Save, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { Loader2, X, Plus, Edit2, Trash2, Building2, Users, CalendarClock, UploadCloud, FileText, Check as CheckIcon, BarChart2, Download, Paperclip, ExternalLink, Search, Car, Save, ChevronLeft, ChevronRight, ChevronDown, Sparkles } from 'lucide-react'
 import VehicleFuelTab from '../../components/fleet/VehicleFuelTab'
 import VehicleKmTab from '../../components/fleet/VehicleKmTab'
 import VehicleReportsTab from '../../components/fleet/VehicleReportsTab'
 import * as XLSX from 'xlsx'
+import AdminVehicleCleaning from './AdminVehicleCleaning'
 
 const VEHICLE_TYPES = ['car', 'van', 'truck', 'excavator', 'grader', 'compactor', 'pile_driver', 'concrete_mixer', 'tractor_trailer', 'forklift', 'telehandler', 'cherry_picker', 'crane_truck', 'crane', 'pickup_4x4', 'mobile_workshop', 'generator', 'other']
 const VEHICLE_STATUSES = ['active', 'service', 'inactive']
@@ -106,7 +107,7 @@ export default function FleetManagement() {
     const [selectedUserIds, setSelectedUserIds] = useState([])
     const [siteSearch, setSiteSearch] = useState('')
     const [userSearch, setUserSearch] = useState('')
-    const [mainTab, setMainTab] = useState('cars') // 'cars' | 'equipment' | 'report' | 'categories'
+    const [mainTab, setMainTab] = useState('cars') // 'cars' | 'equipment' | 'cleaning' | 'report' | 'categories'
     const CAR_TYPES = ['car', 'van', 'pickup_4x4', 'truck'] // Fallback legacy types
     const [showLogModal, setShowLogModal] = useState(false)
     const [logEquipment, setLogEquipment] = useState(null)
@@ -698,6 +699,13 @@ export default function FleetManagement() {
                         Utilaje
                     </button>
                     <button
+                        onClick={() => setMainTab('cleaning')}
+                        className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap ${mainTab === 'cleaning' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400' : 'bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-none'}`}
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Curățenie (Poze)
+                    </button>
+                    <button
                         onClick={() => { setMainTab('report'); fetchReport(); }}
                         className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap ${mainTab === 'report' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400' : 'bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-none'}`}
                     >
@@ -761,7 +769,11 @@ export default function FleetManagement() {
                 </div>
             )}
 
-            {mainTab !== 'report' && mainTab !== 'categories' && (
+            {mainTab === 'cleaning' && (
+                <AdminVehicleCleaning />
+            )}
+
+            {mainTab !== 'report' && mainTab !== 'categories' && mainTab !== 'cleaning' && (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden rounded-3xl">
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900">
                         <div className="flex items-center gap-3 w-full sm:w-auto">

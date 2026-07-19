@@ -631,9 +631,6 @@ export default function FleetManagement() {
                             <CalendarClock className="w-4 h-4" />
                         </button>
                     )}
-                    <button onClick={() => openEdit(v, 'cleaning')} title="Poze Curățenie" className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
-                        <Sparkles className="w-4 h-4" />
-                    </button>
                     <button onClick={() => openEdit(v)} title={t('common.edit')} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-blue-600 dark:hover:text-blue-400">
                         <Edit2 className="w-4 h-4" />
                     </button>

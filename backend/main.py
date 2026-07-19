@@ -18,7 +18,7 @@ from app.api import (
     admin_teams, admin_vehicles, warehouse, admin_clients, admin_vehicle_categories,
     admin_material_requests, user_material_requests, user_warehouse, user_notifications,
     alerts, admin_complaints, admin_accommodations, admin_expenses, admin_emergencies,
-    admin_leaves, admin_tasks, fleet_fuel, fleet_km, fleet_reports
+    admin_leaves, admin_tasks, fleet_fuel, fleet_km, fleet_reports, vehicle_cleaning
 )
 
 import threading
@@ -349,6 +349,7 @@ app.include_router(admin_tasks.router, prefix="/api/admin/tasks", tags=["admin-t
 app.include_router(fleet_fuel.router, prefix="/api")
 app.include_router(fleet_km.router, prefix="/api")
 app.include_router(fleet_reports.router, prefix="/api")
+app.include_router(vehicle_cleaning.router, prefix="/api")
 
 # ─── User: Sesizari ───────────────────────────────────────────────────────────
 from fastapi import Body

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 import api from '../lib/api'
@@ -193,6 +193,12 @@ export default function Login() {
 
                 {/* Bottom Text */}
                 <div className="mt-8 text-center flex flex-col items-center justify-center fade-in stagger-2 gap-3">
+                    <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-blue-200/80 mb-2">
+                        <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
+                        <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>
+                        <Link to="/agb" className="hover:text-white transition-colors">AGB</Link>
+                        <Link to="/avv" className="hover:text-white transition-colors">AVV</Link>
+                    </div>
                     <p className="text-sm text-blue-200/90 font-medium tracking-wide">
                         © 2025 Pontaj Digital.<br className="sm:hidden" />
                         <span className="hidden sm:inline"> Toate drepturile rezervate. | </span>

@@ -44,9 +44,16 @@ const EmployeeComplaints = lazy(() => import('./pages/employee/EmployeeComplaint
 const EmployeeMaterialRequests = lazy(() => import('./pages/employee/EmployeeMaterialRequests'))
 const EmployeeEmergencies = lazy(() => import('./pages/employee/EmployeeEmergencies'))
 const EmployeeInventory = lazy(() => import('./pages/employee/EmployeeInventory'))
+const VehicleCleaning = lazy(() => import('./pages/VehicleCleaning'))
 import EmployeeLayout from './components/layout/EmployeeLayout'
 import { DialogOverlay } from './components/ui/DialogOverlay'
 import { ToastOverlay } from './components/ui/ToastOverlay'
+import CookieBanner from './components/CookieBanner'
+
+const Impressum = lazy(() => import('./pages/legal/Impressum'))
+const Datenschutz = lazy(() => import('./pages/legal/Datenschutz'))
+const AGB = lazy(() => import('./pages/legal/AGB'))
+const AVV = lazy(() => import('./pages/legal/AVV'))
 
 // Loading fallback for lazy-loaded pages
 function PageLoader() {
@@ -137,6 +144,7 @@ function App() {
             <Router>
             <DialogOverlay />
             <ToastOverlay />
+            <CookieBanner />
             <Suspense fallback={<PageLoader />}>
                 <Routes>
                     {/* Admin Routes - MUST BE FIRST to prevent employee wildcard from catching them */}
@@ -173,6 +181,12 @@ function App() {
                     {/* Employee Routes */}
                     <Route path="/login" element={<Login />} />
 
+                    {/* Legal Routes (Public) */}
+                    <Route path="/impressum" element={<Impressum />} />
+                    <Route path="/datenschutz" element={<Datenschutz />} />
+                    <Route path="/agb" element={<AGB />} />
+                    <Route path="/avv" element={<AVV />} />
+
                     {user ? (
                         <Route element={<EmployeeLayout />}>
                             <Route path="/" element={<ClockInPage />} />
@@ -185,6 +199,7 @@ function App() {
                             <Route path="/sesizari" element={<EmployeeComplaints />} />
                             <Route path="/material-requests" element={<EmployeeMaterialRequests />} />
                             <Route path="/my-inventory" element={<EmployeeInventory />} />
+                            <Route path="/vehicle-cleaning" element={<VehicleCleaning />} />
                             <Route path="/emergencies" element={<EmployeeEmergencies />} />
                         </Route>
                     ) : null}

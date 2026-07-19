@@ -876,3 +876,28 @@ class UserEvaluation(Base):
 
     user = relationship("User", foreign_keys=[user_id])
     evaluator = relationship("Admin", foreign_keys=[evaluator_id])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VEHICLE CLEANING SESSIONS
+# ─────────────────────────────────────────────────────────────────────────────
+class VehicleCleaningSession(Base):
+    """Dosare poze curatenie auto saptamanala"""
+    __tablename__ = "vehicle_cleaning_sessions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    vehicle_id = Column(String(36), ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # JSON containing specific photo categories:
+    # {
+    #   "exterior": { "fata": "url", "laterala_stanga": "url", "laterala_dreapta": "url", "spate": "url" },
+    #   "interior": { "bord": "url", "scaune": "url", "portbagaj": "url" }
+    # }
+    photos = Column(JSON, default=dict)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    vehicle = relationship("Vehicle")
+    user = relationship("User")

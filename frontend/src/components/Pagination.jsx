@@ -68,8 +68,8 @@ export default function Pagination({
                         ))}
                     </select>
                 </div>
-                <span className="whitespace-nowrap uppercase tracking-wide">
-                    Total înregistrări: <strong className="text-slate-900 dark:text-white text-sm">{totalItems}</strong>
+                <span className="whitespace-nowrap">
+                    &middot; Total înregistrări: {totalItems}
                 </span>
             </div>
             <div className="flex items-center gap-4">

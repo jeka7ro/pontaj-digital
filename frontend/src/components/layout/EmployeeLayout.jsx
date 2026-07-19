@@ -47,7 +47,16 @@ export default function EmployeeLayout() {
                     <span className="text-[10px] font-bold truncate w-full text-center">Materiale</span>
                 </NavLink>
 
-                {/* 3. Acasă (Home) - Glossy Glass 3D Button */}
+                {/* 3. Inventar (Green/Teal) */}
+                <NavLink 
+                    to="/my-inventory" 
+                    className={({isActive}) => `flex flex-col items-center p-1 w-[56px] transition-all ${isActive ? 'text-emerald-600 scale-110 drop-shadow-md' : (isHome ? 'text-emerald-600/90' : 'text-slate-400')}`}
+                >
+                    <Wrench className="w-6 h-6 mb-1.5" />
+                    <span className="text-[10px] font-bold">Inventar</span>
+                </NavLink>
+
+                {/* 4. Acasă (Home) - Centered Glossy Glass 3D Button */}
                 <div className="relative flex justify-center w-[72px]">
                     <button
                         onClick={handleHomePress}
@@ -56,15 +65,6 @@ export default function EmployeeLayout() {
                         <Home className="w-8 h-8 drop-shadow-md" />
                     </button>
                 </div>
-
-                {/* 4. Inventar (Green/Teal) */}
-                <NavLink 
-                    to="/my-inventory" 
-                    className={({isActive}) => `flex flex-col items-center p-1 w-[56px] transition-all ${isActive ? 'text-emerald-600 scale-110 drop-shadow-md' : (isHome ? 'text-emerald-600/90' : 'text-slate-400')}`}
-                >
-                    <Wrench className="w-6 h-6 mb-1.5" />
-                    <span className="text-[10px] font-bold">Inventar</span>
-                </NavLink>
 
                 {/* 5. Curățenie (Purple) */}
                 <NavLink 

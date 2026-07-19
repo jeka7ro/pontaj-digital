@@ -10,6 +10,8 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSession, setSelectedSession] = useState(null);
     const [lightboxIndex, setLightboxIndex] = useState(null);
+    const [page, setPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const getSessionPhotos = (session) => {
         if (!session) return [];
@@ -69,6 +71,9 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                s.user_name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+    const paginatedSessions = filteredSessions.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+    const totalPages = Math.ceil(filteredSessions.length / rowsPerPage);
+
     if (loading) {
         return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
     }
@@ -83,9 +88,14 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                             type="text"
                             placeholder="Caută mașină sau șofer..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white"
+                            onChange={(e) => {setSearchQuery(e.target.value); setPage(1);}}
+                            className="w-full pl-9 pr-20 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white"
                         />
+                        {searchQuery && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-600 text-white rounded-full px-2.5 py-0.5 text-[11px] font-bold">
+                                {filteredSessions.length} / {sessions.length}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -94,6 +104,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                            <th className="p-4 w-12 text-center">Nr.</th>
                             <th className="p-4">Dată</th>
                             {!vehicleId && <th className="p-4">Vehicul</th>}
                             <th className="p-4">Șofer</th>
@@ -104,14 +115,17 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                     <tbody className="text-sm divide-y divide-slate-100 dark:divide-slate-700/50">
                         {filteredSessions.length === 0 ? (
                             <tr>
-                                <td colSpan="5" className="p-8 text-center text-slate-500">
+                                <td colSpan="6" className="p-8 text-center text-slate-500">
                                     <Sparkles className="w-12 h-12 mx-auto text-slate-300 mb-3" />
                                     Nicio înregistrare găsită.
                                 </td>
                             </tr>
                         ) : (
-                            filteredSessions.map(session => (
+                            paginatedSessions.map((session, index) => (
                                 <tr key={session.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => setSelectedSession(session)}>
+                                    <td className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
+                                        {(page - 1) * rowsPerPage + index + 1}
+                                    </td>
                                     <td className="p-4">
                                         <div className="font-medium text-slate-900 dark:text-white">
                                             {format(new Date(session.created_at), "dd MMM yyyy", { locale: ro })}
@@ -156,6 +170,44 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-3xl">
+                <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                    <span className="whitespace-nowrap">
+                        Afișează{' '}
+                        <select 
+                            value={rowsPerPage} 
+                            onChange={e => {setRowsPerPage(Number(e.target.value)); setPage(1);}} 
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-2 py-0.5 outline-none focus:border-blue-400"
+                        >
+                            <option value={10}>10</option>
+                            <option value={15}>15</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={9999}>Toți</option>
+                        </select>
+                    </span>
+                    <span className="whitespace-nowrap">Total înregistrări: <strong className="text-slate-900 dark:text-white">{filteredSessions.length}</strong></span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <span className="whitespace-nowrap mr-2">Pagina {page} din {totalPages || 1}</span>
+                    <button 
+                        className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" 
+                        onClick={() => setPage(p => p - 1)} 
+                        disabled={page === 1}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button 
+                        className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" 
+                        onClick={() => setPage(p => p + 1)} 
+                        disabled={page === totalPages || totalPages === 0}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Photo Viewer Modal */}

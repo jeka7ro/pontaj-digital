@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, Download } from 'lucide-react';
+import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, ChevronLeft, Download, ZoomIn } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
@@ -9,6 +9,16 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSession, setSelectedSession] = useState(null);
+    const [lightboxIndex, setLightboxIndex] = useState(null);
+
+    const getSessionPhotos = (session) => {
+        if (!session) return [];
+        const ext = Object.entries(session.photos?.exterior || {}).map(([k, u]) => ({ title: `Exterior - ${k.replace('_', ' ')}`, url: u }));
+        const int = Object.entries(session.photos?.interior || {}).map(([k, u]) => ({ title: `Interior - ${k.replace('_', ' ')}`, url: u }));
+        return [...ext, ...int];
+    };
+    
+    const currentPhotos = getSessionPhotos(selectedSession);
 
     useEffect(() => {
         fetchSessions();
@@ -102,7 +112,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                         <div className="font-medium text-slate-700 dark:text-slate-300">{session.user_name}</div>
                                     </td>
                                     <td className="p-4">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setSelectedSession(session)}>
                                             <div className="flex -space-x-2">
                                                 {Object.values(session.photos?.exterior || {}).slice(0,2).map((url, i) => (
                                                     <img key={`ext-${i}`} src={url} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
@@ -111,7 +121,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                                     <img key={`int-${i}`} src={url} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
                                                 ))}
                                             </div>
-                                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full group-hover:bg-blue-100 transition-colors">
                                                 Verifică dosar
                                             </span>
                                         </div>
@@ -162,12 +172,12 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     {Object.entries(selectedSession.photos?.exterior || {}).map(([key, url]) => (
                                         <div key={key} className="space-y-2">
-                                            <a href={url} target="_blank" rel="noreferrer" className="block relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-square">
+                                            <button onClick={() => setLightboxIndex(currentPhotos.findIndex(p => p.url === url))} className="block w-full relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-square focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                    <Download className="text-white opacity-0 group-hover:opacity-100 w-8 h-8" />
+                                                    <ZoomIn className="text-white opacity-0 group-hover:opacity-100 w-8 h-8" />
                                                 </div>
-                                            </a>
+                                            </button>
                                             <p className="text-xs text-center font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{key.replace('_', ' ')}</p>
                                         </div>
                                     ))}
@@ -182,18 +192,57 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     {Object.entries(selectedSession.photos?.interior || {}).map(([key, url]) => (
                                         <div key={key} className="space-y-2">
-                                            <a href={url} target="_blank" rel="noreferrer" className="block relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-[4/3]">
+                                            <button onClick={() => setLightboxIndex(currentPhotos.findIndex(p => p.url === url))} className="block w-full relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-[4/3] focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                    <Download className="text-white opacity-0 group-hover:opacity-100 w-8 h-8" />
+                                                    <ZoomIn className="text-white opacity-0 group-hover:opacity-100 w-8 h-8" />
                                                 </div>
-                                            </a>
-                                            <p className="text-xs text-center font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{key}</p>
+                                            </button>
+                                            <p className="text-xs text-center font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">{key.replace('_', ' ')}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Fullscreen Lightbox */}
+            {lightboxIndex !== null && currentPhotos.length > 0 && (
+                <div className="fixed inset-0 z-[60] bg-black/95 flex flex-col" onClick={() => setLightboxIndex(null)}>
+                    <div className="flex justify-between items-center p-4 text-white" onClick={e => e.stopPropagation()}>
+                        <div className="text-sm font-medium">
+                            {lightboxIndex + 1} / {currentPhotos.length} - {currentPhotos[lightboxIndex].title}
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <a href={currentPhotos[lightboxIndex].url} target="_blank" rel="noreferrer" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Descarcă originalul">
+                                <Download className="w-5 h-5" />
+                            </a>
+                            <button onClick={() => setLightboxIndex(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 flex items-center justify-center relative px-4 sm:px-16" onClick={e => e.stopPropagation()}>
+                        {lightboxIndex > 0 && (
+                            <button onClick={() => setLightboxIndex(lightboxIndex - 1)} className="absolute left-2 sm:left-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+                                <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </button>
+                        )}
+                        
+                        <img 
+                            src={currentPhotos[lightboxIndex].url} 
+                            className="max-w-full max-h-[85vh] object-contain select-none shadow-2xl" 
+                            alt={currentPhotos[lightboxIndex].title} 
+                        />
+                        
+                        {lightboxIndex < currentPhotos.length - 1 && (
+                            <button onClick={() => setLightboxIndex(lightboxIndex + 1)} className="absolute right-2 sm:right-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+                                <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

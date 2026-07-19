@@ -92,15 +92,16 @@ export default function VehicleCleaning() {
                 for (const key in photos[cat]) {
                     const file = photos[cat][key];
                     if (file) {
+                        const uniqueName = `${cat}_${key}_${file.name}`;
                         try {
                             // Try to compress, if fails fallback to original
                             const compressedFile = await imageCompression(file, compressionOptions);
-                            formData.append('files', compressedFile, file.name);
+                            formData.append('files', compressedFile, uniqueName);
                         } catch (err) {
                             console.error("Compression error:", err);
-                            formData.append('files', file);
+                            formData.append('files', file, uniqueName);
                         }
-                        photosMeta[cat][key] = file.name;
+                        photosMeta[cat][key] = uniqueName;
                     }
                 }
             }

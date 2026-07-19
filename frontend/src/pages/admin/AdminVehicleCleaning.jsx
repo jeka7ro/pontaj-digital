@@ -102,7 +102,7 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
                             placeholder="Caută mașină sau șofer..."
                             value={searchQuery}
                             onChange={(e) => {setSearchQuery(e.target.value); setPage(1);}}
-                            className="w-full pl-9 pr-20 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white"
+                            className={`w-full pl-9 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white ${searchQuery ? 'pr-20' : 'pr-4'}`}
                         />
                         {searchQuery && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-600 text-white rounded-full px-2.5 py-0.5 text-[11px] font-bold">

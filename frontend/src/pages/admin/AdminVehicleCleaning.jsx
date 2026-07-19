@@ -20,6 +20,24 @@ export default function AdminVehicleCleaning({ vehicleId, vehicleName }) {
     
     const currentPhotos = getSessionPhotos(selectedSession);
 
+    // Keyboard navigation for lightbox
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (lightboxIndex === null) return;
+            
+            if (e.key === 'ArrowLeft' && lightboxIndex > 0) {
+                setLightboxIndex(prev => prev - 1);
+            } else if (e.key === 'ArrowRight' && lightboxIndex < currentPhotos.length - 1) {
+                setLightboxIndex(prev => prev + 1);
+            } else if (e.key === 'Escape') {
+                setLightboxIndex(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [lightboxIndex, currentPhotos.length]);
+
     useEffect(() => {
         fetchSessions();
     }, []);

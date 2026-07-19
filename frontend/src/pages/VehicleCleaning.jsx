@@ -27,6 +27,25 @@ export default function VehicleCleaning() {
         return [...ext, ...int];
     };
 
+    // Keyboard navigation for lightbox
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!lightboxState) return;
+            
+            const photos = getSessionPhotos(lightboxState.session);
+            if (e.key === 'ArrowLeft' && lightboxState.index > 0) {
+                setLightboxState(prev => ({ ...prev, index: prev.index - 1 }));
+            } else if (e.key === 'ArrowRight' && lightboxState.index < photos.length - 1) {
+                setLightboxState(prev => ({ ...prev, index: prev.index + 1 }));
+            } else if (e.key === 'Escape') {
+                setLightboxState(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [lightboxState]);
+
     // Photos state
     const [photos, setPhotos] = useState({
         exterior: {

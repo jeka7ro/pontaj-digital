@@ -295,6 +295,46 @@ export default function VehicleCleaning() {
                         </div>
                     )}
                 </div>
+
+                {/* Fullscreen Gallery Lightbox Modal */}
+                {lightboxState && (
+                    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col" onClick={() => setLightboxState(null)}>
+                        <div className="flex justify-between items-center p-4 text-white" onClick={e => e.stopPropagation()}>
+                            <div className="text-sm font-medium">
+                                {lightboxState.index + 1} / {getSessionPhotos(lightboxState.session).length} - {getSessionPhotos(lightboxState.session)[lightboxState.index].title}
+                            </div>
+                            <button onClick={() => setLightboxState(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 flex items-center justify-center relative px-4 sm:px-16" onClick={e => e.stopPropagation()}>
+                            {lightboxState.index > 0 && (
+                                <button 
+                                    onClick={() => setLightboxState({ ...lightboxState, index: lightboxState.index - 1 })} 
+                                    className="absolute left-2 sm:left-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                                >
+                                    <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+                                </button>
+                            )}
+                            
+                            <img 
+                                src={getSessionPhotos(lightboxState.session)[lightboxState.index].url} 
+                                className="max-w-full max-h-[85vh] object-contain select-none shadow-2xl" 
+                                alt={getSessionPhotos(lightboxState.session)[lightboxState.index].title} 
+                            />
+                            
+                            {lightboxState.index < getSessionPhotos(lightboxState.session).length - 1 && (
+                                <button 
+                                    onClick={() => setLightboxState({ ...lightboxState, index: lightboxState.index + 1 })} 
+                                    className="absolute right-2 sm:right-4 p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                                >
+                                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }

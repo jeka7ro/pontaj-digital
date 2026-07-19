@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Car, Camera, Check, Sparkles, Plus, Image as ImageIcon, ChevronRight, CarFront, Gauge, Sofa, Package } from 'lucide-react';
+import { ArrowLeft, Car, Camera, Check, Sparkles, Plus, Image as ImageIcon, ChevronRight, CarFront, Gauge, Sofa, Package, History } from 'lucide-react';
+import { format } from 'date-fns';
+import { ro } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +12,8 @@ export default function VehicleCleaning() {
     const { showToast } = useUIStore();
     const navigate = useNavigate();
     const [vehicles, setVehicles] = useState([]);
+    const [history, setHistory] = useState([]);
+    const [activeTab, setActiveTab] = useState('clean'); // 'clean' | 'history'
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -30,18 +34,21 @@ export default function VehicleCleaning() {
     });
 
     useEffect(() => {
-        const fetchVehicles = async () => {
+        const fetchData = async () => {
             try {
-                // Fetch only vehicles assigned to the logged-in user
-                const res = await api.get('/worker/assigned-vehicles'); 
-                setVehicles(res.data);
+                const [vehiclesRes, historyRes] = await Promise.all([
+                    api.get('/worker/assigned-vehicles'),
+                    api.get('/worker/vehicle-cleaning/history')
+                ]);
+                setVehicles(vehiclesRes.data);
+                setHistory(historyRes.data);
             } catch (err) {
-                showToast("Nu s-au putut încărca mașinile.", "error");
+                showToast("Eroare la încărcarea datelor.", "error");
             } finally {
                 setLoading(false);
             }
         };
-        fetchVehicles();
+        fetchData();
     }, []);
 
     const handlePhotoCapture = (category, angle, file) => {
@@ -150,22 +157,44 @@ export default function VehicleCleaning() {
     if (!selectedVehicle) {
         return (
             <div className="min-h-screen bg-slate-50 pb-24">
-                <div className="bg-white px-4 py-4 sticky top-0 z-20 flex items-center justify-between border-b shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-slate-100 rounded-full">
-                            <ArrowLeft className="w-6 h-6 text-slate-700" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold text-slate-900 leading-tight">Flotă Auto</h1>
-                            <p className="text-xs text-slate-500">Selectează mașina pentru curățenie</p>
-                        </div>
+                <div className="bg-white px-4 py-4 sticky top-0 z-20 flex items-center gap-3 border-b shadow-sm">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-slate-100 rounded-full">
+                        <ArrowLeft className="w-6 h-6 text-slate-700" />
+                    </button>
+                    <div>
+                        <h1 className="text-lg font-bold text-slate-900 leading-tight">Curățenie Auto</h1>
+                        <p className="text-xs text-slate-500">Gestionează pozele pentru mașina ta</p>
                     </div>
                 </div>
-                
-                <div className="p-4">
+
+                <div className="p-4 max-w-md mx-auto">
+                    {/* Tabs */}
+                    <div className="flex bg-slate-200/60 p-1 rounded-xl mb-6">
+                        <button
+                            onClick={() => setActiveTab('clean')}
+                            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                                activeTab === 'clean' 
+                                    ? 'bg-white text-blue-600 shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            Curăță o mașină
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                                activeTab === 'history' 
+                                    ? 'bg-white text-blue-600 shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            Istoric (Arhivă)
+                        </button>
+                    </div>
+
                     {loading ? (
                         <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
-                    ) : (
+                    ) : activeTab === 'clean' ? (
                         <div className="space-y-3">
                             {vehicles.length === 0 ? (
                                 <div className="p-6 text-center bg-gray-50 rounded-xl border border-gray-100">
@@ -191,6 +220,38 @@ export default function VehicleCleaning() {
                                         </div>
                                         <ChevronRight className="text-gray-400" />
                                     </button>
+                                ))
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {history.length === 0 ? (
+                                <div className="p-6 text-center bg-gray-50 rounded-xl border border-gray-100">
+                                    <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 font-medium">Nicio sesiune de curățenie înregistrată.</p>
+                                </div>
+                            ) : (
+                                history.map(session => (
+                                    <div key={session.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-bold text-gray-900">{session.vehicle_name}</h3>
+                                                <p className="text-xs text-gray-500">{session.vehicle_plate}</p>
+                                            </div>
+                                            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                                                {format(new Date(session.created_at), "dd MMM yyyy, HH:mm", { locale: ro })}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {Object.values(session.photos?.exterior || {}).slice(0, 2).map((url, i) => (
+                                                <img key={`ext-${i}`} src={url} className="w-full aspect-square object-cover rounded-lg border border-gray-100" />
+                                            ))}
+                                            {Object.values(session.photos?.interior || {}).slice(0, 2).map((url, i) => (
+                                                <img key={`int-${i}`} src={url} className="w-full aspect-square object-cover rounded-lg border border-gray-100" />
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-center text-slate-400 mt-2">Toate pozele sunt salvate în cloud</p>
+                                    </div>
                                 ))
                             )}
                         </div>

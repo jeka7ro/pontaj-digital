@@ -78,8 +78,27 @@ async def submit_cleaning_session(
     db.add(session)
     db.commit()
     db.refresh(session)
-    
     return {"status": "success", "session_id": session.id}
+
+@router.get("/worker/vehicle-cleaning/history")
+def get_worker_cleaning_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    sessions = db.query(VehicleCleaningSession).filter(
+        VehicleCleaningSession.user_id == current_user.id
+    ).order_by(VehicleCleaningSession.created_at.desc()).all()
+    
+    result = []
+    for s in sessions:
+        result.append({
+            "id": s.id,
+            "vehicle_name": s.vehicle.name if s.vehicle else "Unknown",
+            "vehicle_plate": s.vehicle.plate_number if s.vehicle else "",
+            "created_at": s.created_at,
+            "photos": s.photos
+        })
+    return result
 
 @router.get("/admin/vehicle-cleaning")
 def get_cleaning_sessions(

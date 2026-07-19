@@ -10,7 +10,7 @@ export default function Pagination({
     totalItems,
     onPageChange,
     onPageSizeChange,
-    pageSizeOptions = [10, 20, 50, 100]
+    pageSizeOptions = [10, 15, 25, 50, 9999]
 }) {
     const totalPages = Math.ceil(totalItems / pageSize)
     const startItem = (currentPage - 1) * pageSize + 1
@@ -55,17 +55,22 @@ export default function Pagination({
 
     return (
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-slate-800/20 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-2">
-                <span className="uppercase tracking-wide">Afișează</span>
-                <select
-                    value={pageSize}
-                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                    {pageSizeOptions.map((size) => (
-                        <option key={size} value={size}>{size}</option>
-                    ))}
-                </select>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <span className="uppercase tracking-wide">Afișează</span>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                        {pageSizeOptions.map((size) => (
+                            <option key={size} value={size}>{size === 9999 ? 'Toți' : size}</option>
+                        ))}
+                    </select>
+                </div>
+                <span className="whitespace-nowrap uppercase tracking-wide">
+                    Total înregistrări: <strong className="text-slate-900 dark:text-white text-sm">{totalItems}</strong>
+                </span>
             </div>
             <div className="flex items-center gap-4">
                 <span>Pagina {currentPage} din {totalPages || 1}</span>

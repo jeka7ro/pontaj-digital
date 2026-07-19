@@ -121,7 +121,7 @@ export default function EmployeesManagement() {
                   ADMIN_ROLE_NAMES.includes(u.role_name))
             )
             setUsers(filtered)
-            setTotalUsers(filtered.length)
+            setTotalUsers(response.data.total || filtered.length)
         } catch (error) {
             console.error('Error fetching users:', error)
         } finally {

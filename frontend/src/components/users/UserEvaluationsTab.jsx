@@ -49,7 +49,6 @@ export default function UserEvaluationsTab({ userId, onEvaluationAdded }) {
 
     useEffect(() => {
         fetchEvaluations();
-            if (onEvaluationAdded) onEvaluationAdded();
     }, [userId]);
 
     const fetchEvaluations = async () => {

@@ -699,13 +699,6 @@ export default function FleetManagement() {
                         Utilaje
                     </button>
                     <button
-                        onClick={() => setMainTab('cleaning')}
-                        className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap ${mainTab === 'cleaning' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400' : 'bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-none'}`}
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Curățenie (Poze)
-                    </button>
-                    <button
                         onClick={() => { setMainTab('report'); fetchReport(); }}
                         className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap ${mainTab === 'report' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400' : 'bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-none'}`}
                     >
@@ -769,11 +762,7 @@ export default function FleetManagement() {
                 </div>
             )}
 
-            {mainTab === 'cleaning' && (
-                <AdminVehicleCleaning />
-            )}
-
-            {mainTab !== 'report' && mainTab !== 'categories' && mainTab !== 'cleaning' && (
+            {mainTab !== 'report' && mainTab !== 'categories' && (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden rounded-3xl">
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900">
                         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -934,7 +923,8 @@ export default function FleetManagement() {
                                 { key: 'reports', label: 'Rapoarte' },
                                 { key: 'sites', label: 'Alocări Șantiere' },
                                 { key: 'drivers', label: 'Șoferi / Operatori' },
-                                { key: 'documents', label: 'Documente' }
+                                { key: 'documents', label: 'Documente' },
+                                { key: 'cleaning', label: 'Curățenie (Poze)' }
                             ].map(tab => (
                                 <button
                                     key={tab.key}
@@ -1249,6 +1239,21 @@ export default function FleetManagement() {
                                         </div>
                                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Salvează vehiculul</h3>
                                         <p className="text-slate-500 dark:text-slate-400 max-w-sm text-sm">Rapoartele vor fi disponibile după ce salvezi vehiculul și adaugi date.</p>
+                                    </div>
+                                )
+                            )}
+
+                            {/* Cleaning Tab */}
+                            {activeTab === 'cleaning' && (
+                                editingVehicle ? (
+                                    <AdminVehicleCleaning vehicleId={editingVehicle.id} />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4">
+                                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4 text-blue-500">
+                                            <Save className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Salvează vehiculul</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 max-w-sm text-sm">Pozele de curățenie vor fi disponibile după ce salvezi vehiculul.</p>
                                     </div>
                                 )
                             )}

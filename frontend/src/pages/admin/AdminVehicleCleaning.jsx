@@ -4,7 +4,7 @@ import { ro } from 'date-fns/locale';
 import { Search, Image as ImageIcon, Sparkles, X, ChevronRight, Download } from 'lucide-react';
 import api from '../../lib/api';
 
-export default function AdminVehicleCleaning() {
+export default function AdminVehicleCleaning({ vehicleId }) {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -25,11 +25,12 @@ export default function AdminVehicleCleaning() {
         }
     };
 
-    const filteredSessions = sessions.filter(s => 
-        s.vehicle_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.vehicle_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.user_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredSessions = sessions.filter(s => {
+        if (vehicleId && s.vehicle_id !== vehicleId) return false;
+        return s.vehicle_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               s.vehicle_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               s.user_name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     if (loading) {
         return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
@@ -37,25 +38,27 @@ export default function AdminVehicleCleaning() {
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden rounded-3xl">
-            <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
-                <div className="relative w-full sm:w-64">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Caută mașină sau șofer..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white"
-                    />
+            {!vehicleId && (
+                <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/50">
+                    <div className="relative w-full sm:w-64">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Caută mașină sau șofer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 h-10 border border-slate-200 dark:border-slate-700 rounded-full text-sm outline-none focus:border-blue-400 dark:bg-slate-800 dark:text-white"
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                             <th className="p-4">Dată</th>
-                            <th className="p-4">Vehicul</th>
+                            {!vehicleId && <th className="p-4">Vehicul</th>}
                             <th className="p-4">Șofer</th>
                             <th className="p-4">Status / Poze</th>
                             <th className="p-4 text-right">Acțiuni</th>
@@ -80,10 +83,12 @@ export default function AdminVehicleCleaning() {
                                             {format(new Date(session.created_at), "HH:mm")}
                                         </div>
                                     </td>
-                                    <td className="p-4">
-                                        <div className="font-semibold text-slate-900 dark:text-white">{session.vehicle_name}</div>
-                                        <div className="text-slate-500">{session.vehicle_plate}</div>
-                                    </td>
+                                    {!vehicleId && (
+                                        <td className="p-4">
+                                            <div className="font-semibold text-slate-900 dark:text-white">{session.vehicle_name}</div>
+                                            <div className="text-slate-500">{session.vehicle_plate}</div>
+                                        </td>
+                                    )}
                                     <td className="p-4">
                                         <div className="font-medium text-slate-700 dark:text-slate-300">{session.user_name}</div>
                                     </td>

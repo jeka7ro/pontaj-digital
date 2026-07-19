@@ -113,6 +113,7 @@ def get_cleaning_sessions(
     for s in sessions:
         result.append({
             "id": s.id,
+            "vehicle_id": s.vehicle_id,
             "vehicle_name": s.vehicle.name if s.vehicle else "Unknown",
             "vehicle_plate": s.vehicle.plate_number if s.vehicle else "",
             "user_name": f"{s.user.first_name} {s.user.last_name}" if s.user else "Unknown",

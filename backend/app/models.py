@@ -738,6 +738,16 @@ class AccommodationAssignment(Base):
     accommodation = relationship("Accommodation", back_populates="assignments")
     user = relationship("User", foreign_keys=[user_id])
 
+class ExpenseCategory(Base):
+    __tablename__ = "expense_categories"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    color = Column(String(50), nullable=False, default="bg-slate-100 text-slate-700")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Expense(Base):
     __tablename__ = "expenses"
 
@@ -752,6 +762,9 @@ class Expense(Base):
     date = Column(Date, nullable=False)
     description = Column(Text, nullable=True)
     document_url = Column(String(255), nullable=True)
+    
+    status = Column(String(20), default="achitat")
+    partial_amount = Column(Float, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

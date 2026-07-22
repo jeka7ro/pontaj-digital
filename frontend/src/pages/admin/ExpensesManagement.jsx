@@ -665,9 +665,14 @@ export default function ExpensesManagement() {
                                                     {exp.status === 'neachitat' && <span className="text-slate-700 dark:text-slate-300 font-medium">Neachitat</span>}
                                                     {exp.status === 'stornat' && <span className="text-slate-500 dark:text-slate-400 font-medium line-through">Stornat</span>}
                                                     {exp.status === 'partial' && (
-                                                        <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                                            Parțial: {exp.partial_amount}
-                                                        </span>
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                                                Parțial: {exp.partial_amount?.toLocaleString('ro-RO')}
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                                                Rest: {(exp.amount - (exp.partial_amount || 0)).toLocaleString('ro-RO')}
+                                                            </span>
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">

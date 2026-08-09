@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next'
 import LanguageSelector from '../../components/LanguageSelector'
 import {
     LayoutDashboard, Users, Building2, FileText, Settings, LogOut,
-    ChevronLeft, Clock, Activity, Bell, ChevronRight, Camera, Sun, Moon, Truck, Package, Briefcase, Shield, HardHat, MessageSquareWarning, BedDouble, Wallet, PackageSearch, AlertTriangle, Megaphone, Calendar, ClipboardList, Sparkles
+    ChevronLeft, Clock, Activity, Bell, ChevronRight, Camera, Sun, Moon, Truck, Package, Briefcase, Shield, HardHat, MessageSquareWarning, BedDouble, Wallet, PackageSearch, AlertTriangle, Megaphone, Calendar, ClipboardList, Sparkles,
+    ShoppingCart
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
@@ -157,6 +158,7 @@ export default function AdminDashboard() {
                 { path: '/admin/fleet-cleaning', icon: Sparkles, label: 'Curățenie Auto' },
                 { path: '/admin/material-requests', icon: PackageSearch, label: 'Necesar Materiale' },
                 { path: '/admin/expenses', icon: Wallet, label: 'Deconturi / Cheltuieli' },
+                { path: '/admin/logistics/deliveries', icon: ShoppingCart, label: 'Livrări' },
             ]
         },
         {

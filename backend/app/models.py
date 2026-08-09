@@ -914,3 +914,26 @@ class VehicleCleaningSession(Base):
     organization = relationship("Organization")
     vehicle = relationship("Vehicle")
     user = relationship("User")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOGISTICS - DELIVERIES
+# ─────────────────────────────────────────────────────────────────────────────
+class Delivery(Base):
+    """Livrari pe santier"""
+    __tablename__ = "deliveries"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    site_id = Column(String(36), ForeignKey("construction_sites.id", ondelete="CASCADE"), nullable=False)
+    
+    delivery_date = Column(Date, nullable=False, default=date.today)
+    materials_delivered = Column(Text, nullable=False)
+    photo_url = Column(String(500), nullable=True)
+    
+    created_by_id = Column(String(36), ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    organization = relationship("Organization")
+    site = relationship("ConstructionSite")
+    creator = relationship("Admin", foreign_keys=[created_by_id])

@@ -1,14 +1,22 @@
-import asyncio
-from sqlalchemy import create_engine, func
-from sqlalchemy.orm import sessionmaker
-from app.models import User, ConstructionSite
-import os
+import sys
 from dotenv import load_dotenv
-
 load_dotenv()
-engine = create_engine(os.getenv("DATABASE_URL"))
-SessionLocal = sessionmaker(bind=engine)
-db = SessionLocal()
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import os
+from app.database import engine, SessionLocal
+from app.models import Expense, ConstructionSite, User
 
-print("Users:", db.query(func.count(User.id)).scalar())
-print("Sites:", db.query(func.count(ConstructionSite.id)).scalar())
+db = SessionLocal()
+admin_org_id = "8f307eb8-61d5-4dd6-be2d-209afb762506" # eugen's org id likely, or just fetch all
+q = db.query(Expense, ConstructionSite.name, User.full_name).outerjoin(
+    ConstructionSite, Expense.site_id == ConstructionSite.id
+).outerjoin(
+    User, Expense.user_id == User.id
+)
+
+results = q.order_by(Expense.date.desc(), Expense.created_at.desc()).all()
+print(f"Total rows: {len(results)}")
+for e, s_name, u_name in results:
+    print(f"ID: {e.id}, Date: {e.date}, Category: {e.category}, Amount: {e.amount}")
+

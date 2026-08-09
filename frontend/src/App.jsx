@@ -38,6 +38,7 @@ const WarehouseManagement = lazy(() => import('./pages/admin/WarehouseManagement
 const ComplaintsManagement = lazy(() => import('./pages/admin/ComplaintsManagement'))
 const AccommodationsManagement = lazy(() => import('./pages/admin/AccommodationsManagement'))
 const ExpensesManagement = lazy(() => import('./pages/admin/ExpensesManagement'))
+const DeliveriesManagement = lazy(() => import('./pages/admin/DeliveriesManagement'))
 const AdminMaterialRequests = lazy(() => import('./pages/admin/AdminMaterialRequests'))
 const AdminEmergencies = lazy(() => import('./pages/admin/AdminEmergencies'))
 const AdminVehicleCleaning = lazy(() => import('./pages/admin/AdminVehicleCleaning'))
@@ -174,6 +175,7 @@ function App() {
                         <Route path="complaints" element={<ComplaintsManagement />} />
                         <Route path="accommodations" element={<AccommodationsManagement />} />
                                 <Route path="expenses" element={<ExpensesManagement />} />
+                                <Route path="logistics/deliveries" element={<DeliveriesManagement />} />
                                 <Route path="material-requests" element={<AdminMaterialRequests />} />
                                 <Route path="emergencies" element={<AdminEmergencies />} />
                                 <Route path="alerts" element={<AlertsManagement />} />

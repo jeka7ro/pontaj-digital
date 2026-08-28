@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import date, datetime, time
+from datetime import date as dt_date, datetime, time as dt_time
 import uuid
 import os
 
@@ -30,8 +30,8 @@ class FuelEntryCreate(BaseModel):
 class FuelEntryResponse(BaseModel):
     id: str
     vehicle_id: str
-    date: date
-    time: Optional[time] = None
+    date: dt_date
+    time: Optional[dt_time] = None
     supplier: str
     fuel_card: Optional[str] = None
     country: Optional[str] = None
@@ -74,14 +74,14 @@ def create_fuel_entry(
     t = None
     if payload.time:
         try:
-            t = time.fromisoformat(payload.time)
+            t = dt_time.fromisoformat(payload.time)
         except ValueError:
             pass
 
     entry = VehicleFuelEntry(
         id=str(uuid.uuid4()),
         vehicle_id=payload.vehicle_id,
-        date=date.fromisoformat(payload.date),
+        date=dt_date.fromisoformat(payload.date),
         time=t,
         supplier=payload.supplier,
         fuel_card=payload.fuel_card,

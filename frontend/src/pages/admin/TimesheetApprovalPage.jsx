@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../lib/api'
-import { Calendar, Clock, Users, Coffee, Building2, Activity, RefreshCw, CheckCircle, Loader2, Timer, Image, X, ChevronLeft, ChevronRight, Phone, Mail, MapPin, FileText, ArrowLeft, FileDown, FileSpreadsheet, Search } from 'lucide-react'
+import { Calendar, Clock, Users, Coffee, Building2, Activity, RefreshCw, CheckCircle, Loader2, Timer, Image, X, ChevronLeft, ChevronRight, Phone, Mail, MapPin, FileText, ArrowLeft, FileDown, FileSpreadsheet, Search, AlertTriangle, ChevronDown, ChevronUp, UserX } from 'lucide-react'
 import DataTable from '../../components/DataTable'
 import { useTranslation } from 'react-i18next'
 
@@ -57,6 +57,10 @@ export default function TimesheetApprovalPage() {
     // Filtering
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Missing workers
+    const [missingWorkers, setMissingWorkers] = useState([])
+    const [showMissing, setShowMissing] = useState(false)
+
     // Live clock
     const [now, setNow] = useState(Date.now())
     useEffect(() => {
@@ -79,6 +83,7 @@ export default function TimesheetApprovalPage() {
                     params: { target_date: dateFrom }
                 })
                 setWorkers(response.data.active_workers || [])
+                setMissingWorkers(response.data.missing_workers || [])
             } else {
                 // Multi-day: fetch each day, then AGGREGATE per worker
                 const start = new Date(dateFrom)
@@ -427,6 +432,58 @@ export default function TimesheetApprovalPage() {
                 <KPICard label={t('timesheets.kpi.hours_worked')} value={formatHours(totalWorked)} icon={Clock} color="bg-gradient-to-br from-indigo-500 to-indigo-600" isText />
                 <KPICard label={t('timesheets.kpi.break_hours')} value={formatHours(totalBreak)} icon={Coffee} color="bg-gradient-to-br from-amber-400 to-amber-500" isText />
             </div>
+
+            {/* Missing Workers */}
+            {!isRange && missingWorkers.length > 0 && (
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm mb-6 overflow-hidden">
+                    <button
+                        onClick={() => setShowMissing(!showMissing)}
+                        className="w-full flex items-center justify-between px-5 py-3 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <UserX className="w-4 h-4 text-red-500" />
+                            <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                                Nepontați la {new Date(dateFrom).toLocaleDateString('ro-RO')} ({missingWorkers.length})
+                            </span>
+                        </div>
+                        {showMissing ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    </button>
+                    {showMissing && (
+                        <div className="border-t border-red-100 dark:border-red-900/30 px-5 py-4">
+                            {(() => {
+                                const grouped = missingWorkers.reduce((acc, w) => {
+                                    const site = w.site_name || 'Fără șantier alocat';
+                                    if (!acc[site]) acc[site] = [];
+                                    acc[site].push(w);
+                                    return acc;
+                                }, {});
+                                
+                                return Object.entries(grouped).map(([site, workers]) => (
+                                    <div key={site} className="mb-5 last:mb-0">
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 ml-1">
+                                            {site} ({workers.length})
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                            {workers.map(w => (
+                                                <div key={w.worker_id} className="flex items-center gap-3 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl">
+                                                    <AvatarImg path={w.avatar_path} name={w.worker_name} size="w-8 h-8" textSize="text-xs" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{w.worker_name}</p>
+                                                        <p className="text-[10px] text-slate-500">{w.employee_code}</p>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-red-600 bg-white dark:bg-red-950 px-2 py-0.5 rounded-full shadow-sm border border-red-200 dark:border-red-800 shrink-0">
+                                                        ABSENT
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Site Photos */}
             {photos.length > 0 && (

@@ -25,6 +25,7 @@ export default function AdminOverview() {
     const [statsLoading, setStatsLoading] = useState(true)
     const [chartLoading, setChartLoading] = useState(true)
     const [activeWorkers, setActiveWorkers] = useState([])
+    const [missingWorkers, setMissingWorkers] = useState([])
     const [fleetAlerts, setFleetAlerts] = useState([])
     const [sesizari, setSesizari] = useState([])       // cereri de material pending
     const [necesar, setNecesar] = useState([])         // cereri neîndeplinite / în așteptare
@@ -152,7 +153,9 @@ export default function AdminOverview() {
             setWorkersLoading(true)
             const url = globalSiteFilter ? `/admin/timesheets/active-workers?site_id=${globalSiteFilter}` : '/admin/timesheets/active-workers'
             const res = await api.get(url)
+            console.log("FETCHED WORKERS:", res.data)
             setActiveWorkers(res.data.active_workers || [])
+            setMissingWorkers(res.data.missing_workers || [])
             setLastRefresh(new Date())
         } catch (e) { console.error(e) }
         finally { setWorkersLoading(false) }
@@ -395,8 +398,8 @@ export default function AdminOverview() {
                 </div>
             </div>
 
-            {/* Row 3: Hourly Chart + Top Performers + Late Arrivals/Production */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Row 3: Hourly Chart + Top Performers + Late Arrivals/Production + Missing */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
                 {/* Hourly Activity */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
@@ -485,6 +488,7 @@ export default function AdminOverview() {
                             </div>
                         </div>
                     )}
+
                 </div>
 
                 {/* Alerts + Production — single card, two sections */}
@@ -541,6 +545,37 @@ export default function AdminOverview() {
                                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('dashboard.all_ok')}</p>
                                 <p className="text-xs text-slate-400 mt-1">{t('dashboard.no_alerts')}</p>
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Missing Workers Dedicated Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 flex flex-col max-h-[500px] overflow-y-auto custom-scrollbar">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2 shrink-0">
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                        Nepontați Azi ({missingWorkers.length})
+                    </h3>
+                    
+                    {missingWorkers.length === 0 ? (
+                        <div className="flex items-center justify-center flex-1 text-center">
+                            <div>
+                                <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Toți sunt prezenți</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {missingWorkers.map(w => (
+                                <div key={w.worker_id} className="flex items-center gap-2 text-sm p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl">
+                                    <AvatarImg path={w.avatar_path} name={w.worker_name} size="w-7 h-7" textSize="text-[10px]" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{w.worker_name}</p>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-red-600 bg-white dark:bg-red-950 px-2 py-0.5 rounded-full shadow-sm border border-red-200 dark:border-red-800 shrink-0">
+                                        ABSENT
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

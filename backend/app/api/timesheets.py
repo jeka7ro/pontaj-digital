@@ -786,16 +786,13 @@ def get_active_workers(
         ts_query = ts_query.join(TimesheetSegment).filter(TimesheetSegment.site_id == site_id)
     today_timesheets = ts_query.all()
     
-    if not today_timesheets:
-        return {"active_workers": [], "total_active": 0, "total_today": 0, "timestamp": str(now)}
-    
     ts_ids = [ts.id for ts in today_timesheets]
     user_ids = list(set([ts.owner_user_id for ts in today_timesheets]))
     
     # ── BULK FETCH 2: All segments for these timesheets ──
     all_segments = db.query(TimesheetSegment).filter(
         TimesheetSegment.timesheet_id.in_(ts_ids)
-    ).order_by(TimesheetSegment.check_in_time.asc()).all()
+    ).order_by(TimesheetSegment.check_in_time.asc()).all() if ts_ids else []
     
     # Map segments by timesheet_id
     segs_by_ts = {}
@@ -803,7 +800,7 @@ def get_active_workers(
         segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
     
     # ── BULK FETCH 3: All users ──
-    users_list = db.query(User).filter(User.id.in_(user_ids)).all()
+    users_list = db.query(User).filter(User.id.in_(user_ids)).all() if user_ids else []
     users_dict = {u.id: u for u in users_list}
     
     # ── BULK FETCH 4: All sites ──
@@ -823,7 +820,7 @@ def get_active_workers(
     # ── BULK FETCH 6: All activity lines + activities ──
     all_lines = db.query(TimesheetLine).filter(
         TimesheetLine.timesheet_id.in_(ts_ids)
-    ).all()
+    ).all() if ts_ids else []
     act_ids = list(set([line.activity_id for line in all_lines if line.activity_id]))
     acts_list = db.query(Activity).filter(Activity.id.in_(act_ids)).all() if act_ids else []
     acts_dict = {a.id: a for a in acts_list}
@@ -861,7 +858,7 @@ def get_active_workers(
         # Re-fetch segments after auto-close
         all_segments = db.query(TimesheetSegment).filter(
             TimesheetSegment.timesheet_id.in_(ts_ids)
-        ).order_by(TimesheetSegment.check_in_time.asc()).all()
+        ).order_by(TimesheetSegment.check_in_time.asc()).all() if ts_ids else []
         segs_by_ts = {}
         for seg in all_segments:
             segs_by_ts.setdefault(seg.timesheet_id, []).append(seg)
@@ -976,10 +973,75 @@ def get_active_workers(
             "activities": activity_list
         })
     
+    # ── CALCULATE MISSING WORKERS ──
+    from app.models import Role, LeaveRequest
+    
+    roles = db.query(Role).filter(~Role.code.in_(["ADMIN", "SUPER_ADMIN", "LOGISTICS"])).all()
+    role_ids = [r.id for r in roles]
+    
+    active_field_users = db.query(User).filter(
+        User.organization_id == current_admin.organization_id,
+        User.is_active == True,
+        User.role_id.in_(role_ids)
+    ).all()
+    
+    leaves = db.query(LeaveRequest).filter(
+        LeaveRequest.organization_id == current_admin.organization_id,
+        LeaveRequest.status == "approved",
+        LeaveRequest.start_date <= query_date,
+        LeaveRequest.end_date >= query_date
+    ).all()
+    leave_user_ids = {l.user_id for l in leaves}
+    
+    # Fetch all sites in org to attach default site to missing workers
+    all_sites_dict = {s.id: s.name for s in db.query(ConstructionSite).filter(ConstructionSite.organization_id == current_admin.organization_id).all()}
+    
+    # Find missing users
+    missing_user_ids = [u.id for u in active_field_users if u.id not in user_ids and u.id not in leave_user_ids]
+    
+    # Find last known site for missing workers
+    last_site_by_user = {}
+    if missing_user_ids:
+        from sqlalchemy import func
+        subq = db.query(
+            Timesheet.owner_user_id,
+            func.max(Timesheet.date).label("max_date")
+        ).filter(
+            Timesheet.owner_user_id.in_(missing_user_ids),
+            Timesheet.owner_type == "USER"
+        ).group_by(Timesheet.owner_user_id).subquery()
+        
+        last_ts_query = db.query(Timesheet.owner_user_id, TimesheetSegment.site_id).join(
+            subq, (Timesheet.owner_user_id == subq.c.owner_user_id) & (Timesheet.date == subq.c.max_date)
+        ).join(
+            TimesheetSegment, TimesheetSegment.timesheet_id == Timesheet.id
+        ).filter(
+            TimesheetSegment.site_id.isnot(None)
+        ).all()
+        
+        for uid, sid in last_ts_query:
+            if uid not in last_site_by_user:
+                last_site_by_user[uid] = sid
+    
+    missing_workers = []
+    for u in active_field_users:
+        if u.id in missing_user_ids:
+            assigned_site_id = u.site_id or last_site_by_user.get(u.id)
+            missing_workers.append({
+                "worker_id": u.id,
+                "worker_name": u.full_name,
+                "employee_code": u.employee_code,
+                "avatar_path": u.avatar_path,
+                "role_code": next((r.code for r in roles if r.id == u.role_id), "WORKER"),
+                "site_name": all_sites_dict.get(assigned_site_id, "Fără șantier alocat")
+            })
+
     return {
         "active_workers": active_workers,
+        "missing_workers": missing_workers,
         "total_active": len([w for w in active_workers if w["status"] != "terminat"]),
         "total_today": len(active_workers),
+        "total_missing": len(missing_workers),
         "timestamp": str(now)
     }
 

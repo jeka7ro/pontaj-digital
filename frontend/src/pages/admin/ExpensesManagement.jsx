@@ -6,6 +6,85 @@ import * as XLSX from 'xlsx'
 import api from '../../lib/api'
 import { useUIStore } from '../../store/uiStore'
 
+const STORAGE_KEY = 'expenses_filter_pref';
+
+const getPeriodDates = (period) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const getLocalDateString = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    switch(period) {
+        case 'Azi': {
+            const dateStr = getLocalDateString(today);
+            return { start: dateStr, end: dateStr };
+        }
+        case 'Mâine': {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateStr = getLocalDateString(tomorrow);
+            return { start: dateStr, end: dateStr };
+        }
+        case 'Ieri': {
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const dateStr = getLocalDateString(yesterday);
+            return { start: dateStr, end: dateStr };
+        }
+        case 'Săptămâna curentă': {
+            const currentWeekStart = new Date(today);
+            const day = currentWeekStart.getDay();
+            const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1);
+            currentWeekStart.setDate(diff);
+            const currentWeekEnd = new Date(currentWeekStart);
+            currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
+            return { start: getLocalDateString(currentWeekStart), end: getLocalDateString(currentWeekEnd) };
+        }
+        case 'Luna curentă': {
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            return { start: getLocalDateString(startOfMonth), end: getLocalDateString(endOfMonth) };
+        }
+        case 'Luna trecută': {
+            const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+            return { start: getLocalDateString(startOfLastMonth), end: getLocalDateString(endOfLastMonth) };
+        }
+        case 'Anul curent': {
+            const startOfYear = new Date(today.getFullYear(), 0, 1);
+            const endOfYear = new Date(today.getFullYear(), 11, 31);
+            return { start: getLocalDateString(startOfYear), end: getLocalDateString(endOfYear) };
+        }
+        case 'Anul trecut': {
+            const startOfLastYear = new Date(today.getFullYear() - 1, 0, 1);
+            const endOfLastYear = new Date(today.getFullYear() - 1, 11, 31);
+            return { start: getLocalDateString(startOfLastYear), end: getLocalDateString(endOfLastYear) };
+        }
+        default: return { start: undefined, end: undefined };
+    }
+};
+
+const getSavedFilterPref = () => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const saveFilterPref = (pref) => {
+    try {
+        const current = getSavedFilterPref() || {};
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...pref }));
+    } catch (e) {}
+};
+
 export default function ExpensesManagement() {
     const [expenses, setExpenses] = useState([])
     const [sites, setSites] = useState([])
@@ -22,26 +101,30 @@ export default function ExpensesManagement() {
     // Document Viewer state
     const [viewDocument, setViewDocument] = useState(null)
 
-    // Filters
-    const getLocalDateStr = (d) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    // Filters — restore whatever client chose last time (stored in localStorage)
+    const savedPref = getSavedFilterPref();
+    const initialPeriod = savedPref?.period !== undefined ? savedPref.period : 'Luna curentă';
+    const initialDates = (() => {
+        if (initialPeriod && initialPeriod !== 'Toate perioadele') {
+            return getPeriodDates(initialPeriod);
+        }
+        if (initialPeriod === 'Toate perioadele') {
+            return { start: '', end: '' };
+        }
+        return {
+            start: savedPref?.startDate || '',
+            end: savedPref?.endDate || ''
+        };
+    })();
 
-    const initialToday = new Date();
-    const initialTomorrow = new Date();
-    initialTomorrow.setDate(initialTomorrow.getDate() + 1);
-
-    const [selectedSite, setSelectedSite] = useState('')
-    const [selectedCategory, setSelectedCategory] = useState('')
-    const [selectedPeriod, setSelectedPeriod] = useState('Anul curent')
-    const [customStartDate, setCustomStartDate] = useState('')
-    const [customEndDate, setCustomEndDate] = useState('')
+    const [selectedSite, setSelectedSite] = useState(savedPref?.siteId || '')
+    const [selectedCategory, setSelectedCategory] = useState(savedPref?.category || '')
+    const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod)
+    const [customStartDate, setCustomStartDate] = useState(initialDates.start || '')
+    const [customEndDate, setCustomEndDate] = useState(initialDates.end || '')
     const [searchQuery, setSearchQuery] = useState('')
     
-    const periods = ['Toate perioadele', 'Anul curent', 'Luna curentă', 'Luna trecută', 'Săptămâna curentă', 'Azi', 'Ieri', 'Mâine', 'Anul trecut']
+    const periods = ['Toate perioadele', 'Luna curentă', 'Luna trecută', 'Anul curent', 'Săptămâna curentă', 'Azi', 'Ieri', 'Mâine', 'Anul trecut']
 
     // Modal state
     const [showModal, setShowModal] = useState(false)
@@ -152,66 +235,6 @@ export default function ExpensesManagement() {
         return { className, style };
     }
 
-    const getPeriodDates = (period) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const getLocalDateString = (d) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-
-        switch(period) {
-            case 'Azi': {
-                const dateStr = getLocalDateString(today);
-                return { start: dateStr, end: dateStr };
-            }
-            case 'Mâine': {
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const dateStr = getLocalDateString(tomorrow);
-                return { start: dateStr, end: dateStr };
-            }
-            case 'Ieri': {
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                const dateStr = getLocalDateString(yesterday);
-                return { start: dateStr, end: dateStr };
-            }
-            case 'Săptămâna curentă': {
-                const currentWeekStart = new Date(today);
-                const day = currentWeekStart.getDay();
-                const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1);
-                currentWeekStart.setDate(diff);
-                const currentWeekEnd = new Date(currentWeekStart);
-                currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
-                return { start: getLocalDateString(currentWeekStart), end: getLocalDateString(currentWeekEnd) };
-            }
-            case 'Luna curentă': {
-                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                return { start: getLocalDateString(startOfMonth), end: getLocalDateString(endOfMonth) };
-            }
-            case 'Luna trecută': {
-                const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-                return { start: getLocalDateString(startOfLastMonth), end: getLocalDateString(endOfLastMonth) };
-            }
-            case 'Anul curent': {
-                const startOfYear = new Date(today.getFullYear(), 0, 1);
-                const endOfYear = new Date(today.getFullYear(), 11, 31);
-                return { start: getLocalDateString(startOfYear), end: getLocalDateString(endOfYear) };
-            }
-            case 'Anul trecut': {
-                const startOfLastYear = new Date(today.getFullYear() - 1, 0, 1);
-                const endOfLastYear = new Date(today.getFullYear() - 1, 11, 31);
-                return { start: getLocalDateString(startOfLastYear), end: getLocalDateString(endOfLastYear) };
-            }
-            default: return { start: undefined, end: undefined };
-        }
-    }
 
     // Fetch static metadata once on mount
     useEffect(() => {
@@ -277,6 +300,17 @@ export default function ExpensesManagement() {
             setCustomEndDate('');
         }
     }, [selectedPeriod]);
+
+    // Persist filter preferences whenever they change
+    useEffect(() => {
+        saveFilterPref({
+            period: selectedPeriod,
+            startDate: customStartDate,
+            endDate: customEndDate,
+            siteId: selectedSite,
+            category: selectedCategory
+        });
+    }, [selectedPeriod, customStartDate, customEndDate, selectedSite, selectedCategory]);
 
     useEffect(() => {
         loadExpenses()

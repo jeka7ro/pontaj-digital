@@ -36,12 +36,12 @@ export default function ExpensesManagement() {
 
     const [selectedSite, setSelectedSite] = useState('')
     const [selectedCategory, setSelectedCategory] = useState('')
-    const [selectedPeriod, setSelectedPeriod] = useState('Luna curentă')
+    const [selectedPeriod, setSelectedPeriod] = useState('Anul curent')
     const [customStartDate, setCustomStartDate] = useState('')
     const [customEndDate, setCustomEndDate] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
     
-    const periods = ['Azi', 'Mâine', 'Ieri', 'Săptămâna curentă', 'Luna curentă', 'Luna trecută', 'Anul curent', 'Anul trecut', 'Toate perioadele']
+    const periods = ['Toate perioadele', 'Anul curent', 'Luna curentă', 'Luna trecută', 'Săptămâna curentă', 'Azi', 'Ieri', 'Mâine', 'Anul trecut']
 
     // Modal state
     const [showModal, setShowModal] = useState(false)
@@ -213,13 +213,36 @@ export default function ExpensesManagement() {
         }
     }
 
-    const loadData = async () => {
+    // Fetch static metadata once on mount
+    useEffect(() => {
+        const fetchMetadata = async () => {
+            try {
+                const [resSites, resUsers, resCats] = await Promise.all([
+                    api.get('/admin/sites/', { params: { page_size: 1000, status: 'active' } }),
+                    api.get('/admin/users/', { params: { page_size: 1000 } }),
+                    api.get('/admin/expenses/categories')
+                ])
+                setSites(Array.isArray(resSites.data) ? resSites.data : (resSites.data?.sites || []))
+                setUsers(Array.isArray(resUsers.data) ? resUsers.data : (resUsers.data?.users || []))
+                setCustomCategories(resCats.data || [])
+            } catch (e) {
+                console.error('Eroare încărcare metadate:', e)
+            }
+        }
+        fetchMetadata()
+    }, [])
+
+    const loadExpenses = async () => {
+        setLoading(true)
         try {
             let startDate, endDate;
-            if (customStartDate || customEndDate) {
+            if (selectedPeriod === 'Toate perioadele') {
+                startDate = undefined;
+                endDate = undefined;
+            } else if (customStartDate || customEndDate) {
                 startDate = customStartDate || undefined;
                 endDate = customEndDate || undefined;
-            } else {
+            } else if (selectedPeriod) {
                 const dates = getPeriodDates(selectedPeriod);
                 startDate = dates.start;
                 endDate = dates.end;
@@ -230,19 +253,11 @@ export default function ExpensesManagement() {
                 category: selectedCategory || undefined,
                 start_date: startDate,
                 end_date: endDate,
-                _t: new Date().getTime()
+                _t: Date.now()
             };
 
-            const [resEx, resSites, resUsers, resCats] = await Promise.all([
-                api.get('/admin/expenses/', { params }),
-                api.get('/admin/sites/', { params: { page_size: 1000, status: 'active' } }),
-                api.get('/admin/users/', { params: { page_size: 1000 } }),
-                api.get('/admin/expenses/categories')
-            ])
+            const resEx = await api.get('/admin/expenses/', { params })
             setExpenses(Array.isArray(resEx.data) ? resEx.data : [])
-            setSites(Array.isArray(resSites.data) ? resSites.data : (resSites.data?.sites || []))
-            setUsers(Array.isArray(resUsers.data) ? resUsers.data : (resUsers.data?.users || []))
-            setCustomCategories(resCats.data || [])
         } catch (e) {
             console.error('Eroare încărcare date cheltuieli:', e)
         } finally {
@@ -251,20 +266,20 @@ export default function ExpensesManagement() {
     }
 
     useEffect(() => {
-        if (selectedPeriod !== 'Toate perioadele') {
+        if (selectedPeriod && selectedPeriod !== 'Toate perioadele') {
             const { start, end } = getPeriodDates(selectedPeriod);
             if (start && end) {
                 setCustomStartDate(start);
                 setCustomEndDate(end);
             }
-        } else {
+        } else if (selectedPeriod === 'Toate perioadele') {
             setCustomStartDate('');
             setCustomEndDate('');
         }
     }, [selectedPeriod]);
 
     useEffect(() => {
-        loadData()
+        loadExpenses()
     }, [selectedSite, selectedCategory, selectedPeriod, customStartDate, customEndDate])
 
     const handleFileUpload = async (e) => {
@@ -389,7 +404,7 @@ export default function ExpensesManagement() {
         if (!window.confirm('Ești sigur că vrei să ștergi această înregistrare?')) return
         try {
             await api.delete(`/admin/expenses/${id}`)
-            loadData()
+            loadExpenses()
         } catch (e) {
             console.error(e)
         } finally {
@@ -541,15 +556,14 @@ export default function ExpensesManagement() {
                                     <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <select 
                                         className="h-10 pl-8 pr-6 text-[13px] sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 appearance-none w-full text-ellipsis overflow-hidden whitespace-nowrap"
-                                        value={(!customStartDate && !customEndDate) ? selectedPeriod : ''}
+                                        value={selectedPeriod}
                                         onChange={(e) => {
-                                            setCustomStartDate('');
-                                            setCustomEndDate('');
-                                            setSelectedPeriod(e.target.value); 
+                                            const p = e.target.value;
+                                            setSelectedPeriod(p); 
                                             setPage(1);
                                         }}
                                     >
-                                        {(customStartDate || customEndDate) && <option value="" disabled hidden>Perioadă...</option>}
+                                        {!periods.includes(selectedPeriod) && <option value="" disabled hidden>Perioadă...</option>}
                                         {periods.map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
@@ -560,6 +574,7 @@ export default function ExpensesManagement() {
                                         className="h-8 text-[13px] sm:text-sm bg-transparent border-none outline-none focus:ring-0 text-slate-700 dark:text-slate-200 w-full px-1 text-center min-w-[125px]"
                                         value={customStartDate}
                                         onChange={e => {
+                                            setSelectedPeriod('');
                                             setCustomStartDate(e.target.value); 
                                             setPage(1);
                                         }}
@@ -570,6 +585,7 @@ export default function ExpensesManagement() {
                                         className="h-8 text-[13px] sm:text-sm bg-transparent border-none outline-none focus:ring-0 text-slate-700 dark:text-slate-200 w-full px-1 text-center min-w-[125px]"
                                         value={customEndDate}
                                         onChange={e => {
+                                            setSelectedPeriod('');
                                             setCustomEndDate(e.target.value); 
                                             setPage(1);
                                         }}

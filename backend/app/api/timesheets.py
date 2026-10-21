@@ -608,7 +608,7 @@ def get_timesheet_stats(
             total_hours_week += max(0, hours)
     
     total_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
-    total_sites = db.query(func.count(ConstructionSite.id)).scalar()
+    total_sites = db.query(func.count(ConstructionSite.id)).filter(ConstructionSite.status == "active").scalar()
     
     return {
         "pending": today_count,
